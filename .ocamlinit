@@ -1,0 +1,20 @@
+(* Ensure that we're in the root of the project. This is helpful for
+   editor integration where the cwd might not be the root of the
+   project.*)
+let root =
+  let rec search path = match Sys.file_exists (path ^ "/.ocamlinit") with
+  | false -> search (Filename.dirname path)
+  | true -> path
+  in search (Sys.getcwd ())
+in Sys.chdir root;;
+
+#use "topfind";;
+#require "core";;
+#require "ocamlgraph";;
+#require "yojson";;
+#directory "_build";;
+
+module List = Core_kernel.List;;
+module Option = Core_kernel.Option;;
+module In_channel = Core_kernel.In_channel;;
+module Out_channel = Core_kernel.Out_channel;;

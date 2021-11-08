@@ -1,0 +1,9 @@
+(env
+ (dev
+  (flags (:standard -g -short-paths -safe-string -strict-formats -strict-sequence -bin-annot -w -27-4-9-40-41-42-45-48-33-26-16))))
+
+ (executable
+  (name InferenceEngineApplication)
+  (flags (:standard -open Core -open InferenceEngineLib))
+  (libraries utop core InferenceEngineLib)
+  (preprocess (pps ppx_compare)))
