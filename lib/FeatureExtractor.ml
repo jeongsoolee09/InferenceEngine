@@ -4,6 +4,8 @@ open GraphRepr
 
 let ( >>= ) = List.( >>= )
 
+and ( >>| ) = List.( >>| )
+
 and return = List.return
 
 module DFS = Graph.Traverse.Dfs (G)
@@ -58,7 +60,7 @@ module ContextualUtils = struct
 
     (** For every leaf, print paths to the leaf from the given source, where the given graph may
         contain a cycle, using a customized DFS algorithm **)
-    let custom_dfs (graph : G.t) (source : G.V.t) : G.V.t list list =
+    let enumerate_paths_from_source_to_leaves (graph : G.t) (source : G.V.t) : G.V.t list list =
       let rec inner (current : G.V.t) (smol_acc : G.V.t list) (big_acc : G.V.t list list)
           (current_havebeenmap : HaveBeenMap.t) : G.V.t list list =
         if is_leaf current graph then List.rev smol_acc :: big_acc
@@ -75,9 +77,17 @@ module ContextualUtils = struct
             ~init:big_acc children
       in
       inner source [source] [] (HaveBeenMap.init graph)
+
+
+    (** Find all paths from the given source to the given destination. **)
+    let find_path_from_source_to_dest (graph : G.t) (source : G.V.t) (dest : G.V.t) :
+        G.V.t list list =
+      enumerate_paths_from_source_to_leaves graph source
+      |> List.filter ~f:(fun path -> List.mem ~equal:G.V.equal path dest)
+      >>| List.take_while ~f:(fun vertex -> not @@ G.V.equal vertex dest)
   end
 
-  let identify_trunks (graph : G.t) : G.t list =
+  let identify_trunks (graph : G.t) : G.V.t list list =
     let roots = collect_roots graph in
     let leaves = collect_leaves graph in
     let carpro = roots >>= fun root -> leaves >>= fun leaf -> return (root, leaf) in
@@ -86,7 +96,8 @@ module ContextualUtils = struct
       List.filter ~f:(fun (root, leaf) -> is_reachable root leaf graph) carpro
     in
     (* now, find the path between the root and the leaf. *)
-    raise TODO
+    reachable_root_and_leaf_pairs
+    >>= fun (root, leaf) -> PathUtils.find_path_from_source_to_dest graph root leaf
 end
 
 module NodeWiseFeatures = struct
