@@ -41,13 +41,13 @@ let is_both_framework_code (vertex1 : G.V.t) (vertex2 : G.V.t) : bool =
         (* should not belong to this package *) )
       skip_methods
   in
-  List.mem ~equal:String.equal
-    (not_this_project_methods_and_java_methods >>| Utils.extract_method_name)
-    (Utils.extract_method_name methname)
+  let is_framework_code methname =
+    List.mem ~equal:String.equal
+      (not_this_project_methods_and_java_methods >>| Utils.extract_method_name)
+      (Utils.extract_method_name methname)
+  in
+  is_framework_code (fst vertex1) && is_framework_code (fst vertex2)
 
 
-(* methname is the result of Procname.to_string *)
-let get_class (methname : string) : string =
-  let regex = Str.regexp ".+ \\(.+\\)\\..+(.*)" in
-  assert (Str.string_match regex methname 0) ;
-  Str.matched_group 1 methname
+let belong_to_same_class (vertex1 : G.V.t) (vertex2 : G.V.t) : bool =
+  String.equal (Utils.extract_class_name (fst vertex1)) (Utils.extract_class_name (fst vertex2))
