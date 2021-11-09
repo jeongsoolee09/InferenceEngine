@@ -269,7 +269,6 @@ module EdgeMaker = struct
 
   let edge_list_of_chain_slice_list (chain_slices : ChainSlice.t list) : G.E.t list =
     let processed = process_chainslices chain_slices in
-    (* print_endline @@ "\nchain_slices: " ^ ChainSlice.pp_chain processed ^ "\n" ; *)
     let vertices = processed >>| VertexMaker.vertex_of_chain_slice in
     make_bicycle_chain vertices
 
