@@ -48,11 +48,9 @@ module ContextualUtils = struct
       type value = int
 
       type t = Int.t WithEdgeDomain.t
+
+      let init (graph : G.t) : t = G.fold_edges (fun v1 v2 acc -> add (v1, v2) 0 acc) graph empty
     end
-
-    let initialize_havebeenmap (graph : G.t) : HaveBeenMap.t =
-      G.fold_edges (fun v1 v2 acc -> HaveBeenMap.add (v1, v2) 0 acc) graph HaveBeenMap.empty
-
 
     let increment_option (prev : int option) : int option =
       match prev with None -> None | Some n -> Some (n + 1)
@@ -76,7 +74,7 @@ module ContextualUtils = struct
                 inner child (child :: smol_acc) acc current_alist_updated )
             ~init:big_acc children
       in
-      inner source [source] [] (initialize_havebeenmap graph)
+      inner source [source] [] (HaveBeenMap.init graph)
   end
 
   let identify_trunks (graph : G.t) : G.t list =
