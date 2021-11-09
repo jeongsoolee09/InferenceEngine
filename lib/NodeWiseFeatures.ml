@@ -8,7 +8,7 @@ and return = List.return
 
 module Utils = struct
   (** Pattern that captures (1) package name, (2) class name, and (3) method name. *)
-  let regex = Str.regexp "\\(.+\\)\\.\\([A-Z][a-zA-Z]+\\)\\.\\([a-zA-Z<>]+\\)(.*)"
+  let regex = Str.regexp "\\(.+\\)\\.\\([A-Z][a-zA-Z$]+\\)\\.\\([a-zA-Z<>$]+\\)(.*)"
 
   (* unique_identifiers are strings of the format {package}.{classname}.{method_name}:{return_type_with_package}
      they are obtained from Procname.pp_unique_id. *)
