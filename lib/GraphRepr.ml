@@ -203,7 +203,7 @@ module VertexMaker = struct
 
 
   let get_all_methods () =
-    Deserializer.deserialize_method_txt "Methods.txt"
+    Deserializer.deserialize_method_txt ()
     |> List.filter ~f:(fun method_str ->
            (not @@ String.is_substring method_str ~substring:"lambda")
            && (not @@ String.is_substring method_str ~substring:"Lambda")
@@ -243,8 +243,7 @@ module EdgeMaker = struct
 
 
   let skip_func_method_names =
-    Deserializer.deserialize_skip_func
-      "/Users/jslee/Taint-Analysis/Code/benchmarks/realworld/relational-data-access/skip_func.txt"
+    Deserializer.deserialize_skip_func ()
     |> List.filter ~f:(fun str -> not @@ String.is_prefix ~prefix:"__" str)
     >>| parse_skip_func
 

@@ -28,14 +28,9 @@ module Utils = struct
 end
 
 (* methname is the result of Procname.to_string *)
-let is_framework_code (methname : string) : bool =
-  let skip_methods =
-    Deserializer.deserialize_method_txt
-      "/Users/jslee/Taint-Analysis/Code/benchmarks/realworld/relational-data-access/skip_func.txt"
-  and udf_methods =
-    Deserializer.deserialize_method_txt
-      "/Users/jslee/Taint-Analysis/Code/benchmarks/realworld/relational-data-access/Methods.txt"
-  in
+let is_both_framework_code (vertex1 : G.V.t) (vertex2 : G.V.t) : bool =
+  let skip_methods = Deserializer.deserialize_method_txt ()
+  and udf_methods = Deserializer.deserialize_method_txt () in
   let this_project_package_name = Utils.extract_package_name @@ List.hd_exn udf_methods in
   let not_this_project_methods_and_java_methods =
     List.filter
