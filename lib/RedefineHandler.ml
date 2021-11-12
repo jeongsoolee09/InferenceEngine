@@ -35,3 +35,18 @@ let collect_redefines (json_assoc : json) : ChainSlice.t list =
   in
   (* deduping process (order is irrelevant) *)
   collected |> ChainSliceSet.of_list |> ChainSliceSet.elements
+
+
+(** Is this vertex from a redefine slice? *)
+let is_redefine_vertex (vertex : G.V.t) (redefine_slices : ChainSlice.t list) : bool =
+  (* check if the method name and linum matches *)
+  let method_name, linum = vertex in
+  List.fold
+    ~f:(fun acc slice ->
+      match slice with
+      | ChainSlice.RedefineSlice (slice_method, slice_loc, _) ->
+          let is_match = String.equal method_name slice_method && String.equal linum slice_loc in
+          is_match || acc
+      | _ ->
+          acc )
+    ~init:false redefine_slices
