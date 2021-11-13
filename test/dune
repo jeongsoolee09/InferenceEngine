@@ -4,6 +4,6 @@
 
 (test
  (name InferenceEngineTests)
- (flags (:standard -open Core))
- (libraries utop core ocamlgraph yojson)
+ (flags (:standard -open Core -open InferenceEngineLib))
+ (libraries utop core ocamlgraph yojson InferenceEngineLib)
  (preprocess (pps ppx_compare)))

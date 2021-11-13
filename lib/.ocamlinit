@@ -11,8 +11,6 @@ in Sys.chdir root;;
 
 #use "topfind";;
 #require "core";;
-#use "topfind";;
-#require "core";;
 #require "ocamlgraph";;
 #require "yojson";;
 #directory "_build";;
