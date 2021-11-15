@@ -38,7 +38,7 @@ let collect_redefines (json_assoc : json) : ChainSlice.t list =
 
 
 (** Is this vertex from a redefine slice? *)
-let is_redefine_vertex (vertex : G.V.t) (redefine_slices : ChainSlice.t list) : bool =
+let is_redefine_vertex (redefine_slices : ChainSlice.t list) (vertex : G.V.t) : bool =
   (* check if the method name and linum matches *)
   let method_name, linum = vertex in
   List.fold

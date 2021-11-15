@@ -11,7 +11,7 @@ module GraphMaker = struct
 
   let batch_add_edge (raw_json : json) (graph : G.t) =
     List.fold
-      ~f:(fun acc (v1, v2) -> G.add_edge acc v1 v2)
+      ~f:(fun acc edge -> G.add_edge_e acc edge)
       ~init:graph
       (EdgeMaker.get_all_edges raw_json)
 
