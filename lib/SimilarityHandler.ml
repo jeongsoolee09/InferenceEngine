@@ -5,30 +5,71 @@ open GraphRepr
 open NodeWiseFeatures
 open ContextualFeatures
 
-exception TODO
-
 module StringPair = struct
   type t = string * string [@@deriving compare]
 end
 
-module NodeWiseSimilarityScoreMap = struct
+module NodeWiseSimilarityMap = struct
   module WithMethodPairDomain = Caml.Map.Make (StringPair)
   include WithMethodPairDomain
 
   type t = Int.t WithMethodPairDomain.t
+
+  let init (all_methods : string list) : t =
+    let method_pairs =
+      let* method1 = all_methods in
+      let* method2 = all_methods in
+      return (method1, method2)
+    in
+    List.fold
+      ~f:(fun acc pair -> WithMethodPairDomain.add pair 0 acc)
+      method_pairs ~init:WithMethodPairDomain.empty
 end
 
-module ContextualSimilarityScoreMap = struct
+module TrunkSimilarityMap = struct
+  module TrunkPair = struct
+    type t = Trunk.t * Trunk.t [@@deriving compare, equal]
+  end
+
+  module WithTrunkPairDomain = Caml.Map.Make (TrunkPair)
+  include WithTrunkPairDomain
+
+  type t = Int.t WithTrunkPairDomain.t
+
+  let init (all_trunks : trunk list) : t =
+    let trunk_pairs =
+      let* trunk1 = all_trunks in
+      let* trunk2 = all_trunks in
+      return (trunk1, trunk2)
+    in
+    List.fold
+      ~f:(fun acc pair -> WithTrunkPairDomain.add pair 0 acc)
+      trunk_pairs ~init:WithTrunkPairDomain.empty
+end
+
+module ContextualSimilarityMap = struct
   module WithMethodPairDomain = Caml.Map.Make (StringPair)
   include WithMethodPairDomain
 
   type t = Int.t WithMethodPairDomain.t
+
+  let init (all_methods : string list) : t =
+    let method_pairs =
+      let* method1 = all_methods in
+      let* method2 = all_methods in
+      return (method1, method2)
+    in
+    List.fold
+      ~f:(fun acc pair -> WithMethodPairDomain.add pair 0 acc)
+      method_pairs ~init:WithMethodPairDomain.empty
 end
 
 module SimilarVertexPairExtractor = struct
+  (** module that ultimately calculates the nodewise similarity of each method. *)
   module NodewisePairExtractor = struct
     let threshold = 1 (* TEMP *)
 
+    (** Run all extractors for every method pair. *)
     let get_nodewise_similarity (method_pair : string * string) : int =
       (* execute all extractors. *)
       let extractors_list = [is_both_framework_code; belong_to_same_class] in
@@ -37,42 +78,53 @@ module SimilarVertexPairExtractor = struct
         ~init:0 extractors_list
 
 
-    let init_similarity_score_map (all_methods : string list) : NodeWiseSimilarityScoreMap.t =
+    (** main functionality: calculate the nodewise simliarity of each method and organize those in a
+        table. *)
+    let update_nodewise_similarity_map (all_methods : string list) : NodeWiseSimilarityMap.t =
       let carpro =
         let* method1 = all_methods in
         let* method2 = all_methods in
         return (method1, method2)
       in
+      let initial_map = NodeWiseSimilarityMap.init all_methods in
       List.fold
         ~f:(fun acc ((m1, m2) as pair) ->
           let nodewise_similarity = get_nodewise_similarity pair in
-          if Int.( >= ) nodewise_similarity threshold then
-            NodeWiseSimilarityScoreMap.add pair nodewise_similarity acc
-          else acc )
-        ~init:NodeWiseSimilarityScoreMap.empty carpro
-
-
-    let get_similar_methods (graph : G.t) : (string * string) list =
-      let all_methods =
-        let all_vertices = G.fold_vertex List.cons graph [] in
-        let module StringSet = Caml.Set.Make (String) in
-        all_vertices >>| fst |> StringSet.of_list |> StringSet.elements
-      in
-      let similarity_score_map = init_similarity_score_map all_methods in
-      NodeWiseSimilarityScoreMap.fold
-        (fun pair similarity acc -> if Int.( >= ) similarity threshold then pair :: acc else acc)
-        similarity_score_map []
+          NodeWiseSimilarityMap.remove pair acc
+          |> NodeWiseSimilarityMap.add pair nodewise_similarity )
+        ~init:initial_map carpro
   end
 
-  module ContextualPairExtractor = struct
-    (* We first work on trunks rather than methods themselves. *)
+  module TrunkPairExtractor = struct
     let threshold = 1 (* TEMP *)
 
+    (** Run all extractors for every trunk pair. *)
     let get_trunk_similarity (trunk_pair : trunk * trunk) : int =
       (* execute all extractors. *)
       let extractors_list = [same_callee_in_trunk_count; trunks_share_same_suffixes_length] in
       List.fold ~f:(fun acc extractor -> extractor trunk_pair) ~init:0 extractors_list
 
+
+    (** main functionality: calculate the simliarity of each trunk pairs and organize those in a
+        table. *)
+    let update_trunk_similarity_map (all_trunks : trunk list) : TrunkSimilarityMap.t =
+      let carpro =
+        let* trunk1 = all_trunks in
+        let* trunk2 = all_trunks in
+        return (trunk1, trunk2)
+      in
+      let initial_map = TrunkSimilarityMap.init all_trunks in
+      List.fold
+        ~f:(fun acc ((t1, t2) as pair) ->
+          let trunk_similarity = get_trunk_similarity pair in
+          TrunkSimilarityMap.remove pair acc |> TrunkSimilarityMap.add pair trunk_similarity )
+        ~init:initial_map carpro
+  end
+
+  (** module that ultimately calculates the contextual similarity of each method. *)
+  module ContextualPairExtractor = struct
+    (* We first work on trunks rather than methods themselves. *)
+    let threshold = TrunkPairExtractor.threshold
 
     (** find vertices dangling from the trunk with bidirectional edges, e.g. if a -> b -> c <-> d,
         find d *)
@@ -100,8 +152,9 @@ module SimilarVertexPairExtractor = struct
       List.filter ~f:is_dangling with_bidirectional_edges
 
 
+    (** given a trunk pair, get the pairs of methods that are contextually similar to each other. *)
     let identify_similar_method_from_similar_trunk ((trunk1, trunk2) : trunk * trunk) (graph : G.t)
-        : (vertex * vertex) list =
+        : (string * string) list =
       (* 1. trunk's roots are similar *)
       let trunk1_root = List.hd_exn trunk1 and trunk2_root = List.hd_exn trunk2 in
       (* 2. trunk's leaves are similar *)
@@ -123,35 +176,42 @@ module SimilarVertexPairExtractor = struct
       let bidirectional_carpro =
         let* bidirectional1 = trunk1_bidirectional graph in
         let* bidirectional2 = trunk2_bidirectional graph in
-        return (bidirectional1, bidirectional2)
+        return (fst bidirectional1, fst bidirectional2)
       in
       match (trunk1_redefines, trunk2_redefines) with
       | [], [] | [], _ | _, [] ->
-          (* do nothing regarding redefines *)
-          [(trunk1_root, trunk2_root); (trunk1_leaf, trunk2_leaf)] @ bidirectional_carpro
+          (* there cannot be any redefine pairs: do nothing regarding redefines *)
+          [(fst trunk1_root, fst trunk2_root); (fst trunk1_leaf, fst trunk2_leaf)]
+          @ bidirectional_carpro
       | _, _ ->
-          (* make a carpro of redefines *)
+          (* we can make redefine pairs: make a carpro of redefines *)
           (* TODO: making a carpro is naive. The logic should be refined *)
           let redefines_carpro =
             let* redefine1 = trunk1_redefines in
             let* redefine2 = trunk2_redefines in
-            return (redefine1, redefine2)
+            return (fst redefine1, fst redefine2)
           in
-          [(trunk1_root, trunk2_root); (trunk1_leaf, trunk2_leaf)]
+          [(fst trunk1_root, fst trunk2_root); (fst trunk1_leaf, fst trunk2_leaf)]
           @ bidirectional_carpro @ redefines_carpro
-
-
-    let with_list_index (lst : 'a list) : (int * 'a) list =
-      List.rev @@ List.foldi ~f:(fun index acc elem -> (index, elem) :: acc) ~init:[] lst
 
 
     (** pairup similar vertices, also putting list indices into consideration. e.g. if a and b are
         similar, and if list_a = [a; c; d; a; a; a;] and list_b = [f; g; h; b; b; i; j], then pair
         up second and third occurrences of a's with first and second occurrences of b's. *)
     let smart_pairup_vertices (trunk_a : trunk) (trunk_b : trunk)
-        (similar_methods : (string * string) list) =
-      let trunk_a_processed = with_list_index (List.stable_dedup trunk_a)
-      and trunk_b_processed = with_list_index (List.stable_dedup trunk_b) in
+        ((trunk_a_similar, trunk_b_similar) : string * string) : (vertex * vertex) list =
+      let with_list_index (lst : 'a list) : (int * 'a) list =
+        List.rev @@ List.foldi ~f:(fun index acc elem -> (index, elem) :: acc) ~init:[] lst
+      in
+      let trunk_a_processed =
+        trunk_a
+        |> List.filter ~f:(fun vertex -> String.equal trunk_a_similar (fst vertex))
+        |> List.stable_dedup |> with_list_index
+      and trunk_b_processed =
+        trunk_b
+        |> List.filter ~f:(fun vertex -> String.equal trunk_b_similar (fst vertex))
+        |> List.stable_dedup |> with_list_index
+      in
       if Int.( >= ) (List.length trunk_a) (List.length trunk_b) then
         (* loop on trunk_b *)
         List.fold
@@ -184,25 +244,81 @@ module SimilarVertexPairExtractor = struct
           ~init:[] trunk_a_processed
 
 
-    let init_contextual_score_map (all_trunks : trunk list) : NodeWiseSimilarityScoreMap.t =
-      let carpro =
+    let update_contextual_similarity_map (all_trunks : trunk list) (all_methods : string list)
+        (graph : G.t) : ContextualSimilarityMap.t =
+      let trunk_carpro =
         let* trunk1 = all_trunks in
         let* trunk2 = all_trunks in
         return (trunk1, trunk2)
       in
-      (* now, we need to translate the trunk similarity into method similarity. *)
-      raise TODO
+      let initial_map = ContextualSimilarityMap.init all_methods in
+      (* now, we need to translate the trunk similarity into method similarity
+         (since SimlarVertexPairExtractor extracts only pairs of similar methods,
+         we need to find vertices containing those similar methods):
+         it's done with smart_pairup_vertices. *)
+      List.fold
+        ~f:(fun acc (trunk1, trunk2) ->
+          let trunkwise_similarity = TrunkPairExtractor.get_trunk_similarity (trunk1, trunk2) in
+          let similar_methods = identify_similar_method_from_similar_trunk (trunk1, trunk2) graph in
+          List.fold
+            ~f:(fun acc pair ->
+              ContextualSimilarityMap.remove pair acc
+              |> ContextualSimilarityMap.add pair trunkwise_similarity )
+            ~init:initial_map similar_methods )
+        ~init:ContextualSimilarityMap.empty trunk_carpro
   end
 end
 
 module EstablishSimEdges = struct
-  (* since SimlarVertexPairExtractor extracts only pairs of similar methods, we need to find vertices containing those similar methods. *)
-
   let make_nodewise_sim_edge (graph : G.t) : G.t =
     let open SimilarVertexPairExtractor in
-    let similar_edges_nodewise = NodewisePairExtractor.get_similar_methods graph in
-    raise TODO
+    let all_vertices = GraphUtils.all_vertices_of_graph graph in
+    let contextual_similarity_map =
+      NodewisePairExtractor.update_nodewise_similarity_map (GraphUtils.all_methods_of_graph graph)
+    in
+    let above_threshold_entries =
+      NodeWiseSimilarityMap.filter
+        (fun _ similarity -> similarity >= NodewisePairExtractor.threshold)
+        contextual_similarity_map
+    in
+    NodeWiseSimilarityMap.fold
+      (fun (method1, method2) _ acc ->
+        let method1_vertices =
+          List.filter ~f:(fun (meth, _) -> String.equal meth method1) all_vertices
+        and method2_vertices =
+          List.filter ~f:(fun (meth, _) -> String.equal meth method2) all_vertices
+        in
+        (* we'll use smart_pairup_vertices to ensure we don't connect two distant vertices. *)
+        let smart_pairedup : (Vertex.t * Vertex.t) list =
+          ContextualPairExtractor.smart_pairup_vertices method1_vertices method2_vertices
+            (method1, method2)
+        in
+        List.fold
+          ~f:(fun acc (v1, v2) -> G.add_edge_e acc (v1, EdgeLabel.NodeWiseSimilarity, v2))
+          ~init:acc smart_pairedup )
+      above_threshold_entries graph
 
 
-  let make_contextual_sim_edge (graph : G.t) : G.t = raise TODO
+  let make_contextual_sim_edge (graph : G.t) : G.t =
+    (* we use smart_pairup here, to translate method simliarity to vertex similarity. *)
+    let open SimilarVertexPairExtractor in
+    let all_trunks = ContextualFeatures.identify_trunks graph in
+    let trunk_similarity_map = TrunkPairExtractor.update_trunk_similarity_map all_trunks in
+    TrunkSimilarityMap.fold
+      (fun ((trunk1, trunk2) as trunk_pair) similarity acc ->
+        if similarity >= TrunkPairExtractor.threshold then
+          let contextually_similar_methods =
+            ContextualPairExtractor.identify_similar_method_from_similar_trunk trunk_pair graph
+          in
+          let smart_pairedup =
+            contextually_similar_methods
+            >>= fun (method1, method2) ->
+            ContextualPairExtractor.smart_pairup_vertices trunk1 trunk2 (method1, method2)
+          in
+          List.fold
+            ~f:(fun smol_acc (v1, v2) ->
+              G.add_edge_e smol_acc (v1, EdgeLabel.ContextualSimilarity, v2) )
+            ~init:acc smart_pairedup
+        else acc )
+      trunk_similarity_map graph
 end
