@@ -6,6 +6,8 @@ exception TODO
 
 exception NotImplemented
 
+module Random = Core_kernel.Random
+
 module Response = struct
   type t = string * TaintLabel.t
 
@@ -32,22 +34,21 @@ module PropagationRules = struct
         let succ_dist = ProbMap.find succ distmap in
         let new_dist =
           match new_fact_label with
-          | Source | Sink | Sanitizer ->
-              if G.is_root succ graph then
-                { ProbQuadruple.src= succ_dist.src +. 0.3
-                ; sin= succ_dist.sin -. 0.1
-                ; san= succ_dist.san -. 0.1
-                ; non= succ_dist.non -. 0.1 }
-              else if G.is_leaf succ graph then
-                { ProbQuadruple.src= succ_dist.src -. 0.1
-                ; sin= succ_dist.sin -. 0.1
-                ; san= succ_dist.san -. 0.1
-                ; non= succ_dist.non +. 0.3 }
-              else
-                { ProbQuadruple.src= succ_dist.src -. 0.1
-                ; sin= succ_dist.sin -. 0.1
-                ; san= succ_dist.san +. 0.3
-                ; non= succ_dist.non -. 0.1 }
+          | Source ->
+              { ProbQuadruple.src= succ_dist.src +. 0.3
+              ; sin= succ_dist.sin -. 0.1
+              ; san= succ_dist.san -. 0.1
+              ; non= succ_dist.non -. 0.1 }
+          | Sink ->
+              { ProbQuadruple.src= succ_dist.src -. 0.1
+              ; sin= succ_dist.sin +. 0.3
+              ; san= succ_dist.san -. 0.1
+              ; non= succ_dist.non -. 0.1 }
+          | Sanitizer ->
+              { ProbQuadruple.src= succ_dist.src -. 0.1
+              ; sin= succ_dist.sin -. 0.1
+              ; san= succ_dist.san +. 0.3
+              ; non= succ_dist.non -. 0.1 }
           | None ->
               raise NotImplemented
           | Indeterminate ->
@@ -74,29 +75,74 @@ module PropagationRules = struct
         let new_dist =
           match new_fact_label with
           | Source ->
-              (* bump the likelihood of the successor being a source *)
-              { ProbQuadruple.src= succ_dist.src +. 0.3
-              ; sin= succ_dist.sin -. 0.1
-              ; san= succ_dist.san -. 0.1
-              ; non= succ_dist.non -. 0.1 }
+              if G.is_root succ graph then
+                { ProbQuadruple.src= succ_dist.src +. 0.3
+                ; sin= succ_dist.sin -. 0.1
+                ; san= succ_dist.san -. 0.1
+                ; non= succ_dist.non -. 0.1 }
+              else if G.is_leaf succ graph then
+                { ProbQuadruple.src= succ_dist.src -. 0.1
+                ; sin= succ_dist.sin -. 0.1
+                ; san= succ_dist.san -. 0.1
+                ; non= succ_dist.non +. 0.3 }
+              else
+                (* bump the likelihood of the successor being a source *)
+                { ProbQuadruple.src= succ_dist.src +. 0.3
+                ; sin= succ_dist.sin -. 0.1
+                ; san= succ_dist.san -. 0.1
+                ; non= succ_dist.non -. 0.1 }
           | Sink ->
-              (* bump the likelihood of the successor being a source *)
-              { ProbQuadruple.src= succ_dist.src -. 0.1
-              ; sin= succ_dist.sin +. 0.3
-              ; san= succ_dist.san -. 0.1
-              ; non= succ_dist.non -. 0.1 }
+              if G.is_root succ graph then
+                { ProbQuadruple.src= succ_dist.src +. 0.3
+                ; sin= succ_dist.sin -. 0.1
+                ; san= succ_dist.san -. 0.1
+                ; non= succ_dist.non -. 0.1 }
+              else if G.is_leaf succ graph then
+                { ProbQuadruple.src= succ_dist.src -. 0.1
+                ; sin= succ_dist.sin -. 0.1
+                ; san= succ_dist.san -. 0.1
+                ; non= succ_dist.non +. 0.3 }
+              else
+                (* bump the likelihood of the successor being a source *)
+                { ProbQuadruple.src= succ_dist.src -. 0.1
+                ; sin= succ_dist.sin +. 0.3
+                ; san= succ_dist.san -. 0.1
+                ; non= succ_dist.non -. 0.1 }
           | Sanitizer ->
-              (* bump the likelihood of the successor being a source *)
-              { ProbQuadruple.src= succ_dist.src -. 0.1
-              ; sin= succ_dist.sin -. 0.1
-              ; san= succ_dist.san +. 0.3
-              ; non= succ_dist.non -. 0.1 }
+              if G.is_root succ graph then
+                { ProbQuadruple.src= succ_dist.src +. 0.3
+                ; sin= succ_dist.sin -. 0.1
+                ; san= succ_dist.san -. 0.1
+                ; non= succ_dist.non -. 0.1 }
+              else if G.is_leaf succ graph then
+                { ProbQuadruple.src= succ_dist.src -. 0.1
+                ; sin= succ_dist.sin -. 0.1
+                ; san= succ_dist.san -. 0.1
+                ; non= succ_dist.non +. 0.3 }
+              else
+                (* bump the likelihood of the successor being a source *)
+                { ProbQuadruple.src= succ_dist.src -. 0.1
+                ; sin= succ_dist.sin -. 0.1
+                ; san= succ_dist.san +. 0.3
+                ; non= succ_dist.non -. 0.1 }
           | None ->
-              (* bump the likelihood of the successor being a source *)
-              { ProbQuadruple.src= succ_dist.src -. 0.1
-              ; sin= succ_dist.sin -. 0.1
-              ; san= succ_dist.san -. 0.1
-              ; non= succ_dist.non +. 0.3 }
+              if G.is_root succ graph then
+                { ProbQuadruple.src= succ_dist.src +. 0.3
+                ; sin= succ_dist.sin -. 0.1
+                ; san= succ_dist.san -. 0.1
+                ; non= succ_dist.non -. 0.1 }
+              else if G.is_leaf succ graph then
+                { ProbQuadruple.src= succ_dist.src -. 0.1
+                ; sin= succ_dist.sin -. 0.1
+                ; san= succ_dist.san -. 0.1
+                ; non= succ_dist.non +. 0.3 }
+              else
+                (* bump the likelihood of the successor being a source *)
+                (* { ProbQuadruple.src= succ_dist.src -. 0.1 *)
+                (* ; sin= succ_dist.sin -. 0.1 *)
+                (* ; san= succ_dist.san -. 0.1 *)
+                (* ; non= succ_dist.non +. 0.3 } *)
+                raise NotImplemented
           | Indeterminate ->
               failwith "Impossible"
         in
@@ -108,6 +154,8 @@ module PropagationRules = struct
       (graph : G.t) : ProbMap.t =
     raise TODO
 end
+
+(* Use Random.int_incl for making a random integer. *)
 
 module AskingRules = struct
   let ask_if_leaf_is_sink = raise TODO
