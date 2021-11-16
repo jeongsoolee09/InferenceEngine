@@ -1,5 +1,22 @@
 open GraphRepr
 
+module Label = struct
+  type t = Source | Sink | Sanitizer | None | Indeterminate [@@deriving equal]
+
+  let to_string (label : t) : string =
+    match label with
+    | Source ->
+        "source"
+    | Sink ->
+        "sink"
+    | Sanitizer ->
+        "sanitizer"
+    | None ->
+        "none"
+    | Indeterminate ->
+        "indeterminate"
+end
+
 module ProbQuadruple = struct
   type t = {src: float; sin: float; san: float; non: float}
 
@@ -13,17 +30,36 @@ module ProbQuadruple = struct
   let winning_threshold = 0.1
 
   let alist_of_dist (dist : t) : (string * float) list =
-    [("source", dist.src); ("sink", dist.sin); ("san", dist.san); ("non", dist.non)]
+    [("source", dist.src); ("sink", dist.sin); ("sanitizer", dist.san); ("none", dist.non)]
 
 
-  let determine_label (dist : t) : string =
+  type label = Label.t
+
+  let label_of_string (str : string) : label =
+    match str with
+    | "source" ->
+        Source
+    | "sink" ->
+        Sink
+    | "sanitizer" ->
+        Sanitizer
+    | "none" ->
+        None
+    | "indeterminate" ->
+        Indeterminate
+    | otherwise ->
+        failwith ("invalid string: " ^ otherwise)
+
+
+  let determine_label (dist : t) : label =
     let alist = alist_of_dist dist in
     let sorted_decreasing =
       List.rev @@ List.sort alist ~compare:(fun (_, v1) (_, v2) -> Float.compare v1 v2)
     in
     let label, v1 = List.nth_exn sorted_decreasing 0 in
     let _, v2 = List.nth_exn sorted_decreasing 1 in
-    if Float.( >= ) (Float.( - ) v1 v2) winning_threshold then label else "indeterminate"
+    if Float.( >= ) (Float.( - ) v1 v2) winning_threshold then label_of_string label
+    else Indeterminate
 end
 
 module ProbMap = struct
@@ -43,3 +79,20 @@ let make_map_for_graph graph : ProbMap.t =
   List.fold
     ~f:(fun acc vertex -> ProbMap.add vertex ProbQuadruple.initial acc)
     ~init:ProbMap.empty all_vertices
+
+
+module Utils = struct
+  let df_succs (vertex : G.V.t) (graph : G.t) =
+    G.fold_edges_e List.cons graph []
+    |> List.filter ~f:(fun (_, label, _) -> EdgeLabel.equal label EdgeLabel.DataFlow)
+
+
+  let ns_succs (vertex : G.V.t) (graph : G.t) =
+    G.fold_edges_e List.cons graph []
+    |> List.filter ~f:(fun (_, label, _) -> EdgeLabel.equal label EdgeLabel.NodeWiseSimilarity)
+
+
+  let cs_succs (vertex : G.V.t) (graph : G.t) =
+    G.fold_edges_e List.cons graph []
+    |> List.filter ~f:(fun (_, label, _) -> EdgeLabel.equal label EdgeLabel.ContextualSimilarity)
+end
