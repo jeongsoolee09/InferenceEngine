@@ -144,8 +144,7 @@ module SimilarVertexPairExtractor = struct
       let is_dangling node =
         Int.( = ) (List.length (G.succ graph node)) 1
         &&
-        let in_edges = GraphUtils.find_in_edges node graph
-        and succ = List.hd_exn (G.succ graph node) in
+        let in_edges = G.find_in_edges node graph and succ = List.hd_exn (G.succ graph node) in
         let edge_shooter, _, _ = List.hd_exn in_edges in
         Int.( = ) (List.length in_edges) 1 && G.V.equal edge_shooter succ
       in
@@ -272,9 +271,9 @@ end
 module EstablishSimEdges = struct
   let make_nodewise_sim_edge (graph : G.t) : G.t =
     let open SimilarVertexPairExtractor in
-    let all_vertices = GraphUtils.all_vertices_of_graph graph in
+    let all_vertices = G.all_vertices_of_graph graph in
     let contextual_similarity_map =
-      NodewisePairExtractor.update_nodewise_similarity_map (GraphUtils.all_methods_of_graph graph)
+      NodewisePairExtractor.update_nodewise_similarity_map (G.all_methods_of_graph graph)
     in
     let above_threshold_entries =
       NodeWiseSimilarityMap.filter

@@ -18,16 +18,16 @@ end
 type trunk = Trunk.t
 
 let identify_trunks (graph : G.t) : trunk list =
-  let roots = GraphUtils.collect_roots graph in
-  let leaves = GraphUtils.collect_leaves graph in
+  let roots = G.collect_roots graph in
+  let leaves = G.collect_leaves graph in
   let carpro = roots >>= fun root -> leaves >>= fun leaf -> return (root, leaf) in
   (* not all leaves are reachable from all roots. So we filter out unreachable (root, leaf) pairs. *)
   let reachable_root_and_leaf_pairs =
-    List.filter ~f:(fun (root, leaf) -> GraphUtils.is_reachable root leaf graph) carpro
+    List.filter ~f:(fun (root, leaf) -> PathUtils.is_reachable root leaf graph) carpro
   in
   (* now, find the path between the root and the leaf. *)
   reachable_root_and_leaf_pairs
-  >>= fun (root, leaf) -> GraphUtils.PathUtils.find_path_from_source_to_dest graph root leaf
+  >>= fun (root, leaf) -> PathUtils.find_path_from_source_to_dest graph root leaf
 
 
 (** Do the two trunks share the same callee? **)

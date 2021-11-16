@@ -1,6 +1,7 @@
 open GraphRepr
+open ListMonad
 
-module Label = struct
+module TaintLabel = struct
   type t = Source | Sink | Sanitizer | None | Indeterminate [@@deriving equal]
 
   let to_string (label : t) : string =
@@ -33,7 +34,7 @@ module ProbQuadruple = struct
     [("source", dist.src); ("sink", dist.sin); ("sanitizer", dist.san); ("none", dist.non)]
 
 
-  type label = Label.t
+  type label = TaintLabel.t
 
   let label_of_string (str : string) : label =
     match str with
@@ -67,6 +68,8 @@ module ProbMap = struct
   include VertexMap
 
   type t = ProbQuadruple.t VertexMap.t (* map from G.V.t to ProbQuadruple.t *)
+
+  let strong_update vertex new_ distmap = remove vertex distmap |> add vertex new_
 end
 
 (** make a map initialized with flat 0.25 distribution for every vertex. *)
@@ -85,14 +88,17 @@ module Utils = struct
   let df_succs (vertex : G.V.t) (graph : G.t) =
     G.fold_edges_e List.cons graph []
     |> List.filter ~f:(fun (_, label, _) -> EdgeLabel.equal label EdgeLabel.DataFlow)
+    >>| trd3
 
 
   let ns_succs (vertex : G.V.t) (graph : G.t) =
     G.fold_edges_e List.cons graph []
     |> List.filter ~f:(fun (_, label, _) -> EdgeLabel.equal label EdgeLabel.NodeWiseSimilarity)
+    >>| trd3
 
 
   let cs_succs (vertex : G.V.t) (graph : G.t) =
     G.fold_edges_e List.cons graph []
     |> List.filter ~f:(fun (_, label, _) -> EdgeLabel.equal label EdgeLabel.ContextualSimilarity)
+    >>| trd3
 end

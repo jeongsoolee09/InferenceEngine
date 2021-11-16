@@ -46,9 +46,105 @@ module G = struct
   let pp_vertex = vertex_name
 
   let pp_edge (v1, v2) = F.asprintf "\"(%s, %s)\"" (vertex_name v1) (vertex_name v2)
+
+  let collect_roots (graph : t) : V.t list =
+    fold_vertex
+      (fun vertex acc -> if Int.( = ) (in_degree graph vertex) 0 then vertex :: acc else acc)
+      graph []
+
+
+  let collect_leaves (graph : t) : V.t list =
+    fold_vertex
+      (fun vertex acc -> if Int.( = ) (out_degree graph vertex) 0 then vertex :: acc else acc)
+      graph []
+
+
+  let is_root (vertex : V.t) (graph : t) : bool = Int.equal (in_degree graph vertex) 0
+
+  let is_leaf (vertex : V.t) (graph : t) : bool = Int.equal (out_degree graph vertex) 0
+
+  let find_in_edges (vertex : V.t) (graph : t) : E.t list =
+    fold_edges_e
+      (fun ((_, label, v2) as edge) acc -> if V.equal vertex v2 then edge :: acc else acc)
+      graph []
+
+
+  module GUndirected = Graph.Persistent.Graph.Concrete (Vertex)
+
+  let to_undirected (graph : t) =
+    let vertices = fold_vertex List.cons graph [] in
+    let edges = fold_edges (fun v1 v2 acc -> (v1, v2) :: acc) graph [] in
+    GUndirected.empty
+    |> (fun graph ->
+         List.fold ~f:(fun acc vertex -> GUndirected.add_vertex acc vertex) ~init:graph vertices )
+    |> fun graph ->
+    List.fold ~f:(fun acc (v1, v2) -> GUndirected.add_edge acc v1 v2) ~init:graph edges
+
+
+  let all_vertices_of_graph (graph : t) : V.t list =
+    let all_vertices_with_dup = fold_vertex List.cons graph [] in
+    let module VertexSet = Caml.Set.Make (V) in
+    all_vertices_with_dup |> VertexSet.of_list |> VertexSet.elements
+
+
+  let all_methods_of_graph (graph : t) : string list =
+    let all_vertices = all_vertices_of_graph graph in
+    let module StringSet = Caml.Set.Make (String) in
+    all_vertices >>| fst |> StringSet.of_list |> StringSet.elements
 end
 
-module GUndirected = Graph.Persistent.Graph.Concrete (Vertex)
+module PathUtils = struct
+  module HaveBeenMap = struct
+    module WithEdgeDomain = Caml.Map.Make (VertexPair)
+    include WithEdgeDomain
+
+    type value = int
+
+    type t = Int.t WithEdgeDomain.t
+
+    let init (graph : G.t) : t = G.fold_edges (fun v1 v2 acc -> add (v1, v2) 0 acc) graph empty
+  end
+
+  let is_reachable (source : G.V.t) (dest : G.V.t) (graph : G.t) : bool =
+    (* dest is reachable from source iff dest is one of the descendants of source. *)
+    let module DFS = Graph.Traverse.Dfs (G) in
+    let descendants = DFS.fold_component List.cons [] graph source in
+    List.mem ~equal:G.V.equal descendants dest
+
+
+  let increment_option (prev : int option) : int option =
+    match prev with None -> None | Some n -> Some (n + 1)
+
+
+  (** For every leaf, print paths to the leaf from the given source, where the given graph may
+      contain a cycle, using a customized DFS algorithm **)
+  let enumerate_paths_from_source_to_leaves (graph : G.t) (source : G.V.t) : G.V.t list list =
+    let rec inner (current : G.V.t) (smol_acc : G.V.t list) (big_acc : G.V.t list list)
+        (current_havebeenmap : HaveBeenMap.t) : G.V.t list list =
+      if G.is_leaf current graph then List.rev smol_acc :: big_acc
+      else
+        let children = G.succ graph current in
+        List.fold
+          ~f:(fun acc child ->
+            if HaveBeenMap.find (current, child) current_havebeenmap >= 1 then acc
+            else
+              let current_alist_updated =
+                HaveBeenMap.update (current, child) increment_option current_havebeenmap
+              in
+              inner child (child :: smol_acc) acc current_alist_updated )
+          ~init:big_acc children
+    in
+    inner source [source] [] (HaveBeenMap.init graph)
+
+
+  (** Find all paths from the given source to the given destination. **)
+  let find_path_from_source_to_dest (graph : G.t) (source : G.V.t) (dest : G.V.t) : G.V.t list list
+      =
+    enumerate_paths_from_source_to_leaves graph source
+    |> List.filter ~f:(fun path -> List.mem ~equal:G.V.equal path dest)
+    >>| List.take_while ~f:(fun vertex -> not @@ G.V.equal vertex dest)
+end
+
 module Dot = Graph.Graphviz.Dot (G)
 
 module ChainSlice = struct
@@ -283,102 +379,4 @@ module EdgeMaker = struct
     ChainSliceManager.wrapped_chain_list_of_raw_json raw_json
     >>| ChainSliceManager.chain_slice_list_of_wrapped_chain >>| ChainRefiners.delete_inner_deads
     >>= edge_list_of_chain_slice_list
-end
-
-module GraphUtils = struct
-  let is_reachable (source : G.V.t) (dest : G.V.t) (graph : G.t) : bool =
-    (* dest is reachable from source iff dest is one of the descendants of source. *)
-    let module DFS = Graph.Traverse.Dfs (G) in
-    let descendants = DFS.fold_component List.cons [] graph source in
-    List.mem ~equal:G.V.equal descendants dest
-
-
-  let collect_roots (graph : G.t) : G.V.t list =
-    G.fold_vertex
-      (fun vertex acc -> if Int.( = ) (G.in_degree graph vertex) 0 then vertex :: acc else acc)
-      graph []
-
-
-  let collect_leaves (graph : G.t) : G.V.t list =
-    G.fold_vertex
-      (fun vertex acc -> if Int.( = ) (G.out_degree graph vertex) 0 then vertex :: acc else acc)
-      graph []
-
-
-  let is_root (vertex : G.V.t) (graph : G.t) : bool = Int.equal (G.in_degree graph vertex) 0
-
-  let is_leaf (vertex : G.V.t) (graph : G.t) : bool = Int.equal (G.out_degree graph vertex) 0
-
-  let find_in_edges (vertex : G.V.t) (graph : G.t) : G.E.t list =
-    G.fold_edges_e
-      (fun ((_, label, v2) as edge) acc -> if G.V.equal vertex v2 then edge :: acc else acc)
-      graph []
-
-
-  let to_undirected (graph : G.t) =
-    let vertices = G.fold_vertex List.cons graph [] in
-    let edges = G.fold_edges (fun v1 v2 acc -> (v1, v2) :: acc) graph [] in
-    GUndirected.empty
-    |> (fun graph ->
-         List.fold ~f:(fun acc vertex -> GUndirected.add_vertex acc vertex) ~init:graph vertices )
-    |> fun graph ->
-    List.fold ~f:(fun acc (v1, v2) -> GUndirected.add_edge acc v1 v2) ~init:graph edges
-
-
-  let all_vertices_of_graph (graph : G.t) : G.V.t list =
-    let all_vertices_with_dup = G.fold_vertex List.cons graph [] in
-    let module VertexSet = Caml.Set.Make (G.V) in
-    all_vertices_with_dup |> VertexSet.of_list |> VertexSet.elements
-
-
-  let all_methods_of_graph (graph : G.t) : string list =
-    let all_vertices = all_vertices_of_graph graph in
-    let module StringSet = Caml.Set.Make (String) in
-    all_vertices >>| fst |> StringSet.of_list |> StringSet.elements
-
-
-  module PathUtils = struct
-    module HaveBeenMap = struct
-      module WithEdgeDomain = Caml.Map.Make (VertexPair)
-      include WithEdgeDomain
-
-      type value = int
-
-      type t = Int.t WithEdgeDomain.t
-
-      let init (graph : G.t) : t = G.fold_edges (fun v1 v2 acc -> add (v1, v2) 0 acc) graph empty
-    end
-
-    let increment_option (prev : int option) : int option =
-      match prev with None -> None | Some n -> Some (n + 1)
-
-
-    (** For every leaf, print paths to the leaf from the given source, where the given graph may
-        contain a cycle, using a customized DFS algorithm **)
-    let enumerate_paths_from_source_to_leaves (graph : G.t) (source : G.V.t) : G.V.t list list =
-      let rec inner (current : G.V.t) (smol_acc : G.V.t list) (big_acc : G.V.t list list)
-          (current_havebeenmap : HaveBeenMap.t) : G.V.t list list =
-        if is_leaf current graph then List.rev smol_acc :: big_acc
-        else
-          let children = G.succ graph current in
-          List.fold
-            ~f:(fun acc child ->
-              if HaveBeenMap.find (current, child) current_havebeenmap >= 1 then acc
-              else
-                let current_alist_updated =
-                  HaveBeenMap.update (current, child) increment_option current_havebeenmap
-                in
-                inner child (child :: smol_acc) acc current_alist_updated )
-            ~init:big_acc children
-      in
-      inner source [source] [] (HaveBeenMap.init graph)
-
-
-    (** Find all paths from the given source to the given destination. **)
-    let find_path_from_source_to_dest (graph : G.t) (source : G.V.t) (dest : G.V.t) :
-        G.V.t list list =
-      enumerate_paths_from_source_to_leaves graph source
-      |> List.filter ~f:(fun path -> List.mem ~equal:G.V.equal path dest)
-      >>| List.take_while ~f:(fun vertex -> not @@ G.V.equal vertex dest)
-  end
 end
