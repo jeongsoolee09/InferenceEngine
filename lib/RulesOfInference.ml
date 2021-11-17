@@ -16,6 +16,24 @@ module Response = struct
   let get_label = snd
 end
 
+module Question = struct
+  type t = AskingForLabel of string | AskingForConfirmation of (string * TaintLabel.t)
+
+  (** make a prompt message out of a question term. *)
+  let make_prompt (question : t) : string =
+    match question with
+    | AskingForLabel meth ->
+        F.asprintf "What label does %s bear? [src|sin|san|non]: " meth
+    | AskingForConfirmation (meth, label) ->
+        F.asprintf "Method %s is a(n) %s, right? [yes|no]: " meth (TaintLabel.to_string label)
+end
+
+module Utils = struct
+  let random_select_elem (list : 'a list) : 'a =
+    let random_index = Random.int_incl 0 (List.length list - 1) in
+    List.nth_exn list random_index
+end
+
 (** Rules for propagating facts *)
 module PropagationRules = struct
   (* rules have signature of ProbMap.t -> Response.t -> ProbMap.t. *)
@@ -27,7 +45,9 @@ module PropagationRules = struct
       G.all_vertices_of_graph graph
       |> List.filter ~f:(fun (meth, _) -> String.equal meth new_fact_method)
     in
-    let contextual_succs = new_fact_method_vertices >>= fun vertex -> Utils.cs_succs vertex graph in
+    let contextual_succs =
+      new_fact_method_vertices >>= fun vertex -> Probability.Utils.cs_succs vertex graph
+    in
     let contextual_succ_dist = contextual_succs >>| fun succ -> ProbMap.find succ distmap in
     List.fold
       ~f:(fun acc succ ->
@@ -67,7 +87,9 @@ module PropagationRules = struct
       G.all_vertices_of_graph graph
       |> List.filter ~f:(fun (meth, _) -> String.equal meth new_fact_method)
     in
-    let similarity_succs = new_fact_method_vertices >>= fun vertex -> Utils.ns_succs vertex graph in
+    let similarity_succs =
+      new_fact_method_vertices >>= fun vertex -> Probability.Utils.ns_succs vertex graph
+    in
     let similarity_succ_dist = similarity_succs >>| fun succ -> ProbMap.find succ distmap in
     List.fold
       ~f:(fun acc succ ->
@@ -153,15 +175,58 @@ module PropagationRules = struct
   let annotation_rule (distmap : ProbMap.t) (new_fact : Response.t) (prev_facts : Response.t list)
       (graph : G.t) : ProbMap.t =
     raise TODO
+
+
+  let all_rules = [contextual_similarity_rule; nodewise_similarity_propagation_rule; annotation_rule]
 end
 
 (* Use Random.int_incl for making a random integer. *)
 
 module AskingRules = struct
-  let ask_if_leaf_is_sink = raise TODO
+  let ask_if_leaf_is_sink (graph : G.t) (asked : string) nfeaturemap cfeaturemap : Question.t =
+    (* TODO: consider featuremaps *)
+    let all_leaves = G.collect_leaves graph in
+    let random_leaf =
+      let random_index = Random.int_incl 0 (List.length all_leaves - 1) in
+      List.nth_exn all_leaves random_index
+    in
+    Question.AskingForConfirmation (fst random_leaf, TaintLabel.Sink)
 
-  let ask_if_root_is_source = raise TODO
+
+  let ask_if_root_is_source (graph : G.t) (asked : string) nfeaturemap cfeaturemap : Question.t =
+    (* TODO consider featuremaps *)
+    let all_roots = G.collect_roots graph in
+    let random_root =
+      let random_index = Random.int_incl 0 (List.length all_roots - 1) in
+      List.nth_exn all_roots random_index
+    in
+    Question.AskingForConfirmation (fst random_root, TaintLabel.Source)
+
 
   (** ask a method from a foreign package of its label. *)
-  let ask_foreign_package_label = raise TODO
+  let ask_foreign_package_label (graph : G.t) (asked : string) nfeaturemap cfeaturemap : Question.t
+      =
+    let all_foreign_package_vertices =
+      G.fold_vertex
+        (fun vertex acc ->
+          if NodeWiseFeatures.Predicates.is_framework_code (fst vertex) then vertex :: acc else acc
+          )
+        graph []
+    in
+    let random_foreign_vertex = Utils.random_select_elem all_foreign_package_vertices in
+    Question.AskingForLabel (fst random_foreign_vertex)
+
+
+  let all_rules = [ask_if_leaf_is_sink; ask_if_root_is_source; ask_foreign_package_label]
+end
+
+module MetaRules = struct
+  let assign_priority_on_propagation_rules prop_rules (graph : G.t) =
+    (* TEMP *)
+    List.map ~f:(fun rule -> (rule, 1)) prop_rules
+
+
+  let assign_priority_on_asking_rules asking_rules (graph : G.t) =
+    (* TEMP *)
+    List.map ~f:(fun rule -> (rule, 1)) asking_rules
 end
