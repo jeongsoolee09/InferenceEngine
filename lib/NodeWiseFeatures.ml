@@ -29,26 +29,28 @@ module Utils = struct
     Str.matched_group 3 unique_identifier
 end
 
-(* methname is the result of Procname.to_string *)
-let is_both_framework_code ((method1, method2) : string * string) : bool =
-  let skip_methods = Deserializer.deserialize_method_txt ()
-  and udf_methods = Deserializer.deserialize_method_txt () in
-  let this_project_package_name = Utils.extract_package_name @@ List.hd_exn udf_methods in
-  let not_this_project_methods_and_java_methods =
-    List.filter
-      ~f:(fun str ->
-        not
-          ( String.is_substring ~substring:"java." str (* should not be a Java builtin *)
-          || String.is_substring ~substring:this_project_package_name str )
-        (* should not belong to this package *) )
-      skip_methods
-  in
+module Predicates = struct
   let is_framework_code methname =
+    let skip_methods = Deserializer.deserialize_method_txt ()
+    and udf_methods = Deserializer.deserialize_method_txt () in
+    let this_project_package_name = Utils.extract_package_name @@ List.hd_exn udf_methods in
+    let not_this_project_methods_and_java_methods =
+      List.filter
+        ~f:(fun str ->
+          not
+            ( String.is_substring ~substring:"java." str (* should not be a Java builtin *)
+            || String.is_substring ~substring:this_project_package_name str )
+          (* should not belong to this package *) )
+        skip_methods
+    in
     List.mem ~equal:String.equal
       (not_this_project_methods_and_java_methods >>| Utils.extract_method_name)
       (Utils.extract_method_name methname)
-  in
-  is_framework_code method1 && is_framework_code method2
+end
+
+(* methname is the result of Procname.to_string *)
+let is_both_framework_code ((method1, method2) : string * string) : bool =
+  Predicates.is_framework_code method1 && Predicates.is_framework_code method2
 
 
 let belong_to_same_class ((method1, method2) : string * string) : bool =
