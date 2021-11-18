@@ -1,3 +1,4 @@
+open InfixOperators
 open ListMonad
 open GraphRepr
 open Probability
@@ -36,9 +37,13 @@ end
 
 (** Rules for propagating facts *)
 module PropagationRules = struct
-  (* rules have signature of ProbMap.t -> Response.t -> ProbMap.t. *)
-  let contextual_similarity_rule (distmap : ProbMap.t) (new_fact : Response.t)
-      (prev_facts : Response.t list) (graph : G.t) : ProbMap.t =
+  type t = ProbMap.t -> Response.t -> Response.t list -> G.t -> ProbMap.t
+
+  (** propagating to contextually similar vertices: requires that the new_fact's method have
+      successors with contextual similarity edge *)
+  let contextual_similarity_rule : t =
+   fun (distmap : ProbMap.t) (new_fact : Response.t) (prev_facts : Response.t list) (graph : G.t) :
+       ProbMap.t ->
     let new_fact_method = Response.get_method new_fact
     and new_fact_label = Response.get_label new_fact in
     let new_fact_method_vertices =
@@ -48,6 +53,7 @@ module PropagationRules = struct
     let contextual_succs =
       new_fact_method_vertices >>= fun vertex -> Probability.Utils.cs_succs vertex graph
     in
+    assert (Int.( >= ) (List.length contextual_succs) 1) ;
     let contextual_succ_dist = contextual_succs >>| fun succ -> ProbMap.find succ distmap in
     List.fold
       ~f:(fun acc succ ->
@@ -78,9 +84,10 @@ module PropagationRules = struct
       contextual_succs ~init:distmap
 
 
-  (** Propagate the same info to nodes that are similar nodewise. *)
-  let nodewise_similarity_propagation_rule (distmap : ProbMap.t) (new_fact : Response.t)
-      (prev_facts : Response.t list) (graph : G.t) : ProbMap.t =
+  (** Propagate the same info to nodes that are similar nodewise: requires that the new_fact's
+      method have successors with nodewise simlarity edge *)
+  let nodewise_similarity_propagation_rule : t =
+   fun (distmap : ProbMap.t) (new_fact : Response.t) (prev_facts : Response.t list) (graph : G.t) ->
     let new_fact_method = Response.get_method new_fact
     and new_fact_label = Response.get_label new_fact in
     let new_fact_method_vertices =
@@ -90,6 +97,7 @@ module PropagationRules = struct
     let similarity_succs =
       new_fact_method_vertices >>= fun vertex -> Probability.Utils.ns_succs vertex graph
     in
+    assert (Int.( >= ) (List.length similarity_succs) 1) ;
     let similarity_succ_dist = similarity_succs >>| fun succ -> ProbMap.find succ distmap in
     List.fold
       ~f:(fun acc succ ->
@@ -172,8 +180,11 @@ module PropagationRules = struct
       similarity_succs ~init:distmap
 
 
-  let annotation_rule (distmap : ProbMap.t) (new_fact : Response.t) (prev_facts : Response.t list)
-      (graph : G.t) : ProbMap.t =
+  (** Propagate the same info to nodes with the same @annotations: requires that the new_fact's
+      method have successors with nodewise simlarity edge bearing the same @annotation *)
+  let annotation_rule : t =
+   fun (distmap : ProbMap.t) (new_fact : Response.t) (prev_facts : Response.t list) (graph : G.t) ->
+    (* assert that there is at least one successor with the same annotation. *)
     raise TODO
 
 
@@ -221,12 +232,57 @@ module AskingRules = struct
 end
 
 module MetaRules = struct
-  let assign_priority_on_propagation_rules prop_rules (graph : G.t) =
-    (* TEMP *)
-    List.map ~f:(fun rule -> (rule, 1)) prop_rules
+  (** the priority of propagation rules represent their application order. *)
+  module ForPropagation = struct
+    let take_subset_of_applicable_propagation_rules vertex prop_rules probmap new_fact responses
+        graph =
+      (* rule R is applicable to vertex V <=def=> V has successor with labeled edge required by rule R
+                                          <=def=> the embedded assertion succeeds *)
+      List.rev
+      @@ List.fold
+           ~f:(fun acc prop_rule ->
+             try
+               let _ = prop_rule probmap new_fact responses graph in
+               prop_rules :: acc
+             with Assert_failure _ -> acc )
+           ~init:[] prop_rules
 
 
-  let assign_priority_on_asking_rules asking_rules (graph : G.t) =
-    (* TEMP *)
-    List.map ~f:(fun rule -> (rule, 1)) asking_rules
+    (** main logic of this submodule. *)
+    let assign_priority_on_propagation_rules prop_rules (graph : G.t) =
+      (* TEMP *)
+      List.map ~f:(fun rule -> (rule, 1)) prop_rules
+
+
+    let sort_propagation_rules_by_priority prop_rules (graph : G.t) =
+      let priority_assigned = assign_priority_on_propagation_rules prop_rules graph in
+      List.sort
+        ~compare:(fun (_, priority1) (_, priority2) -> Int.neg @@ Int.compare priority1 priority2)
+        priority_assigned
+  end
+
+  (** the priority of asking rules represent their current adequacy of application. *)
+  module ForAsking = struct
+    let take_subset_of_applicable_asking_rules asking_rules =
+      (* rule R is applicable to vertex V <=def=> V has successor with labeled edge required by rule R
+                                          <=def=> the embedded assertion succeeds *)
+      List.rev
+      @@ List.fold
+           ~f:(fun acc asking_rule ->
+             try
+               let _ = asking_rule probmap new_fact responses graph in
+               asking_rules :: acc
+             with Assert_failure _ -> acc )
+           ~init:[] asking_rules
+
+
+    (** main logic of this submodule. *)
+    let assign_priority_on_asking_rules asking_rules (graph : G.t) =
+      (* TEMP *)
+      List.map ~f:(fun rule -> (rule, 1)) asking_rules
+
+
+    (** choose the most applicable asking rule. *)
+    let asking_rules_selector asking_rules = raise TODO
+  end
 end

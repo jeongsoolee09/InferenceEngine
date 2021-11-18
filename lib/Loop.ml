@@ -1,5 +1,6 @@
 open GraphRepr
 open Probability
+open RulesOfInference
 
 exception TODO
 
@@ -18,5 +19,10 @@ end
 
 module In_channel = Core_kernel.In_channel
 
-let loop (current_distmap : ProbMap.t) () : ProbMap.t =
-  if Saturation.distmap_is_saturated current_distmap then current_distmap else raise TODO
+let loop (current_distmap : ProbMap.t) (received_responses : Response.t list) (graph : G.t) :
+    ProbMap.t =
+  if Saturation.distmap_is_saturated current_distmap then current_distmap
+  else
+    let prompt = Question.make_prompt @@ raise TODO in
+    let response = In_channel.input_line In_channel.stdin in
+    raise TODO

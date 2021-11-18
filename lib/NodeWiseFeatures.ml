@@ -55,3 +55,7 @@ let is_both_framework_code ((method1, method2) : string * string) : bool =
 
 let belong_to_same_class ((method1, method2) : string * string) : bool =
   String.equal (Utils.extract_class_name method1) (Utils.extract_class_name method2)
+
+
+let belong_to_same_package ((method1, method2) : string * string) : bool =
+  String.equal (Utils.extract_package_name method1) (Utils.extract_package_name method2)
