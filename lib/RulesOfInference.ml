@@ -220,8 +220,10 @@ module AskingRules = struct
     let all_foreign_package_vertices =
       G.fold_vertex
         (fun vertex acc ->
-          if NodeWiseFeatures.Predicates.is_framework_code (fst vertex) then vertex :: acc else acc
-          )
+          let open NodeWiseFeatures in
+          if SingleFeature.bool_of_feature @@ SingleFeature.is_framework_code (fst vertex) then
+            vertex :: acc
+          else acc )
         graph []
     in
     let random_foreign_vertex = Utils.random_select_elem all_foreign_package_vertices in
@@ -232,16 +234,18 @@ module AskingRules = struct
 end
 
 module MetaRules = struct
-  (** the priority of propagation rules represent their application order. *)
+  (** the priority of propagation rules represent their application order. the smallest number
+      represents the highest priority. *)
   module ForPropagation = struct
     let take_subset_of_applicable_propagation_rules vertex prop_rules probmap new_fact responses
         graph =
-      (* rule R is applicable to vertex V <=def=> V has successor with labeled edge required by rule R
-                                          <=def=> the embedded assertion succeeds *)
+      (* rule R is applicable to vertex V iff (def) V has successor with labeled edge required by rule R
+                                          iff (def) the embedded assertion succeeds *)
       List.rev
       @@ List.fold
            ~f:(fun acc prop_rule ->
              try
+               (* try applying a prop_rule *)
                let _ = prop_rule probmap new_fact responses graph in
                prop_rules :: acc
              with Assert_failure _ -> acc )
@@ -257,21 +261,20 @@ module MetaRules = struct
     let sort_propagation_rules_by_priority prop_rules (graph : G.t) =
       let priority_assigned = assign_priority_on_propagation_rules prop_rules graph in
       List.sort
-        ~compare:(fun (_, priority1) (_, priority2) -> Int.neg @@ Int.compare priority1 priority2)
+        ~compare:(fun (_, priority1) (_, priority2) -> Int.compare priority1 priority2)
         priority_assigned
   end
 
   (** the priority of asking rules represent their current adequacy of application. *)
   module ForAsking = struct
     let take_subset_of_applicable_asking_rules asking_rules =
-      (* rule R is applicable to vertex V <=def=> V has successor with labeled edge required by rule R
-                                          <=def=> the embedded assertion succeeds *)
+      (* rule R is applicable to vertex V iff (def) V has successor with labeled edge required by rule R
+                                          iff (def) the embedded assertion succeeds *)
       List.rev
       @@ List.fold
            ~f:(fun acc asking_rule ->
-             try
-               let _ = asking_rule probmap new_fact responses graph in
-               asking_rules :: acc
+             try (* let _ = asking_rule probmap new_fact responses graph in *)
+                 asking_rules :: acc
              with Assert_failure _ -> acc )
            ~init:[] asking_rules
 
@@ -283,6 +286,12 @@ module MetaRules = struct
 
 
     (** choose the most applicable asking rule. *)
-    let asking_rules_selector asking_rules = raise TODO
+    let asking_rules_selector asking_rules (graph : G.t) =
+      let priority_assigned = assign_priority_on_asking_rules asking_rules graph in
+      (* sort the asking rules by the priority, and get the first one. *)
+      List.hd_exn
+      @@ List.sort
+           ~compare:(fun (_, priority1) (_, priority2) -> Int.compare priority1 priority2)
+           priority_assigned
   end
 end
