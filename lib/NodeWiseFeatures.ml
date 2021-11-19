@@ -110,4 +110,4 @@ let init_feature_map (graph : G.t) : FeatureMaps.NodeWiseFeatureMap.t =
   List.fold
     ~f:(fun acc meth ->
         FeatureMaps.NodeWiseFeatureMap.strong_update acc meth (run_all_single_features meth) )
-    all_methods ~init:FeatureMaps.NodeWiseFeatureMap.empty
+    all_methods ~init:(FeatureMaps.NodeWiseFeatureMap.init graph)

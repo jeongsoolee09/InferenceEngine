@@ -15,6 +15,19 @@ module Response = struct
   let get_method = fst
 
   let get_label = snd
+
+  let response_of_string (method_ : string) (response_str : string) : t =
+    match response_str with
+    | "src" ->
+        (method_, TaintLabel.Source)
+    | "sin" ->
+        (method_, TaintLabel.Sink)
+    | "san" ->
+        (method_, TaintLabel.Sanitizer)
+    | "non" ->
+        (method_, TaintLabel.None)
+    | otherwise ->
+        raise @@ Invalid_argument otherwise
 end
 
 module Question = struct
@@ -26,7 +39,11 @@ module Question = struct
     | AskingForLabel meth ->
         F.asprintf "What label does %s bear? [src|sin|san|non]: " meth
     | AskingForConfirmation (meth, label) ->
-        F.asprintf "Method %s is a(n) %s, right? [yes|no]: " meth (TaintLabel.to_string label)
+        F.asprintf "Method %s is a %s, right? [yes|no]: " meth (TaintLabel.to_string label)
+
+
+  let get_method (question : t) : string =
+    match question with AskingForLabel meth -> meth | AskingForConfirmation (meth, _) -> meth
 end
 
 module Utils = struct
@@ -194,7 +211,11 @@ end
 (* Use Random.int_incl for making a random integer. *)
 
 module AskingRules = struct
-  let ask_if_leaf_is_sink (graph : G.t) (asked : string) nfeaturemap cfeaturemap : Question.t =
+  (* NOTE we might use a curried type to make this def simpler. *)
+  type t = G.t -> Response.t list -> FeatureMaps.NodeWiseFeatureMap.t -> Question.t
+
+  let ask_if_leaf_is_sink (graph : G.t) (received_responses : Response.t list)
+      (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) : Question.t =
     (* TODO: consider featuremaps *)
     let all_leaves = G.collect_leaves graph in
     let random_leaf =
@@ -204,7 +225,8 @@ module AskingRules = struct
     Question.AskingForConfirmation (fst random_leaf, TaintLabel.Sink)
 
 
-  let ask_if_root_is_source (graph : G.t) (asked : string) nfeaturemap cfeaturemap : Question.t =
+  let ask_if_root_is_source (graph : G.t) (received_responses : Response.t list)
+      (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) : Question.t =
     (* TODO consider featuremaps *)
     let all_roots = G.collect_roots graph in
     let random_root =
@@ -215,8 +237,8 @@ module AskingRules = struct
 
 
   (** ask a method from a foreign package of its label. *)
-  let ask_foreign_package_label (graph : G.t) (asked : string) nfeaturemap cfeaturemap : Question.t
-      =
+  let ask_foreign_package_label (graph : G.t) (received_responses : Response.t list)
+      (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) : Question.t =
     let all_foreign_package_vertices =
       G.fold_vertex
         (fun vertex acc ->
@@ -258,11 +280,14 @@ module MetaRules = struct
       List.map ~f:(fun rule -> (rule, 1)) prop_rules
 
 
-    let sort_propagation_rules_by_priority prop_rules (graph : G.t) =
-      let priority_assigned = assign_priority_on_propagation_rules prop_rules graph in
-      List.sort
-        ~compare:(fun (_, priority1) (_, priority2) -> Int.compare priority1 priority2)
-        priority_assigned
+    let sort_propagation_rules_by_priority (graph : G.t) : PropagationRules.t list =
+      let priority_assigned =
+        assign_priority_on_propagation_rules PropagationRules.all_rules graph
+      in
+      List.map ~f:fst
+      @@ List.sort
+           ~compare:(fun (_, priority1) (_, priority2) -> Int.compare priority1 priority2)
+           priority_assigned
   end
 
   (** the priority of asking rules represent their current adequacy of application. *)
@@ -286,10 +311,10 @@ module MetaRules = struct
 
 
     (** choose the most applicable asking rule. *)
-    let asking_rules_selector asking_rules (graph : G.t) =
-      let priority_assigned = assign_priority_on_asking_rules asking_rules graph in
+    let asking_rules_selector (graph : G.t) : AskingRules.t =
+      let priority_assigned = assign_priority_on_asking_rules AskingRules.all_rules graph in
       (* sort the asking rules by the priority, and get the first one. *)
-      List.hd_exn
+      fst @@ List.hd_exn
       @@ List.sort
            ~compare:(fun (_, priority1) (_, priority2) -> Int.compare priority1 priority2)
            priority_assigned

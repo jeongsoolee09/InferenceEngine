@@ -72,7 +72,9 @@ module SimilarVertexPairExtractor = struct
     (** Run all extractors for every method pair. *)
     let get_nodewise_similarity (method_pair : string * string) : int =
       (* execute all extractors. *)
-      let extractors_list = [is_both_framework_code; belong_to_same_class] in
+      let extractors_list =
+        [PairwiseFeature.is_both_framework_code; PairwiseFeature.belong_to_same_class]
+      in
       List.fold
         ~f:(fun acc extractor -> if extractor method_pair then acc + 1 else acc)
         ~init:0 extractors_list
