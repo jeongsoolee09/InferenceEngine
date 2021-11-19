@@ -178,10 +178,8 @@ module ChainSlice = struct
 
 
   let to_string (slices : t list) : string =
-    let open_bracket = F.asprintf "[ "
-    and contents = List.fold ~f:(fun acc slice -> acc ^ pp slice ^ ", ") slices ~init:""
-    and close_bracket = F.asprintf "] " in
-    open_bracket ^ contents ^ close_bracket
+    let contents = List.fold ~f:(fun acc slice -> acc ^ pp slice ^ ", ") slices ~init:"" in
+    "[ " ^ contents ^ " ]"
 
 
   let is_define slice = match slice with DefineSlice _ -> true | _ -> false

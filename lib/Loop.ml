@@ -22,7 +22,7 @@ module In_channel = Core_kernel.In_channel
 module Out_channel = Core_kernel.Out_channel
 
 let rec loop (current_distmap : ProbMap.t) (received_responses : Response.t list) (graph : G.t)
-    (nodewise_featuremap : FeatureMaps.NodeWiseFeatureMap.t) : ProbMap.t =
+    (nodewise_featuremap : FeatureMaps.NodeWiseFeatureMap.t) (count : int) : ProbMap.t =
   if Saturation.distmap_is_saturated current_distmap then current_distmap
   else
     (* find the most appropriate Asking Rule. *)
@@ -46,4 +46,4 @@ let rec loop (current_distmap : ProbMap.t) (received_responses : Response.t list
         ~f:(fun acc prop_rule -> prop_rule acc response received_responses graph)
         ~init:current_distmap propagation_rules_to_apply
     in
-    loop propagated (response :: received_responses) graph nodewise_featuremap
+    loop propagated (response :: received_responses) graph nodewise_featuremap (count + 1)
