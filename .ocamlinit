@@ -18,3 +18,5 @@ module List = Core_kernel.List;;
 module Option = Core_kernel.Option;;
 module In_channel = Core_kernel.In_channel;;
 module Out_channel = Core_kernel.Out_channel;;
+
+open InferenceEngineLib;;

@@ -9,6 +9,11 @@ let root =
   in search (Sys.getcwd ())
 in Sys.chdir root;;
 
+let () = Toploop.add_directive "reload"
+    (Directive_none (fun () -> Unix.execvp "utop" [||]))
+    { section="My Directives"
+    ; doc="Quit and reload utop"};;
+
 #use "topfind";;
 #require "core";;
 #require "ocamlgraph";;
@@ -23,3 +28,5 @@ module String = Core_kernel.String;;
 module Int = Core_kernel.Int;;
 
 open InferenceEngineLib;;
+
+#use "../bin/InferenceEngineApplication.ml";;
