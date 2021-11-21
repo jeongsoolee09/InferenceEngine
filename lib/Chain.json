@@ -1,0 +1,930 @@
+[
+  {
+    "defining_method": "void RelationalDataAccessApplication.run()",
+    "access_path": "(name, [])",
+    "location": "{ line 30 }",
+    "chain": [
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Define",
+        "access_path": "(name, [])",
+        "location": "{ line 30 }",
+        "using": "String RelationalDataAccessApplication.create()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Call",
+        "callee": "StringBuilder StringBuilder.append(String)",
+        "location": "{ line 31 }",
+        "with": "(param_append_31_1, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Define",
+        "access_path": "($irvar2, [])",
+        "location": "{ line 31 }",
+        "using": "StringBuilder StringBuilder.append(String)"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Call",
+        "callee": "StringBuilder StringBuilder.append(String)",
+        "location": "{ line 31 }",
+        "with": "(param_append_31_0, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Define",
+        "access_path": "($irvar3, [])",
+        "location": "{ line 31 }",
+        "using": "StringBuilder StringBuilder.append(String)"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Call",
+        "callee": "String StringBuilder.toString()",
+        "location": "{ line 31 }",
+        "with": "(param_toString_31_0, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Define",
+        "access_path": "(sql, [])",
+        "location": "{ line 31 }",
+        "using": "String StringBuilder.toString()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Call",
+        "callee": "int[] JdbcTemplate.batchUpdate(String,List)",
+        "location": "{ line 33 }",
+        "with": "(param_batchUpdate_33_1, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Define",
+        "access_path": "($irvar4, [])",
+        "location": "{ line 33 }",
+        "using": "int[] JdbcTemplate.batchUpdate(String,List)"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Dead"
+      }
+    ]
+  },
+  {
+    "defining_method": "Map RelationalDataAccessApplication.query()",
+    "access_path": "(results, [])",
+    "location": "{ line 37 }",
+    "chain": [
+      {
+        "current_method": "Map RelationalDataAccessApplication.query()",
+        "status": "Define",
+        "access_path": "(results, [])",
+        "location": "{ line 37 }",
+        "using": "Map JdbcTemplate.queryForMap(String,Object[])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.bridge()",
+        "status": "Define",
+        "access_path": "(queryResult, [])",
+        "location": "{ line 47 }",
+        "using": "Map RelationalDataAccessApplication.query()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.bridge()",
+        "status": "VoidCall",
+        "callee": "void RelationalDataAccessApplication.printer(Map)",
+        "location": "{ line 41 }",
+        "with": "(results, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Call",
+        "callee": "Collection Map.values()",
+        "location": "{ line 42 }",
+        "with": "(param_values_42_0, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Define",
+        "access_path": "($irvar0, [])",
+        "location": "{ line 42 }",
+        "using": "Collection Map.values()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Call",
+        "callee": "Iterator Collection.iterator()",
+        "location": "{ line 42 }",
+        "with": "(param_iterator_42_0, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Define",
+        "access_path": "($bcvar2, [])",
+        "location": "{ line 42 }",
+        "using": "Iterator Collection.iterator()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Call",
+        "callee": "boolean Iterator.hasNext()",
+        "location": "{ line 42 }",
+        "with": "(param_hasNext_42_0, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Define",
+        "access_path": "($irvar1, [])",
+        "location": "{ line 42 }",
+        "using": "boolean Iterator.hasNext()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Dead"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.bridge()",
+        "status": "Dead"
+      }
+    ]
+  },
+  {
+    "defining_method": "Map RelationalDataAccessApplication.query()",
+    "access_path": "(results, [])",
+    "location": "{ line 37 }",
+    "chain": [
+      {
+        "current_method": "Map RelationalDataAccessApplication.query()",
+        "status": "Define",
+        "access_path": "(results, [])",
+        "location": "{ line 37 }",
+        "using": "Map JdbcTemplate.queryForMap(String,Object[])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.bridge()",
+        "status": "Define",
+        "access_path": "(queryResult, [])",
+        "location": "{ line 47 }",
+        "using": "Map RelationalDataAccessApplication.query()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.bridge()",
+        "status": "VoidCall",
+        "callee": "void RelationalDataAccessApplication.printer(Map)",
+        "location": "{ line 41 }",
+        "with": "(results, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Call",
+        "callee": "Collection Map.values()",
+        "location": "{ line 42 }",
+        "with": "(param_values_42_0, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Define",
+        "access_path": "($irvar0, [])",
+        "location": "{ line 42 }",
+        "using": "Collection Map.values()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Call",
+        "callee": "Iterator Collection.iterator()",
+        "location": "{ line 42 }",
+        "with": "(param_iterator_42_0, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Define",
+        "access_path": "($bcvar2, [])",
+        "location": "{ line 42 }",
+        "using": "Iterator Collection.iterator()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Call",
+        "callee": "Object Iterator.next()",
+        "location": "{ line 42 }",
+        "with": "(param_next_42_0, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Define",
+        "access_path": "(name, [])",
+        "location": "{ line 42 }",
+        "using": "Object Iterator.next()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Call",
+        "callee": "StringBuilder StringBuilder.append(Object)",
+        "location": "{ line 43 }",
+        "with": "(param_append_43_1, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Define",
+        "access_path": "($irvar5, [])",
+        "location": "{ line 43 }",
+        "using": "StringBuilder StringBuilder.append(Object)"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Call",
+        "callee": "String StringBuilder.toString()",
+        "location": "{ line 43 }",
+        "with": "(param_toString_43_0, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Define",
+        "access_path": "($irvar6, [])",
+        "location": "{ line 43 }",
+        "using": "String StringBuilder.toString()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "VoidCall",
+        "callee": "void PrintStream.println(String)",
+        "location": "{ line 43 }",
+        "with": "(param_println_43_1, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Dead"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.bridge()",
+        "status": "Dead"
+      }
+    ]
+  },
+  {
+    "defining_method": "void RelationalDataAccessApplication.bridge()",
+    "access_path": "(queryResult, [])",
+    "location": "{ line 47 }",
+    "chain": [
+      {
+        "current_method": "void RelationalDataAccessApplication.bridge()",
+        "status": "Define",
+        "access_path": "(queryResult, [])",
+        "location": "{ line 47 }",
+        "using": "Map RelationalDataAccessApplication.query()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.bridge()",
+        "status": "VoidCall",
+        "callee": "void RelationalDataAccessApplication.printer(Map)",
+        "location": "{ line 41 }",
+        "with": "(results, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Call",
+        "callee": "Collection Map.values()",
+        "location": "{ line 42 }",
+        "with": "(param_values_42_0, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Define",
+        "access_path": "($irvar0, [])",
+        "location": "{ line 42 }",
+        "using": "Collection Map.values()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Call",
+        "callee": "Iterator Collection.iterator()",
+        "location": "{ line 42 }",
+        "with": "(param_iterator_42_0, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Define",
+        "access_path": "($bcvar2, [])",
+        "location": "{ line 42 }",
+        "using": "Iterator Collection.iterator()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Call",
+        "callee": "boolean Iterator.hasNext()",
+        "location": "{ line 42 }",
+        "with": "(param_hasNext_42_0, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Define",
+        "access_path": "($irvar1, [])",
+        "location": "{ line 42 }",
+        "using": "boolean Iterator.hasNext()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Dead"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.bridge()",
+        "status": "Dead"
+      }
+    ]
+  },
+  {
+    "defining_method": "void RelationalDataAccessApplication.bridge()",
+    "access_path": "(queryResult, [])",
+    "location": "{ line 47 }",
+    "chain": [
+      {
+        "current_method": "void RelationalDataAccessApplication.bridge()",
+        "status": "Define",
+        "access_path": "(queryResult, [])",
+        "location": "{ line 47 }",
+        "using": "Map RelationalDataAccessApplication.query()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.bridge()",
+        "status": "VoidCall",
+        "callee": "void RelationalDataAccessApplication.printer(Map)",
+        "location": "{ line 41 }",
+        "with": "(results, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Call",
+        "callee": "Collection Map.values()",
+        "location": "{ line 42 }",
+        "with": "(param_values_42_0, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Define",
+        "access_path": "($irvar0, [])",
+        "location": "{ line 42 }",
+        "using": "Collection Map.values()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Call",
+        "callee": "Iterator Collection.iterator()",
+        "location": "{ line 42 }",
+        "with": "(param_iterator_42_0, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Define",
+        "access_path": "($bcvar2, [])",
+        "location": "{ line 42 }",
+        "using": "Iterator Collection.iterator()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Call",
+        "callee": "Object Iterator.next()",
+        "location": "{ line 42 }",
+        "with": "(param_next_42_0, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Define",
+        "access_path": "(name, [])",
+        "location": "{ line 42 }",
+        "using": "Object Iterator.next()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Call",
+        "callee": "StringBuilder StringBuilder.append(Object)",
+        "location": "{ line 43 }",
+        "with": "(param_append_43_1, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Define",
+        "access_path": "($irvar5, [])",
+        "location": "{ line 43 }",
+        "using": "StringBuilder StringBuilder.append(Object)"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Call",
+        "callee": "String StringBuilder.toString()",
+        "location": "{ line 43 }",
+        "with": "(param_toString_43_0, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Define",
+        "access_path": "($irvar6, [])",
+        "location": "{ line 43 }",
+        "using": "String StringBuilder.toString()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "VoidCall",
+        "callee": "void PrintStream.println(String)",
+        "location": "{ line 43 }",
+        "with": "(param_println_43_1, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Dead"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.bridge()",
+        "status": "Dead"
+      }
+    ]
+  },
+  {
+    "defining_method": "String RelationalDataAccessApplication.create()",
+    "access_path": "(scanner, [])",
+    "location": "{ line 24 }",
+    "chain": [
+      {
+        "current_method": "String RelationalDataAccessApplication.create()",
+        "status": "Define",
+        "access_path": "(scanner, [])",
+        "location": "{ line 24 }",
+        "using": "Scanner.<init>(InputStream)"
+      },
+      {
+        "current_method": "String RelationalDataAccessApplication.create()",
+        "status": "Call",
+        "callee": "String Scanner.nextLine()",
+        "location": "{ line 25 }",
+        "with": "(param_nextLine_25_0, [])"
+      },
+      {
+        "current_method": "String RelationalDataAccessApplication.create()",
+        "status": "Define",
+        "access_path": "(name, [])",
+        "location": "{ line 25 }",
+        "using": "String Scanner.nextLine()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Define",
+        "access_path": "(name, [])",
+        "location": "{ line 30 }",
+        "using": "String RelationalDataAccessApplication.create()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Call",
+        "callee": "StringBuilder StringBuilder.append(String)",
+        "location": "{ line 31 }",
+        "with": "(param_append_31_1, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Define",
+        "access_path": "($irvar2, [])",
+        "location": "{ line 31 }",
+        "using": "StringBuilder StringBuilder.append(String)"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Call",
+        "callee": "StringBuilder StringBuilder.append(String)",
+        "location": "{ line 31 }",
+        "with": "(param_append_31_0, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Define",
+        "access_path": "($irvar3, [])",
+        "location": "{ line 31 }",
+        "using": "StringBuilder StringBuilder.append(String)"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Call",
+        "callee": "String StringBuilder.toString()",
+        "location": "{ line 31 }",
+        "with": "(param_toString_31_0, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Define",
+        "access_path": "(sql, [])",
+        "location": "{ line 31 }",
+        "using": "String StringBuilder.toString()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Call",
+        "callee": "int[] JdbcTemplate.batchUpdate(String,List)",
+        "location": "{ line 33 }",
+        "with": "(param_batchUpdate_33_1, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Define",
+        "access_path": "($irvar4, [])",
+        "location": "{ line 33 }",
+        "using": "int[] JdbcTemplate.batchUpdate(String,List)"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Dead"
+      }
+    ]
+  },
+  {
+    "defining_method": "void RelationalDataAccessApplication.printer(Map)",
+    "access_path": "(results, [])",
+    "location": "{ line 41 }",
+    "chain": [
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Define",
+        "access_path": "(results, [])",
+        "location": "{ line 41 }",
+        "using": "void RelationalDataAccessApplication.printer(Map)"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Call",
+        "callee": "Collection Map.values()",
+        "location": "{ line 42 }",
+        "with": "(param_values_42_0, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Define",
+        "access_path": "($irvar0, [])",
+        "location": "{ line 42 }",
+        "using": "Collection Map.values()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Call",
+        "callee": "Iterator Collection.iterator()",
+        "location": "{ line 42 }",
+        "with": "(param_iterator_42_0, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Define",
+        "access_path": "($bcvar2, [])",
+        "location": "{ line 42 }",
+        "using": "Iterator Collection.iterator()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Call",
+        "callee": "boolean Iterator.hasNext()",
+        "location": "{ line 42 }",
+        "with": "(param_hasNext_42_0, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Define",
+        "access_path": "($irvar1, [])",
+        "location": "{ line 42 }",
+        "using": "boolean Iterator.hasNext()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Dead"
+      }
+    ]
+  },
+  {
+    "defining_method": "void RelationalDataAccessApplication.printer(Map)",
+    "access_path": "(results, [])",
+    "location": "{ line 41 }",
+    "chain": [
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Define",
+        "access_path": "(results, [])",
+        "location": "{ line 41 }",
+        "using": "void RelationalDataAccessApplication.printer(Map)"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Call",
+        "callee": "Collection Map.values()",
+        "location": "{ line 42 }",
+        "with": "(param_values_42_0, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Define",
+        "access_path": "($irvar0, [])",
+        "location": "{ line 42 }",
+        "using": "Collection Map.values()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Call",
+        "callee": "Iterator Collection.iterator()",
+        "location": "{ line 42 }",
+        "with": "(param_iterator_42_0, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Define",
+        "access_path": "($bcvar2, [])",
+        "location": "{ line 42 }",
+        "using": "Iterator Collection.iterator()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Call",
+        "callee": "Object Iterator.next()",
+        "location": "{ line 42 }",
+        "with": "(param_next_42_0, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Define",
+        "access_path": "(name, [])",
+        "location": "{ line 42 }",
+        "using": "Object Iterator.next()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Call",
+        "callee": "StringBuilder StringBuilder.append(Object)",
+        "location": "{ line 43 }",
+        "with": "(param_append_43_1, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Define",
+        "access_path": "($irvar5, [])",
+        "location": "{ line 43 }",
+        "using": "StringBuilder StringBuilder.append(Object)"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Call",
+        "callee": "String StringBuilder.toString()",
+        "location": "{ line 43 }",
+        "with": "(param_toString_43_0, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Define",
+        "access_path": "($irvar6, [])",
+        "location": "{ line 43 }",
+        "using": "String StringBuilder.toString()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "VoidCall",
+        "callee": "void PrintStream.println(String)",
+        "location": "{ line 43 }",
+        "with": "(param_println_43_1, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Dead"
+      }
+    ]
+  },
+  {
+    "defining_method": "void RelationalDataAccessApplication.run()",
+    "access_path": "(args, [])",
+    "location": "{ line 32 }",
+    "chain": [
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Define",
+        "access_path": "(args, [])",
+        "location": "{ line 32 }",
+        "using": "ArrayList.<init>()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Call",
+        "callee": "int[] JdbcTemplate.batchUpdate(String,List)",
+        "location": "{ line 33 }",
+        "with": "(param_batchUpdate_33_2, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Define",
+        "access_path": "($irvar4, [])",
+        "location": "{ line 33 }",
+        "using": "int[] JdbcTemplate.batchUpdate(String,List)"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Dead"
+      }
+    ]
+  },
+  {
+    "defining_method": "void RelationalDataAccessApplication.main(String[])",
+    "access_path": "(args, [])",
+    "location": "{ line 19 }",
+    "chain": [
+      {
+        "current_method":
+          "void RelationalDataAccessApplication.main(String[])",
+        "status": "Define",
+        "access_path": "(args, [])",
+        "location": "{ line 19 }",
+        "using": "void RelationalDataAccessApplication.main(String[])"
+      },
+      {
+        "current_method":
+          "void RelationalDataAccessApplication.main(String[])",
+        "status": "Call",
+        "callee":
+          "ConfigurableApplicationContext SpringApplication.run(Class,String[])",
+        "location": "{ line 20 }",
+        "with": "(param_run_20_1, [])"
+      },
+      {
+        "current_method":
+          "void RelationalDataAccessApplication.main(String[])",
+        "status": "Define",
+        "access_path": "($irvar0, [])",
+        "location": "{ line 20 }",
+        "using":
+          "ConfigurableApplicationContext SpringApplication.run(Class,String[])"
+      },
+      {
+        "current_method":
+          "void RelationalDataAccessApplication.main(String[])",
+        "status": "Dead"
+      }
+    ]
+  },
+  {
+    "defining_method": "void RelationalDataAccessApplication.run()",
+    "access_path": "(sql, [])",
+    "location": "{ line 31 }",
+    "chain": [
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Define",
+        "access_path": "(sql, [])",
+        "location": "{ line 31 }",
+        "using": "String StringBuilder.toString()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Call",
+        "callee": "int[] JdbcTemplate.batchUpdate(String,List)",
+        "location": "{ line 33 }",
+        "with": "(param_batchUpdate_33_1, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Define",
+        "access_path": "($irvar4, [])",
+        "location": "{ line 33 }",
+        "using": "int[] JdbcTemplate.batchUpdate(String,List)"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Dead"
+      }
+    ]
+  },
+  {
+    "defining_method": "String RelationalDataAccessApplication.create()",
+    "access_path": "(name, [])",
+    "location": "{ line 25 }",
+    "chain": [
+      {
+        "current_method": "String RelationalDataAccessApplication.create()",
+        "status": "Define",
+        "access_path": "(name, [])",
+        "location": "{ line 25 }",
+        "using": "String Scanner.nextLine()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Define",
+        "access_path": "(name, [])",
+        "location": "{ line 30 }",
+        "using": "String RelationalDataAccessApplication.create()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Call",
+        "callee": "StringBuilder StringBuilder.append(String)",
+        "location": "{ line 31 }",
+        "with": "(param_append_31_1, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Define",
+        "access_path": "($irvar2, [])",
+        "location": "{ line 31 }",
+        "using": "StringBuilder StringBuilder.append(String)"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Call",
+        "callee": "StringBuilder StringBuilder.append(String)",
+        "location": "{ line 31 }",
+        "with": "(param_append_31_0, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Define",
+        "access_path": "($irvar3, [])",
+        "location": "{ line 31 }",
+        "using": "StringBuilder StringBuilder.append(String)"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Call",
+        "callee": "String StringBuilder.toString()",
+        "location": "{ line 31 }",
+        "with": "(param_toString_31_0, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Define",
+        "access_path": "(sql, [])",
+        "location": "{ line 31 }",
+        "using": "String StringBuilder.toString()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Call",
+        "callee": "int[] JdbcTemplate.batchUpdate(String,List)",
+        "location": "{ line 33 }",
+        "with": "(param_batchUpdate_33_1, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Define",
+        "access_path": "($irvar4, [])",
+        "location": "{ line 33 }",
+        "using": "int[] JdbcTemplate.batchUpdate(String,List)"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.run()",
+        "status": "Dead"
+      }
+    ]
+  },
+  {
+    "defining_method": "void RelationalDataAccessApplication.printer(Map)",
+    "access_path": "(name, [])",
+    "location": "{ line 42 }",
+    "chain": [
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Define",
+        "access_path": "(name, [])",
+        "location": "{ line 42 }",
+        "using": "Object Iterator.next()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Call",
+        "callee": "StringBuilder StringBuilder.append(Object)",
+        "location": "{ line 43 }",
+        "with": "(param_append_43_1, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Define",
+        "access_path": "($irvar5, [])",
+        "location": "{ line 43 }",
+        "using": "StringBuilder StringBuilder.append(Object)"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Call",
+        "callee": "String StringBuilder.toString()",
+        "location": "{ line 43 }",
+        "with": "(param_toString_43_0, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Define",
+        "access_path": "($irvar6, [])",
+        "location": "{ line 43 }",
+        "using": "String StringBuilder.toString()"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "VoidCall",
+        "callee": "void PrintStream.println(String)",
+        "location": "{ line 43 }",
+        "with": "(param_println_43_1, [])"
+      },
+      {
+        "current_method": "void RelationalDataAccessApplication.printer(Map)",
+        "status": "Dead"
+      }
+    ]
+  }
+]
