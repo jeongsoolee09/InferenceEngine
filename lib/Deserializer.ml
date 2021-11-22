@@ -1,4 +1,6 @@
 open Yojson.Basic
+open ListMonad
+open InfixOperators
 
 type json = Yojson.Basic.t
 
@@ -25,4 +27,6 @@ let deserialize_json () : json =
 
 let deserialize_method_txt () : string list = In_channel.read_lines (project_root ^ "Methods.txt")
 
-let deserialize_skip_func () : string list = In_channel.read_lines (project_root ^ "skip_func.txt")
+let deserialize_skip_func () : string list =
+  In_channel.read_lines (project_root ^ "skip_func.txt")
+  |> List.filter ~f:(not << String.is_prefix ~prefix:"__")
