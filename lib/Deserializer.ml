@@ -9,14 +9,18 @@ module Json = Yojson.Basic
 let deserialize_config () =
   let in_channel = In_channel.create "config.json" in
   let json = Json.from_channel in_channel in
-  Util.member "project_root" json |> Util.to_string
+  let out = Util.member "project_root" json |> Util.to_string in
+  In_channel.close in_channel ;
+  out
 
 
 let project_root = deserialize_config ()
 
 let deserialize_json () : json =
   let in_channel = In_channel.create (project_root ^ "Chain.json") in
-  Json.from_channel in_channel
+  let out = Json.from_channel in_channel in
+  In_channel.close in_channel ;
+  out
 
 
 let deserialize_method_txt () : string list = In_channel.read_lines (project_root ^ "Methods.txt")
