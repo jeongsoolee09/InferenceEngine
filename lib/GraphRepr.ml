@@ -69,6 +69,24 @@ module G = struct
       graph []
 
 
+  let df_succs (vertex : V.t) (graph : t) =
+    fold_edges_e List.cons graph []
+    |> List.filter ~f:(fun (_, label, _) -> EdgeLabel.equal label EdgeLabel.DataFlow)
+    >>| trd3
+
+
+  let ns_succs (vertex : V.t) (graph : t) =
+    fold_edges_e List.cons graph []
+    |> List.filter ~f:(fun (_, label, _) -> EdgeLabel.equal label EdgeLabel.NodeWiseSimilarity)
+    >>| trd3
+
+
+  let cs_succs (vertex : V.t) (graph : t) =
+    fold_edges_e List.cons graph []
+    |> List.filter ~f:(fun (_, label, _) -> EdgeLabel.equal label EdgeLabel.ContextualSimilarity)
+    >>| trd3
+
+
   module GUndirected = Graph.Persistent.Graph.Concrete (Vertex)
 
   let to_undirected (graph : t) =

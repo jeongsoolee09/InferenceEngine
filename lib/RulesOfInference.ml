@@ -111,11 +111,8 @@ module PropagationRules = struct
       G.all_vertices_of_graph graph
       |> List.filter ~f:(fun (meth, _) -> String.equal meth new_fact_method)
     in
-    let similarity_succs =
-      new_fact_method_vertices >>= fun vertex -> Probability.Utils.ns_succs vertex graph
-    in
+    let similarity_succs = new_fact_method_vertices >>= fun vertex -> G.ns_succs vertex graph in
     assert (Int.( >= ) (List.length similarity_succs) 1) ;
-    let similarity_succ_dist = similarity_succs >>| fun succ -> ProbMap.find succ distmap in
     List.fold
       ~f:(fun acc succ ->
         let succ_dist = ProbMap.find succ distmap in
