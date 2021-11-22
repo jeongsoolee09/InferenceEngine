@@ -116,29 +116,9 @@ module TestSimilarityEdges = struct
   (* no... this is not working.... *)
 end
 
-module TestTrunkSimilarity = struct
-  let json = Deserializer.deserialize_json ()
-
-  let graph = GraphMaker.init_graph json
-
-  let trunks = identify_trunks graph
-
-  (* noooo there are too many of them!!! *)
-  (* utop # List.length trunks;; *)
-  (* - : int = 36 *)
-
-  (* meh.... whatever... *)
-
-  (* contextualsimilarity가 잘 매겨지고 있나...?? *)
-
-  (* --> we need to examine the internals of make_contextual_sim_edge!!! *)
-
-  let test () = SimilarityHandler.EstablishSimEdges.make_contextual_sim_edge graph
-
-  let test2 () = RedefineHandler.collect_redefines json
-
-  module Util = Yojson.Basic.Util
+module TestRedefineHandler = struct
   module ChainSliceSet = Set.Make (ChainSlice)
+  module Util = Yojson.Basic.Util
 
   let collect_redefines_for_single_chain (json_assoc : json) (* : ChainSlice.t list *) =
     let collected =
@@ -180,4 +160,57 @@ module TestTrunkSimilarity = struct
         >>= collect_redefines_for_single_chain
     | _ ->
         failwith "Type Error4"
+
+  (* now working fine!!! *)
+end
+
+(* the repl makes tedious debugging very viable! *)
+
+module TrunkSimilarityTest = struct
+  let json = Deserializer.deserialize_json ()
+
+  let graph = GraphMaker.init_graph json
+
+  let all_trunks = identify_trunks graph
+
+  let all_methods = G.all_methods_of_graph graph
+
+  (* noooo there are too many of them!!! *)
+  (* utop # List.length all_trunks;; *)
+  (* - : int = 36 *)
+
+  (* meh.... whatever... *)
+
+  (* contextualsimilarity가 잘 매겨지고 있나...?? *)
+
+  (* --> we need to examine TrunkSimilarityMap!!! *)
+  (* --> ..which leads us to each of the extractors. *)
+
+  let sample_tsmap =
+    SimilarityHandler.SimilarVertexPairExtractor.ContextualPairExtractor
+    .update_contextual_similarity_map all_trunks all_methods graph
+
+
+  open Core_kernel.Out_channel
+
+  let test () =
+    ContextualSimilarityMap.iter
+      (fun k v ->
+        output_string stdout (string_of_int v) ;
+        newline stdout )
+      sample_tsmap
+
+
+  let test1 () =
+    ContextualSimilarityMap.iter
+      (fun k v ->
+        if v >= 1 then (
+          output_string stdout (string_of_int v) ;
+          newline stdout ) )
+      sample_tsmap
+
+  (* ok, there are some contextual similarities captured: they are all six. *)
+  (* maybe I need some granular investigation! *)
+
+  (* --> all contextual extractors working. *)
 end
