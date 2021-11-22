@@ -5,6 +5,9 @@ open FeatureMaps
 
 exception TODO
 
+module In_channel = Core_kernel.In_channel
+module Out_channel = Core_kernel.Out_channel
+
 module Saturation = struct
   let saturated_parameter = 0.2 (* TEMP: subject to change *)
 
@@ -18,9 +21,6 @@ module Saturation = struct
     ProbMap.for_all (fun _ quad -> dist_is_saturated quad) distmap
 end
 
-module In_channel = Core_kernel.In_channel
-module Out_channel = Core_kernel.Out_channel
-
 let rec loop (current_distmap : ProbMap.t) (received_responses : Response.t list) (graph : G.t)
     (nodewise_featuremap : FeatureMaps.NodeWiseFeatureMap.t) (count : int) : ProbMap.t =
   if Saturation.distmap_is_saturated current_distmap then current_distmap
@@ -30,10 +30,15 @@ let rec loop (current_distmap : ProbMap.t) (received_responses : Response.t list
     let question = question_maker graph received_responses nodewise_featuremap in
     let prompt = Question.make_prompt question in
     Out_channel.output_string Out_channel.stdout prompt ;
+    Out_channel.flush Out_channel.stdout ;
     let response =
       match In_channel.input_line In_channel.stdin with
-      | Some response_str ->
-          Response.response_of_string (Question.get_method question) response_str
+      | Some response_str -> (
+        match question with
+        | AskingForLabel meth ->
+            Response.response_of_string_forlabel meth response_str
+        | AskingForConfirmation (meth, label) ->
+            Response.response_of_string_foryesorno meth label response_str )
       | None ->
           failwith "no response ahahahah"
     in
