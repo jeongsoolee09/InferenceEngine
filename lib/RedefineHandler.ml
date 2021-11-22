@@ -1,3 +1,5 @@
+open ListMonad
+open InfixOperators
 open Yojson.Basic
 open GraphRepr
 module Json = Yojson.Basic
@@ -6,12 +8,13 @@ type json = Json.t
 
 module ChainSliceSet = Set.Make (ChainSlice)
 
-let collect_redefines (json_assoc : json) : ChainSlice.t list =
+let collect_redefines_for_single_chain (json_assoc : json) : ChainSlice.t list =
   let collected =
     match json_assoc with
-    | `Assoc alist ->
+    | `List alist ->
         List.fold
-          ~f:(fun acc chainslice ->
+          ~f:(fun acc assoc ->
+            let alist = Util.to_assoc assoc in
             match List.Assoc.find_exn alist "status" ~equal:String.equal with
             | `String "Redefine" ->
                 let current_method =
@@ -31,7 +34,7 @@ let collect_redefines (json_assoc : json) : ChainSlice.t list =
                 acc )
           ~init:[] alist
     | _ ->
-        failwith "Type Error"
+        failwith "Type Error3"
   in
   (* deduping process (order is irrelevant) *)
   collected |> ChainSliceSet.of_list |> ChainSliceSet.elements
@@ -50,3 +53,13 @@ let is_redefine_vertex (redefine_slices : ChainSlice.t list) (vertex : G.V.t) : 
       | _ ->
           acc )
     ~init:false redefine_slices
+
+
+let collect_redefines (json : json) =
+  match json with
+  | `List list ->
+      list
+      >>| (fun json_assoc -> Util.member "chain" json_assoc)
+      >>= collect_redefines_for_single_chain
+  | _ ->
+      failwith "Type Error4"
