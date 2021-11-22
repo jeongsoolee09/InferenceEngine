@@ -1,9 +1,11 @@
+(* behold the power of Emacs... *)
+
 open GraphRepr
 open ListMonad
 open InfixOperators
 open ContextualFeatures
 
-module TestGraph = struct
+module GraphTest = struct
   let sample_graph =
     G.empty
     |> (fun graph -> G.add_edge graph ("nextLine", "26") ("create", "26"))
@@ -17,9 +19,30 @@ module TestGraph = struct
     |> (fun graph -> G.add_edge graph ("run", "32") ("batchUpdate", "34"))
     |> fun graph -> G.add_edge graph ("run", "33") ("batchUpdate", "34")
 
+
   (** How will identify_trunk work on sample_graph? *)
 
-  let _ =
+  let test () =
     let trunks = identify_trunks sample_graph in
     List.iter ~f:(fun trunk -> Trunk.pp trunk) trunks
+end
+
+module GraphMakerTest = struct
+  open GraphRepr
+  open MakeGraph
+
+  let json = Deserializer.deserialize_json ()
+
+  let graph = GraphMaker.init_graph json
+
+  let out_channel = Out_channel.create "graphmakertest.dot"
+
+  let test () = Dot.output_graph out_channel graph
+
+  (* works well!!! *)
+end
+
+module DistMapTest = struct
+  (* let test () = *)
+  (*   let  *)
 end
