@@ -10,4 +10,4 @@ let main () =
   print_endline "hihi"
 
 
-(* let _ = main () *)
+let _ = main ()

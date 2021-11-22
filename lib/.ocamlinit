@@ -29,4 +29,4 @@ module Int = Core_kernel.Int;;
 
 open InferenceEngineLib;;
 
-#use "../bin/InferenceEngineApplication.ml";;
+#use "../test/InferenceEngineTests.ml";;
