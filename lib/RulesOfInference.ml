@@ -9,27 +9,6 @@ exception NotImplemented
 
 module Random = Core_kernel.Random
 
-module Response = struct
-  type t = string * TaintLabel.t
-
-  let get_method = fst
-
-  let get_label = snd
-
-  let response_of_string (method_ : string) (response_str : string) : t =
-    match response_str with
-    | "src" ->
-        (method_, TaintLabel.Source)
-    | "sin" ->
-        (method_, TaintLabel.Sink)
-    | "san" ->
-        (method_, TaintLabel.Sanitizer)
-    | "non" ->
-        (method_, TaintLabel.None)
-    | otherwise ->
-        raise @@ Invalid_argument otherwise
-end
-
 module Question = struct
   type t = AskingForLabel of string | AskingForConfirmation of (string * TaintLabel.t)
 
@@ -44,6 +23,62 @@ module Question = struct
 
   let get_method (question : t) : string =
     match question with AskingForLabel meth -> meth | AskingForConfirmation (meth, _) -> meth
+
+
+  let get_label (question : t) : TaintLabel.t =
+    match question with
+    | AskingForConfirmation (_, label) ->
+        label
+    | _ ->
+        raise @@ Invalid_argument "hahaha"
+end
+
+module Response = struct
+  type t = ForLabel of (string * TaintLabel.t) | ForYesOrNo of (string * TaintLabel.t * bool)
+
+  let get_method (res : t) : string =
+    match res with ForLabel (meth, _) -> meth | ForYesOrNo (meth, _, _) -> meth
+
+
+  let get_label (res : t) : TaintLabel.t =
+    match res with
+    | ForLabel (_, label) ->
+        label
+    | _ ->
+        raise @@ Invalid_argument "this is not a response of a yes/no question"
+
+
+  let get_yesorno (res : t) : bool =
+    match res with
+    | ForYesOrNo (_, _, bool) ->
+        bool
+    | _ ->
+        raise @@ Invalid_argument "this is not a response of a question asking for label"
+
+
+  let response_of_string_forlabel (method_ : string) (response_str : string) : t =
+    match response_str with
+    | "src" | "source" ->
+        ForLabel (method_, TaintLabel.Source)
+    | "sin" | "sink" ->
+        ForLabel (method_, TaintLabel.Sink)
+    | "san" | "sanitizer" ->
+        ForLabel (method_, TaintLabel.Sanitizer)
+    | "non" | "none" ->
+        ForLabel (method_, TaintLabel.None)
+    | otherwise ->
+        raise @@ Invalid_argument otherwise
+
+
+  let response_of_string_foryesorno (method_ : string) (label : TaintLabel.t) (response_str : string)
+      : t =
+    match response_str with
+    | "yes" | "y" ->
+        ForYesOrNo (method_, label, true)
+    | "no" | "n" ->
+        ForYesOrNo (method_, label, false)
+    | otherwise ->
+        raise @@ Invalid_argument otherwise
 end
 
 module Utils = struct
