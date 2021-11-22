@@ -112,4 +112,72 @@ module TestSimilarityEdges = struct
   let target_vertex = ("void PrintStream.println(String)", "{ line 43 }")
 
   let test () = G.cs_succs target_vertex with_sim_edges
+
+  (* no... this is not working.... *)
+end
+
+module TestTrunkSimilarity = struct
+  let json = Deserializer.deserialize_json ()
+
+  let graph = GraphMaker.init_graph json
+
+  let trunks = identify_trunks graph
+
+  (* noooo there are too many of them!!! *)
+  (* utop # List.length trunks;; *)
+  (* - : int = 36 *)
+
+  (* meh.... whatever... *)
+
+  (* contextualsimilarity가 잘 매겨지고 있나...?? *)
+
+  (* --> we need to examine the internals of make_contextual_sim_edge!!! *)
+
+  let test () = SimilarityHandler.EstablishSimEdges.make_contextual_sim_edge graph
+
+  let test2 () = RedefineHandler.collect_redefines json
+
+  module Util = Yojson.Basic.Util
+  module ChainSliceSet = Set.Make (ChainSlice)
+
+  let collect_redefines_for_single_chain (json_assoc : json) (* : ChainSlice.t list *) =
+    let collected =
+      match json_assoc with
+      | `List alist ->
+          List.fold
+            ~f:(fun acc assoc ->
+              let alist = Util.to_assoc assoc in
+              match List.Assoc.find_exn alist "status" ~equal:String.equal with
+              | `String "Redefine" ->
+                  let current_method =
+                    Util.to_string @@ List.Assoc.find_exn alist "current_method" ~equal:String.equal
+                  in
+                  let location =
+                    Util.to_string @@ List.Assoc.find_exn alist "location" ~equal:String.equal
+                  in
+                  let access_path =
+                    Util.to_string @@ List.Assoc.find_exn alist "access_path" ~equal:String.equal
+                  in
+                  let redefine_slice =
+                    ChainSlice.RedefineSlice (current_method, location, access_path)
+                  in
+                  redefine_slice :: acc
+              | otherwise ->
+                  acc )
+            ~init:[] alist
+      | _ ->
+          failwith "Type Error3"
+    in
+    (* deduping process (order is irrelevant) *)
+    collected |> ChainSliceSet.of_list |> ChainSliceSet.elements
+
+
+  let collect_redefines (json : json) =
+    match json with
+    | `List list ->
+        list
+        >>| (fun json_assoc -> Util.member "chain" json_assoc)
+        >>= collect_redefines_for_single_chain
+    | _ ->
+        failwith "Type Error4"
 end
