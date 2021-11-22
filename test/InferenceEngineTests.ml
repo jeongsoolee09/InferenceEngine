@@ -7,6 +7,7 @@ open ContextualFeatures
 open MakeGraph
 open SimilarityHandler
 open Probability
+open Loop
 
 module GraphTest = struct
   let sample_graph =
@@ -55,14 +56,13 @@ module DistMapTest = struct
 
   let distmap_keys = ProbMap.fold (fun k _ acc -> k :: acc) distmap []
 
-  let test () =
-    ProbMap.iter
-      (fun k v ->
-        print_string @@ Vertex.to_string k ;
-        print_string @@ ProbQuadruple.to_string v ;
-        print_newline () )
-      distmap
-
+  (* let test () = *)
+  (*   ProbMap.iter *)
+  (*     (fun k v -> *)
+  (*       print_string @@ Vertex.to_string k ; *)
+  (*       print_string @@ ProbQuadruple.to_string v ; *)
+  (*       print_newline () ) *)
+  (*     distmap *)
 
   let test2 () =
     List.for_all ~f:(fun elem -> List.mem ~equal:Vertex.equal vertices elem) distmap_keys
@@ -72,4 +72,22 @@ module DistMapTest = struct
     List.for_all ~f:(fun elem -> List.mem ~equal:Vertex.equal distmap_keys elem) vertices
 
   (* works well! *)
+end
+
+module TestLoop = struct
+  (* does it even run smoothly? *)
+
+  let json = Deserializer.deserialize_json ()
+
+  let graph = GraphMaker.init_graph json
+
+  let initial_distmap = make_map_for_graph graph
+
+  let received_responses = []
+
+  let nodewise_featuremap = NodeWiseFeatures.init_feature_map graph
+
+  let test () = loop initial_distmap received_responses graph nodewise_featuremap 1
+
+  (* uhoh. the prompt's not showing up immediately *)
 end
