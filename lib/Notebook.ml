@@ -40,7 +40,9 @@ module GraphMakerTest = struct
 
   let out_channel = Out_channel.create "graphmakertest.dot"
 
-  let test () = Dot.output_graph out_channel graph
+  let test () =
+    Dot.output_graph out_channel graph ;
+    Out_channel.close out_channel
 
   (* works well!!! *)
 end
@@ -210,7 +212,60 @@ module TrunkSimilarityTest = struct
       sample_tsmap
 
   (* ok, there are some contextual similarities captured: they are all six. *)
-  (* maybe I need some granular investigation! *)
 
+  (* maybe I need some granular investigation! *)
   (* --> all contextual extractors working. *)
+end
+
+module TestSimilarityEdges2 = struct
+  (* 이제, sim edge가 왜 안 생기는지를 보자. *)
+  let json = Deserializer.deserialize_json ()
+
+  let graph = GraphMaker.init_graph json
+
+  let with_sim_edges =
+    SimilarityHandler.EstablishSimEdges.make_contextual_sim_edge
+    @@ SimilarityHandler.EstablishSimEdges.make_nodewise_sim_edge graph
+
+
+  let target_vertex = ("void PrintStream.println(String)", "{ line 43 }")
+
+  let test () = G.cs_succs target_vertex with_sim_edges
+
+  let df_edges = G.get_df_edges graph
+
+  let ns_edges = G.get_ns_edges graph
+
+  let cs_edges = G.get_cs_edges graph
+
+  (* no sim edges at all!! *)
+
+  let nodewise_map =
+    SimilarVertexPairExtractor.NodewisePairExtractor.update_nodewise_similarity_map
+      (G.all_methods_of_graph graph)
+
+
+  open Out_channel
+
+  let test2 () =
+    NodeWiseSimilarityMap.iter
+      (fun k v ->
+        if v >= 2 then (
+          output_string stdout (StringPair.to_string k) ;
+          output_string stdout (string_of_int v) ;
+          newline stdout ) )
+      nodewise_map
+end
+
+module TestNodewiseSim = struct
+  let json = Deserializer.deserialize_json ()
+
+  let graph = GraphMaker.init_graph json
+
+  let all_methods = G.all_methods_of_graph graph
+
+  open Out_channel
+
+  (* let test2 () = *)
+  (*   NodeWiseSimilarityMap.iter *)
 end

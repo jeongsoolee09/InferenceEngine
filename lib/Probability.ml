@@ -52,6 +52,10 @@ module ProbQuadruple = struct
         failwith ("invalid string: " ^ otherwise)
 
 
+  let to_string (quad : t) =
+    F.asprintf "{src= %f; sin= %f; san= %f; non= %f}" quad.src quad.sin quad.san quad.non
+
+
   let determine_label (dist : t) : label =
     let alist = alist_of_dist dist in
     let sorted_decreasing =

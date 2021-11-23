@@ -1,11 +1,6 @@
+open ListMonad
 open GraphRepr
 open FeatureMaps
-
-let ( >>= ) = List.( >>= )
-
-and ( >>| ) = List.( >>| )
-
-and return = List.return
 
 exception TODO
 
@@ -51,7 +46,7 @@ module SingleFeature = struct
 
 
   let is_framework_code methname =
-    let skip_methods = Deserializer.deserialize_method_txt ()
+    let skip_methods = Deserializer.deserialize_skip_func ()
     and udf_methods = Deserializer.deserialize_method_txt () in
     let this_project_package_name =
       string_of_feature @@ extract_package_name_from_id @@ List.hd_exn udf_methods in
@@ -59,7 +54,7 @@ module SingleFeature = struct
       List.filter
         ~f:(fun str ->
           not
-            ( String.is_substring ~substring:"java." str (* should not be a Java builtin *)
+            ( String.is_prefix ~prefix:"java." str (* should not be a Java builtin *)
             || String.is_substring ~substring:this_project_package_name str
                (* should not belong to this package *) ) )
         skip_methods

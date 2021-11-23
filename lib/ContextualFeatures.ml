@@ -36,7 +36,8 @@ let same_callee_in_trunk_count ((trunk1, trunk2) : trunk * trunk) : int =
   List.fold
     ~f:(fun acc vertex ->
       let matching = List.mem ~equal:G.V.equal trunk2 vertex in
-      if matching then acc + 1 else acc )
+      if matching then (* print_endline "same callee!!" ; *)
+        acc + 1 else acc )
     ~init:0 trunk1
 
 
@@ -62,4 +63,5 @@ let trunks_share_same_suffixes_length ((trunk1, trunk2) : trunk * trunk) : int =
   in
   let zipped = List.zip_exn trunk1_revised trunk2_revised in
   let suffix = List.take_while ~f:(fun (v1, v2) -> String.equal v1 v2) zipped in
+  (* if List.length suffix >= 1 then print_endline "same suffixes length!" ; *)
   List.length suffix

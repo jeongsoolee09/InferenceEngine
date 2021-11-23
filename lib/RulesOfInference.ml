@@ -102,11 +102,8 @@ module PropagationRules = struct
       G.all_vertices_of_graph graph
       |> List.filter ~f:(fun (meth, _) -> String.equal meth new_fact_method)
     in
-    let contextual_succs =
-      new_fact_method_vertices >>= fun vertex -> Probability.Utils.cs_succs vertex graph
-    in
+    let contextual_succs = new_fact_method_vertices >>= fun vertex -> G.cs_succs vertex graph in
     assert (Int.( >= ) (List.length contextual_succs) 1) ;
-    let contextual_succ_dist = contextual_succs >>| fun succ -> ProbMap.find succ distmap in
     List.fold
       ~f:(fun acc succ ->
         let succ_dist = ProbMap.find succ distmap in
@@ -132,7 +129,7 @@ module PropagationRules = struct
           | Indeterminate ->
               failwith "Impossible"
         in
-        ProbMap.strong_update succ succ_dist acc )
+        ProbMap.strong_update succ new_dist acc )
       contextual_succs ~init:distmap
 
 
@@ -225,7 +222,7 @@ module PropagationRules = struct
           | Indeterminate ->
               failwith "Impossible"
         in
-        ProbMap.strong_update succ succ_dist acc )
+        ProbMap.strong_update succ new_dist acc )
       similarity_succs ~init:distmap
 
 
@@ -254,7 +251,8 @@ module AskingRules = struct
       let random_index = Random.int_incl 0 (List.length all_leaves - 1) in
       List.nth_exn all_leaves random_index
     in
-    Question.AskingForConfirmation (fst random_leaf, TaintLabel.Sink)
+    (* Question.AskingForConfirmation (fst random_leaf, TaintLabel.Sink) *)
+    Question.AskingForLabel (fst random_leaf)
 
 
   let ask_if_root_is_source (graph : G.t) (received_responses : Response.t list)
@@ -265,7 +263,8 @@ module AskingRules = struct
       let random_index = Random.int_incl 0 (List.length all_roots - 1) in
       List.nth_exn all_roots random_index
     in
-    Question.AskingForConfirmation (fst random_root, TaintLabel.Source)
+    (* Question.AskingForConfirmation (fst random_root, TaintLabel.Source) *)
+    Question.AskingForLabel (fst random_root)
 
 
   (** ask a method from a foreign package of its label. *)

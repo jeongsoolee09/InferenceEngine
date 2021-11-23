@@ -7,6 +7,8 @@ open ContextualFeatures
 
 module StringPair = struct
   type t = string * string [@@deriving compare]
+
+  let to_string (s1, s2) = F.asprintf "(%s, %s)" s1 s2
 end
 
 module NodeWiseSimilarityMap = struct
@@ -67,7 +69,7 @@ end
 module SimilarVertexPairExtractor = struct
   (** module that ultimately calculates the nodewise similarity of each method. *)
   module NodewisePairExtractor = struct
-    let threshold = 1 (* TEMP *)
+    let threshold = 2 (* TEMP *)
 
     (** Run all extractors for every method pair. *)
     let get_nodewise_similarity (method_pair : string * string) : int =
@@ -104,7 +106,7 @@ module SimilarVertexPairExtractor = struct
     let get_trunk_similarity (trunk_pair : trunk * trunk) : int =
       (* execute all extractors. *)
       let extractors_list = [same_callee_in_trunk_count; trunks_share_same_suffixes_length] in
-      List.fold ~f:(fun acc extractor -> extractor trunk_pair) ~init:0 extractors_list
+      List.fold ~f:(fun acc extractor -> acc + extractor trunk_pair) ~init:0 extractors_list
 
 
     (** main functionality: calculate the simliarity of each trunk pairs and organize those in a
@@ -295,7 +297,9 @@ module EstablishSimEdges = struct
             (method1, method2)
         in
         List.fold
-          ~f:(fun acc (v1, v2) -> G.add_edge_e acc (v1, EdgeLabel.NodeWiseSimilarity, v2))
+          ~f:(fun acc (v1, v2) ->
+            G.add_edge_e acc (v1, EdgeLabel.NodeWiseSimilarity, v2)
+            |> fun graph -> G.add_edge_e graph (v2, EdgeLabel.NodeWiseSimilarity, v1) )
           ~init:acc smart_pairedup )
       above_threshold_entries graph
 
@@ -320,6 +324,9 @@ module EstablishSimEdges = struct
             ~f:(fun smol_acc (v1, v2) ->
               G.add_edge_e smol_acc (v1, EdgeLabel.ContextualSimilarity, v2) )
             ~init:acc smart_pairedup
-        else acc )
+        else (
+          Out_channel.output_string Out_channel.stdout "miss!!" ;
+          Out_channel.newline Out_channel.stdout ;
+          acc ) )
       trunk_similarity_map graph
 end

@@ -71,20 +71,38 @@ module G = struct
 
   let df_succs (vertex : V.t) (graph : t) =
     fold_edges_e List.cons graph []
-    |> List.filter ~f:(fun (_, label, _) -> EdgeLabel.equal label EdgeLabel.DataFlow)
+    |> List.filter ~f:(fun (v, label, _) ->
+           Vertex.equal vertex v && EdgeLabel.equal label EdgeLabel.DataFlow )
     >>| trd3
 
 
   let ns_succs (vertex : V.t) (graph : t) =
     fold_edges_e List.cons graph []
-    |> List.filter ~f:(fun (_, label, _) -> EdgeLabel.equal label EdgeLabel.NodeWiseSimilarity)
+    |> List.filter ~f:(fun (v, label, _) ->
+           Vertex.equal vertex v && EdgeLabel.equal label EdgeLabel.NodeWiseSimilarity )
     >>| trd3
 
 
   let cs_succs (vertex : V.t) (graph : t) =
     fold_edges_e List.cons graph []
-    |> List.filter ~f:(fun (_, label, _) -> EdgeLabel.equal label EdgeLabel.ContextualSimilarity)
+    |> List.filter ~f:(fun (v, label, _) ->
+           Vertex.equal vertex v && EdgeLabel.equal label EdgeLabel.ContextualSimilarity )
     >>| trd3
+
+
+  let get_df_edges (graph : t) =
+    fold_edges_e List.cons graph []
+    |> List.filter ~f:(fun (_, label, _) -> EdgeLabel.equal label EdgeLabel.DataFlow)
+
+
+  let get_ns_edges (graph : t) =
+    fold_edges_e List.cons graph []
+    |> List.filter ~f:(fun (_, label, _) -> EdgeLabel.equal label EdgeLabel.NodeWiseSimilarity)
+
+
+  let get_cs_edges (graph : t) =
+    fold_edges_e List.cons graph []
+    |> List.filter ~f:(fun (_, label, _) -> EdgeLabel.equal label EdgeLabel.ContextualSimilarity)
 
 
   module GUndirected = Graph.Persistent.Graph.Concrete (Vertex)
@@ -272,7 +290,7 @@ module ChainSlice = struct
       | otherwise ->
           raise @@ Invalid_argument (Yojson.Basic.to_string otherwise) )
     | _ ->
-        failwith "Type Error"
+        failwith "Type Error1"
 end
 
 module ChainSliceManager = struct
@@ -283,7 +301,7 @@ module ChainSliceManager = struct
     | `List json_list ->
         json_list >>| ChainSlice.chain_slice_of_json_assoc
     | _ ->
-        failwith "Type Error"
+        failwith "Type Error2"
 end
 
 module VertexMaker = struct
