@@ -313,15 +313,14 @@ module TestNodewiseSim = struct
       contextual_similarity_map
 
 
-  let _ =
-    NodeWiseSimilarityMap.iter
-      (fun (k1, k2) v ->
-        print_string k1 ;
-        print_string k2 ;
-        print_int v ;
-        print_newline () )
-      above_threshold_entries
-
+  (* let _ = *)
+  (*   NodeWiseSimilarityMap.iter *)
+  (*     (fun (k1, k2) v -> *)
+  (*       print_string k1 ; *)
+  (*       print_string k2 ; *)
+  (*       print_int v ; *)
+  (*       print_newline () ) *)
+  (*     above_threshold_entries *)
 
   let testgraph = SimilarityHandler.EstablishSimEdges.make_nodewise_sim_edge graph
 
@@ -358,4 +357,153 @@ module TestContextualSimilarity = struct
   let testgraph = SimilarityHandler.EstablishSimEdges.make_contextual_sim_edge graph
 
   let _ = G.get_cs_edges testgraph
+
+  let _ = List.length @@ G.get_cs_edges testgraph
+
+  (* working fine *)
+end
+
+module TestAllSimilarities = struct
+  let json = Deserializer.deserialize_json ()
+
+  let graph = GraphMaker.init_graph json
+
+  let testgraph =
+    SimilarityHandler.EstablishSimEdges.make_contextual_sim_edge graph
+    |> SimilarityHandler.EstablishSimEdges.make_nodewise_sim_edge
+
+
+  let _ = G.all_vertices_of_graph graph
+
+  let _ =
+    G.all_vertices_of_graph (SimilarityHandler.EstablishSimEdges.make_contextual_sim_edge graph)
+
+
+  let _ = G.all_vertices_of_graph (SimilarityHandler.EstablishSimEdges.make_nodewise_sim_edge graph)
+
+  (* make_contextual_sim_edge is making a ("", "") vertex! *)
+end
+
+module TestContextualSimEdge = struct
+  let json = Deserializer.deserialize_json ()
+
+  let graph = GraphMaker.init_graph json
+
+  open SimilarVertexPairExtractor
+
+  let all_trunks = ContextualFeatures.identify_trunks graph
+
+  let trunk_similarity_map = TrunkPairExtractor.update_trunk_similarity_map all_trunks
+
+  let _ = List.nth all_trunks 5
+
+  (* [("Map JdbcTemplate.queryForMap(String,Object[])", "{ line 37 }");
+     ("Map RelationalDataAccessApplication.query()", "{ line 37 }");
+     ("void RelationalDataAccessApplication.bridge()", "{ line 47 }");
+     ("void RelationalDataAccessApplication.printer(Map)", "{ line 41 }");
+     ("Collection Map.values()", "{ line 42 }");
+     ("void RelationalDataAccessApplication.printer(Map)", "{ line 42 }");
+     ("Iterator Collection.iterator()", "{ line 42 }");
+     ("void RelationalDataAccessApplication.printer(Map)", "{ line 42 }");
+     ("Object Iterator.next()", "{ line 42 }");
+     ("void RelationalDataAccessApplication.printer(Map)", "{ line 42 }");
+     ("StringBuilder StringBuilder.append(Object)", "{ line 43 }");
+     ("void RelationalDataAccessApplication.printer(Map)", "{ line 43 }")]
+
+      trunk list에 이게 왜 들어있는지 모르겠네... line43의 printer가 왜 리프? *)
+
+  (* 이제 왜 empty vertex가 생기는지를 봅시다. *)
+  (* 일단 similarity가 높은 trunk pair부터 찾아 봅시다. *)
+
+  let pair_with_max_value (map : TrunkSimilarityMap.t) =
+    fst
+    @@ TrunkSimilarityMap.fold
+         (fun key value (current_max_key, current_max_value) ->
+           if value > current_max_value then (key, value) else (current_max_key, current_max_value)
+           )
+         map
+         (([], []), Int.min_value)
+
+
+  let update_trunk_similarity_map (all_trunks : trunk list) : TrunkSimilarityMap.t =
+    let initial_map = TrunkSimilarityMap.init all_trunks in
+    TrunkSimilarityMap.fold
+      (fun ((t1, t2) as pair) _ acc ->
+        assert (not @@ Trunk.equal t1 t2) ;
+        let trunk_similarity = TrunkPairExtractor.get_trunk_similarity pair in
+        TrunkSimilarityMap.remove pair acc |> TrunkSimilarityMap.add pair trunk_similarity )
+      initial_map initial_map
+
+
+  let trunk_similarity_map = update_trunk_similarity_map all_trunks
+
+  let _ = pair_with_max_value trunk_similarity_map
+
+  let trunk1 =
+    [ ("Map JdbcTemplate.queryForMap(String,Object[])", "{ line 37 }")
+    ; ("Map RelationalDataAccessApplication.query()", "{ line 37 }")
+    ; ("void RelationalDataAccessApplication.bridge()", "{ line 47 }")
+    ; ("void RelationalDataAccessApplication.printer(Map)", "{ line 41 }")
+    ; ("Collection Map.values()", "{ line 42 }")
+    ; ("void RelationalDataAccessApplication.printer(Map)", "{ line 42 }")
+    ; ("Iterator Collection.iterator()", "{ line 42 }")
+    ; ("void RelationalDataAccessApplication.printer(Map)", "{ line 42 }")
+    ; ("Object Iterator.next()", "{ line 42 }")
+    ; ("void RelationalDataAccessApplication.printer(Map)", "{ line 42 }")
+    ; ("boolean Iterator.hasNext()", "{ line 42 }")
+    ; ("void RelationalDataAccessApplication.printer(Map)", "{ line 42 }")
+    ; ("StringBuilder StringBuilder.append(Object)", "{ line 43 }")
+    ; ("void RelationalDataAccessApplication.printer(Map)", "{ line 43 }")
+    ; ("String StringBuilder.toString()", "{ line 43 }")
+    ; ("void RelationalDataAccessApplication.printer(Map)", "{ line 43 }") ]
+
+
+  let trunk2 =
+    [ ("Map JdbcTemplate.queryForMap(String,Object[])", "{ line 37 }")
+    ; ("Map RelationalDataAccessApplication.query()", "{ line 37 }")
+    ; ("void RelationalDataAccessApplication.bridge()", "{ line 47 }")
+    ; ("void RelationalDataAccessApplication.printer(Map)", "{ line 41 }")
+    ; ("Collection Map.values()", "{ line 42 }")
+    ; ("void RelationalDataAccessApplication.printer(Map)", "{ line 42 }")
+    ; ("Iterator Collection.iterator()", "{ line 42 }")
+    ; ("void RelationalDataAccessApplication.printer(Map)", "{ line 42 }")
+    ; ("boolean Iterator.hasNext()", "{ line 42 }")
+    ; ("void RelationalDataAccessApplication.printer(Map)", "{ line 42 }")
+    ; ("Object Iterator.next()", "{ line 42 }")
+    ; ("void RelationalDataAccessApplication.printer(Map)", "{ line 42 }")
+    ; ("StringBuilder StringBuilder.append(Object)", "{ line 43 }")
+    ; ("void RelationalDataAccessApplication.printer(Map)", "{ line 43 }")
+    ; ("String StringBuilder.toString()", "{ line 43 }")
+    ; ("void RelationalDataAccessApplication.printer(Map)", "{ line 43 }") ]
+
+
+  (* ㅋㅋㅋㅋ 같은 줄 알았는데 아니었네. *)
+  (* 어쨌든 찾았다. *)
+
+  let _ = TrunkSimilarityMap.find (trunk1, trunk2) trunk_similarity_map
+
+  let trunk_pair = (trunk1, trunk2)
+
+  let contextually_similar_methods =
+    ContextualPairExtractor.identify_similar_method_from_similar_trunk trunk_pair graph
+
+
+  let smart_pairedup =
+    contextually_similar_methods
+    >>= fun (method1, method2) ->
+    ContextualPairExtractor.smart_pairup_vertices trunk1 trunk2 (method1, method2)
+
+
+  let testgraph =
+    List.fold
+      ~f:(fun smol_acc (v1, v2) -> G.add_edge_e smol_acc (v1, EdgeLabel.ContextualSimilarity, v2))
+      ~init:graph smart_pairedup
+
+  (*  *)
+end
+
+module TestInitGraph = struct
+  let json = Deserializer.deserialize_json ()
+
+  let graph = GraphMaker.init_graph json
 end
