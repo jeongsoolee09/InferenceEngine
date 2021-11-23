@@ -12,7 +12,7 @@ in Sys.chdir root;;
 #require "core";;
 #require "ocamlgraph";;
 #require "yojson";;
-#directory "_build";;
+(* #directory "_build";; *)
 
 module List = Core_kernel.List;;
 module Option = Core_kernel.Option;;
@@ -21,3 +21,5 @@ module Out_channel = Core_kernel.Out_channel;;
 module String = Core_kernel.String;;
 module Int = Core_kernel.Int;;
 module Float = Core_kernel.Float;;
+
+open InferenceEngineLib;;
