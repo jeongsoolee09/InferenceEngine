@@ -88,7 +88,7 @@ module SimilarVertexPairExtractor = struct
       let carpro =
         let* method1 = all_methods in
         let* method2 = all_methods in
-        return (method1, method2)
+        if not @@ String.equal method1 method2 then return (method1, method2) else []
       in
       let initial_map = NodeWiseSimilarityMap.init all_methods in
       List.fold
@@ -115,7 +115,7 @@ module SimilarVertexPairExtractor = struct
       let carpro =
         let* trunk1 = all_trunks in
         let* trunk2 = all_trunks in
-        return (trunk1, trunk2)
+        if Trunk.equal trunk1 trunk2 then return (trunk1, trunk2) else []
       in
       let initial_map = TrunkSimilarityMap.init all_trunks in
       List.fold
@@ -252,7 +252,7 @@ module SimilarVertexPairExtractor = struct
       let trunk_carpro =
         let* trunk1 = all_trunks in
         let* trunk2 = all_trunks in
-        return (trunk1, trunk2)
+        if Trunk.equal trunk1 trunk2 then return (trunk1, trunk2) else []
       in
       let initial_map = ContextualSimilarityMap.init all_methods in
       (* now, we need to translate the trunk similarity into method similarity
