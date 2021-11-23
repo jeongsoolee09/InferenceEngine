@@ -31,18 +31,26 @@ module SingleFeature = struct
   (* for the record, unique ids and methnames are the same thing here. *)
 
   let extract_package_name_from_id (unique_identifier : string) : feature =
-    assert (Str.string_match id_regex unique_identifier 0) ;
-    String (Str.matched_group 1 unique_identifier)
-
+    try
+      assert (Str.string_match id_regex unique_identifier 0) ;
+      String (Str.matched_group 1 unique_identifier)
+    with Assert_failure _ ->
+      failwith unique_identifier
 
   let extract_class_name_from_id (unique_identifier : string) : feature =
-    assert (Str.string_match id_regex unique_identifier 0) ;
-    String (Str.matched_group 2 unique_identifier)
+    try
+      assert (Str.string_match id_regex unique_identifier 0) ;
+      String (Str.matched_group 2 unique_identifier)
+    with Assert_failure _ ->
+      failwith unique_identifier
 
 
   let extract_method_name_from_id (unique_identifier : string) : feature =
-    assert (Str.string_match id_regex unique_identifier 0) ;
-    String (Str.matched_group 3 unique_identifier)
+    try
+      assert (Str.string_match id_regex unique_identifier 0) ;
+      String (Str.matched_group 3 unique_identifier)
+    with Assert_failure _ ->
+      failwith unique_identifier
 
 
   let is_framework_code methname =

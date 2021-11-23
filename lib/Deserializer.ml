@@ -25,8 +25,11 @@ let deserialize_json () : json =
   out
 
 
-let deserialize_method_txt () : string list = In_channel.read_lines (project_root ^ "Methods.txt")
+let deserialize_method_txt () : string list =
+  In_channel.read_lines (project_root ^ "Methods.txt") |> List.filter ~f:(not << String.is_empty)
+
 
 let deserialize_skip_func () : string list =
   In_channel.read_lines (project_root ^ "skip_func.txt")
   |> List.filter ~f:(not << String.is_prefix ~prefix:"__")
+  |> List.filter ~f:(not << String.is_empty)

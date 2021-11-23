@@ -21,7 +21,7 @@ module NodeWiseSimilarityMap = struct
     let method_pairs =
       let* method1 = all_methods in
       let* method2 = all_methods in
-      return (method1, method2)
+      if not @@ String.equal method1 method2 then return (method1, method2) else []
     in
     List.fold
       ~f:(fun acc pair -> WithMethodPairDomain.add pair 0 acc)
@@ -42,11 +42,21 @@ module TrunkSimilarityMap = struct
     let trunk_pairs =
       let* trunk1 = all_trunks in
       let* trunk2 = all_trunks in
-      return (trunk1, trunk2)
+      if not @@ Trunk.equal trunk1 trunk2 then return (trunk1, trunk2) else []
     in
     List.fold
       ~f:(fun acc pair -> WithTrunkPairDomain.add pair 0 acc)
       trunk_pairs ~init:WithTrunkPairDomain.empty
+
+
+  let pair_with_max_value (map : t) : TrunkPair.t =
+    fst
+    @@ fold
+         (fun key value (current_max_key, current_max_value) ->
+           if value > current_max_value then (key, value) else (current_max_key, current_max_value)
+           )
+         map
+         (([], []), Int.min_value)
 end
 
 module ContextualSimilarityMap = struct
@@ -59,7 +69,7 @@ module ContextualSimilarityMap = struct
     let method_pairs =
       let* method1 = all_methods in
       let* method2 = all_methods in
-      return (method1, method2)
+      if not @@ String.equal method1 method2 then return (method1, method2) else []
     in
     List.fold
       ~f:(fun acc pair -> WithMethodPairDomain.add pair 0 acc)
@@ -85,18 +95,13 @@ module SimilarVertexPairExtractor = struct
     (** main functionality: calculate the nodewise simliarity of each method and organize those in a
         table. *)
     let update_nodewise_similarity_map (all_methods : string list) : NodeWiseSimilarityMap.t =
-      let carpro =
-        let* method1 = all_methods in
-        let* method2 = all_methods in
-        if not @@ String.equal method1 method2 then return (method1, method2) else []
-      in
       let initial_map = NodeWiseSimilarityMap.init all_methods in
-      List.fold
-        ~f:(fun acc ((m1, m2) as pair) ->
+      NodeWiseSimilarityMap.fold
+        (fun ((m1, m2) as pair) _ acc ->
           let nodewise_similarity = get_nodewise_similarity pair in
           NodeWiseSimilarityMap.remove pair acc
           |> NodeWiseSimilarityMap.add pair nodewise_similarity )
-        ~init:initial_map carpro
+        initial_map initial_map
   end
 
   module TrunkPairExtractor = struct
@@ -112,17 +117,12 @@ module SimilarVertexPairExtractor = struct
     (** main functionality: calculate the simliarity of each trunk pairs and organize those in a
         table. *)
     let update_trunk_similarity_map (all_trunks : trunk list) : TrunkSimilarityMap.t =
-      let carpro =
-        let* trunk1 = all_trunks in
-        let* trunk2 = all_trunks in
-        if Trunk.equal trunk1 trunk2 then return (trunk1, trunk2) else []
-      in
       let initial_map = TrunkSimilarityMap.init all_trunks in
-      List.fold
-        ~f:(fun acc ((t1, t2) as pair) ->
+      TrunkSimilarityMap.fold
+        (fun ((t1, t2) as pair) _ acc ->
           let trunk_similarity = get_trunk_similarity pair in
           TrunkSimilarityMap.remove pair acc |> TrunkSimilarityMap.add pair trunk_similarity )
-        ~init:initial_map carpro
+        initial_map initial_map
   end
 
   (** module that ultimately calculates the contextual similarity of each method. *)
@@ -252,7 +252,7 @@ module SimilarVertexPairExtractor = struct
       let trunk_carpro =
         let* trunk1 = all_trunks in
         let* trunk2 = all_trunks in
-        if Trunk.equal trunk1 trunk2 then return (trunk1, trunk2) else []
+        if not @@ Trunk.equal trunk1 trunk2 then return (trunk1, trunk2) else []
       in
       let initial_map = ContextualSimilarityMap.init all_methods in
       (* now, we need to translate the trunk similarity into method similarity
@@ -297,8 +297,8 @@ module EstablishSimEdges = struct
             (method1, method2)
         in
         List.fold
-          ~f:(fun acc (v1, v2) ->
-            G.add_edge_e acc (v1, EdgeLabel.NodeWiseSimilarity, v2)
+          ~f:(fun smol_acc (v1, v2) ->
+            G.add_edge_e smol_acc (v1, EdgeLabel.NodeWiseSimilarity, v2)
             |> fun graph -> G.add_edge_e graph (v2, EdgeLabel.NodeWiseSimilarity, v1) )
           ~init:acc smart_pairedup )
       above_threshold_entries graph
@@ -324,9 +324,6 @@ module EstablishSimEdges = struct
             ~f:(fun smol_acc (v1, v2) ->
               G.add_edge_e smol_acc (v1, EdgeLabel.ContextualSimilarity, v2) )
             ~init:acc smart_pairedup
-        else (
-          Out_channel.output_string Out_channel.stdout "miss!!" ;
-          Out_channel.newline Out_channel.stdout ;
-          acc ) )
+        else acc )
       trunk_similarity_map graph
 end
