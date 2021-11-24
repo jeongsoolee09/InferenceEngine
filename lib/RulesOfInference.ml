@@ -91,6 +91,39 @@ end
 module PropagationRules = struct
   type t = ProbMap.t -> Response.t -> Response.t list -> G.t -> ProbMap.t
 
+  let is_internal_udf_vertex vertex graph =
+    let data_flows_in = Int.( >= ) (List.length @@ G.df_preds vertex graph) 1
+    and data_flows_out = Int.( >= ) (List.length @@ G.df_succs vertex graph) 1
+    and is_udf =
+      let meth = fst vertex in
+      let all_udfs = Deserializer.deserialize_method_txt () in
+      List.mem ~equal:String.equal all_udfs meth
+    in
+    data_flows_in && data_flows_out && is_udf
+
+
+  let internal_udf_vertex_is_none : t =
+   fun (distmap : ProbMap.t) (new_fact : Response.t) (prev_facts : Response.t list) (graph : G.t) :
+       ProbMap.t ->
+    let this_method = Response.get_method new_fact in
+    let this_method_vertices = G.this_method_vertices graph this_method in
+    let this_method_trunks = this_method_vertices >>= find_trunks_containing_vertex graph in
+    List.fold
+      ~f:(fun big_acc trunk ->
+        List.fold
+          ~f:(fun smol_acc trunk_vertex ->
+            let succ_dist = ProbMap.find trunk_vertex distmap in
+            let new_dist =
+              { ProbQuadruple.src= succ_dist.src -. 0.1
+              ; ProbQuadruple.sin= succ_dist.sin -. 0.1
+              ; ProbQuadruple.san= succ_dist.san -. 0.1
+              ; ProbQuadruple.non= succ_dist.non +. 0.3 }
+            in
+            ProbMap.strong_update trunk_vertex new_dist smol_acc )
+          ~init:big_acc trunk )
+      ~init:distmap this_method_trunks
+
+
   (** propagating to contextually similar vertices: requires that the new_fact's method have
       successors with contextual similarity edge *)
   let contextual_similarity_rule : t =
