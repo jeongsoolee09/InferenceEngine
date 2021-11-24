@@ -498,12 +498,26 @@ module TestContextualSimEdge = struct
     List.fold
       ~f:(fun smol_acc (v1, v2) -> G.add_edge_e smol_acc (v1, EdgeLabel.ContextualSimilarity, v2))
       ~init:graph smart_pairedup
-
-  (*  *)
 end
 
 module TestInitGraph = struct
   let json = Deserializer.deserialize_json ()
 
   let graph = GraphMaker.init_graph json
+end
+
+module TestLoop = struct
+  (* now it should run smoothly... *)
+
+  let json = Deserializer.deserialize_json ()
+
+  let graph = GraphMaker.init_graph json
+
+  let initial_distmap = make_map_for_graph graph
+
+  let received_responses = []
+
+  let nodewise_featuremap = NodeWiseFeatures.init_feature_map graph
+
+  let test () = loop initial_distmap received_responses graph nodewise_featuremap 1
 end
