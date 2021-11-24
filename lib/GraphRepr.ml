@@ -55,6 +55,17 @@ module G = struct
 
   let pp_edge (v1, v2) = F.asprintf "\"(%s, %s)\"" (vertex_name v1) (vertex_name v2)
 
+  module Trunk = struct
+    type t = V.t list [@@deriving compare, equal]
+
+    let pp (trunk : t) : unit =
+      print_endline "[" ;
+      List.iter ~f:(fun vertex -> print_endline @@ Vertex.to_string vertex ^ ", ") trunk ;
+      print_endline "]"
+  end
+
+  type trunk = Trunk.t
+
   let collect_roots (graph : t) : V.t list =
     fold_vertex
       (fun vertex acc -> if Int.( = ) (in_degree graph vertex) 0 then vertex :: acc else acc)
@@ -75,6 +86,27 @@ module G = struct
     fold_edges_e
       (fun ((_, label, v2) as edge) acc -> if V.equal vertex v2 then edge :: acc else acc)
       graph []
+
+
+  let df_preds (vertex : V.t) (graph : t) =
+    fold_edges_e List.cons graph []
+    |> List.filter ~f:(fun (_, label, v2) ->
+           Vertex.equal vertex v2 && EdgeLabel.equal label EdgeLabel.DataFlow )
+    >>| fst3
+
+
+  let ns_preds (vertex : V.t) (graph : t) =
+    fold_edges_e List.cons graph []
+    |> List.filter ~f:(fun (_, label, v2) ->
+           Vertex.equal vertex v2 && EdgeLabel.equal label EdgeLabel.NodeWiseSimilarity )
+    >>| fst3
+
+
+  let cs_preds (vertex : V.t) (graph : t) =
+    fold_edges_e List.cons graph []
+    |> List.filter ~f:(fun (_, label, v2) ->
+           Vertex.equal vertex v2 && EdgeLabel.equal label EdgeLabel.ContextualSimilarity )
+    >>| fst3
 
 
   let df_succs (vertex : V.t) (graph : t) =
@@ -294,6 +326,12 @@ module G = struct
         in
         let vertex_is_cs_leaf = Int.equal cs_out_degree_of_vertex 0 in
         if vertex_is_cs_leaf then vertex :: vertex_acc else vertex_acc )
+      graph []
+
+
+  let this_method_vertices (graph : t) (method_ : string) : V.t list =
+    fold_vertex
+      (fun vertex acc -> if String.equal method_ (fst vertex) then vertex :: acc else acc)
       graph []
 
 
@@ -606,3 +644,20 @@ module EdgeMaker = struct
     >>| ChainSliceManager.chain_slice_list_of_wrapped_chain >>| ChainRefiners.delete_inner_deads
     >>= edge_list_of_chain_slice_list
 end
+
+let identify_trunks (graph : G.t) : G.Trunk.t list =
+  let roots = G.collect_roots graph in
+  let leaves = G.collect_leaves graph in
+  let carpro = roots >>= fun root -> leaves >>= fun leaf -> return (root, leaf) in
+  (* not all leaves are reachable from all roots. So we filter out unreachable (root, leaf) pairs. *)
+  let reachable_root_and_leaf_pairs =
+    List.filter ~f:(fun (root, leaf) -> PathUtils.is_reachable root leaf graph) carpro
+  in
+  (* now, find the path between the root and the leaf. *)
+  reachable_root_and_leaf_pairs
+  >>= fun (root, leaf) -> PathUtils.find_path_from_source_to_dest graph root leaf
+
+
+let find_trunks_containing_vertex graph vertex =
+  let all_trunks = identify_trunks graph in
+  List.filter ~f:(fun trunk -> List.mem ~equal:Vertex.equal trunk vertex) all_trunks

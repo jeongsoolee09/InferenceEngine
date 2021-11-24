@@ -1,34 +1,8 @@
 open GraphRepr
+open InfixOperators
+open ListMonad
 
-let ( >>= ) = List.( >>= )
-
-and ( >>| ) = List.( >>| )
-
-and return = List.return
-
-module Trunk = struct
-  type t = G.V.t list [@@deriving compare, equal]
-
-  let pp (trunk : t) : unit =
-    print_endline "[" ;
-    List.iter ~f:(fun vertex -> print_endline @@ Vertex.to_string vertex ^ ", ") trunk ;
-    print_endline "]"
-end
-
-type trunk = Trunk.t
-
-let identify_trunks (graph : G.t) : trunk list =
-  let roots = G.collect_roots graph in
-  let leaves = G.collect_leaves graph in
-  let carpro = roots >>= fun root -> leaves >>= fun leaf -> return (root, leaf) in
-  (* not all leaves are reachable from all roots. So we filter out unreachable (root, leaf) pairs. *)
-  let reachable_root_and_leaf_pairs =
-    List.filter ~f:(fun (root, leaf) -> PathUtils.is_reachable root leaf graph) carpro
-  in
-  (* now, find the path between the root and the leaf. *)
-  reachable_root_and_leaf_pairs
-  >>= fun (root, leaf) -> PathUtils.find_path_from_source_to_dest graph root leaf
-
+type trunk = G.Trunk.t
 
 (** Do the two trunks share the same callee? **)
 let same_callee_in_trunk_count ((trunk1, trunk2) : trunk * trunk) : int =

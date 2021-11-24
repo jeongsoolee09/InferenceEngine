@@ -30,7 +30,7 @@ end
 
 module TrunkSimilarityMap = struct
   module TrunkPair = struct
-    type t = Trunk.t * Trunk.t [@@deriving compare, equal]
+    type t = G.Trunk.t * G.Trunk.t [@@deriving compare, equal]
   end
 
   module WithTrunkPairDomain = Caml.Map.Make (TrunkPair)
@@ -42,7 +42,7 @@ module TrunkSimilarityMap = struct
     let trunk_pairs =
       let* trunk1 = all_trunks in
       let* trunk2 = all_trunks in
-      if not @@ Trunk.equal trunk1 trunk2 then return (trunk1, trunk2) else []
+      if not @@ G.Trunk.equal trunk1 trunk2 then return (trunk1, trunk2) else []
     in
     List.fold
       ~f:(fun acc pair -> WithTrunkPairDomain.add pair 0 acc)
@@ -252,7 +252,7 @@ module SimilarVertexPairExtractor = struct
       let trunk_carpro =
         let* trunk1 = all_trunks in
         let* trunk2 = all_trunks in
-        if not @@ Trunk.equal trunk1 trunk2 then return (trunk1, trunk2) else []
+        if not @@ G.Trunk.equal trunk1 trunk2 then return (trunk1, trunk2) else []
       in
       let initial_map = ContextualSimilarityMap.init all_methods in
       (* now, we need to translate the trunk similarity into method similarity
@@ -307,7 +307,7 @@ module EstablishSimEdges = struct
   let make_contextual_sim_edge (graph : G.t) : G.t =
     (* we use smart_pairup here, to translate method simliarity to vertex similarity. *)
     let open SimilarVertexPairExtractor in
-    let all_trunks = ContextualFeatures.identify_trunks graph in
+    let all_trunks = identify_trunks graph in
     let trunk_similarity_map = TrunkPairExtractor.update_trunk_similarity_map all_trunks in
     TrunkSimilarityMap.fold
       (fun ((trunk1, trunk2) as trunk_pair) similarity acc ->
