@@ -41,7 +41,15 @@ module G = struct
 
   let default_edge_attributes _ = []
 
-  let edge_attributes _ = []
+  let edge_attributes (_, label, _) =
+    match label with
+    | EdgeLabel.DataFlow ->
+        [`Label "DF"; `Color 1]
+    | EdgeLabel.NodeWiseSimilarity ->
+        [`Label "NS"; `Color 2]
+    | EdgeLabel.ContextualSimilarity ->
+        [`Label "CS"; `Color 3]
+
 
   let pp_vertex = vertex_name
 
