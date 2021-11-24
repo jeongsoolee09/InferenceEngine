@@ -26,7 +26,11 @@ let rec loop (current_distmap : ProbMap.t) (received_responses : Response.t list
   if Saturation.distmap_is_saturated current_distmap then current_distmap
   else
     (* find the most appropriate Asking Rule. *)
-    let question_maker = MetaRules.ForAsking.asking_rules_selector graph in
+    let question_maker =
+      (* MetaRules.ForAsking.asking_rules_selector graph received_responses nodewise_featuremap *)
+      (* TEMP Hardcoded *)
+      AskingRules.ask_if_leaf_is_sink
+    in
     let question = question_maker graph received_responses nodewise_featuremap in
     let prompt = Question.make_prompt question in
     Out_channel.output_string Out_channel.stdout prompt ;
@@ -44,7 +48,8 @@ let rec loop (current_distmap : ProbMap.t) (received_responses : Response.t list
     in
     (* sort applicable Propagation Rules by adequacy. *)
     let propagation_rules_to_apply =
-      MetaRules.ForPropagation.sort_propagation_rules_by_priority graph
+      MetaRules.ForPropagation.sort_propagation_rules_by_priority current_distmap response
+        received_responses graph
     in
     let propagated =
       List.fold

@@ -248,8 +248,9 @@ module AskingRules = struct
     (* TODO: consider featuremaps *)
     let all_leaves = G.collect_leaves graph in
     let random_leaf =
-      let random_index = Random.int_incl 0 (List.length all_leaves - 1) in
-      List.nth_exn all_leaves random_index
+      (* Utils.random_select_elem all_leaves *)
+      (* TEMP Hardcoded *)
+      ("void PrintStream.println(String)", "{ line 43 }")
     in
     (* Question.AskingForConfirmation (fst random_leaf, TaintLabel.Sink) *)
     Question.AskingForLabel (fst random_leaf)
@@ -290,8 +291,7 @@ module MetaRules = struct
   (** the priority of propagation rules represent their application order. the smallest number
       represents the highest priority. *)
   module ForPropagation = struct
-    let take_subset_of_applicable_propagation_rules vertex prop_rules probmap new_fact responses
-        graph =
+    let take_subset_of_applicable_propagation_rules probmap new_fact response graph prop_rules =
       (* rule R is applicable to vertex V iff (def) V has successor with labeled edge required by rule R
                                           iff (def) the embedded assertion succeeds *)
       List.rev
@@ -299,8 +299,8 @@ module MetaRules = struct
            ~f:(fun acc prop_rule ->
              try
                (* try applying a prop_rule *)
-               let _ = prop_rule probmap new_fact responses graph in
-               prop_rules :: acc
+               let _ = prop_rule probmap new_fact response graph in
+               prop_rule :: acc
              with Assert_failure _ -> acc )
            ~init:[] prop_rules
 
@@ -311,9 +311,13 @@ module MetaRules = struct
       List.map ~f:(fun rule -> (rule, 1)) prop_rules
 
 
-    let sort_propagation_rules_by_priority (graph : G.t) : PropagationRules.t list =
+    let sort_propagation_rules_by_priority probmap new_fact response graph : PropagationRules.t list
+        =
       let priority_assigned =
-        assign_priority_on_propagation_rules PropagationRules.all_rules graph
+        assign_priority_on_propagation_rules
+          (take_subset_of_applicable_propagation_rules probmap new_fact response graph
+             PropagationRules.all_rules )
+          graph
       in
       List.map ~f:fst
       @@ List.sort
@@ -323,14 +327,15 @@ module MetaRules = struct
 
   (** the priority of asking rules represent their current adequacy of application. *)
   module ForAsking = struct
-    let take_subset_of_applicable_asking_rules asking_rules =
+    let take_subset_of_applicable_asking_rules graph responses nfeaturemap asking_rules =
       (* rule R is applicable to vertex V iff (def) V has successor with labeled edge required by rule R
                                           iff (def) the embedded assertion succeeds *)
       List.rev
       @@ List.fold
            ~f:(fun acc asking_rule ->
-             try (* let _ = asking_rule probmap new_fact responses graph in *)
-                 asking_rules :: acc
+             try
+               let _ = asking_rule graph responses nfeaturemap in
+               asking_rule :: acc
              with Assert_failure _ -> acc )
            ~init:[] asking_rules
 
@@ -342,8 +347,12 @@ module MetaRules = struct
 
 
     (** choose the most applicable asking rule. *)
-    let asking_rules_selector (graph : G.t) : AskingRules.t =
-      let priority_assigned = assign_priority_on_asking_rules AskingRules.all_rules graph in
+    let asking_rules_selector (graph : G.t) responses nfeaturemap : AskingRules.t =
+      let priority_assigned =
+        assign_priority_on_asking_rules
+          (take_subset_of_applicable_asking_rules graph responses nfeaturemap AskingRules.all_rules)
+          graph
+      in
       (* sort the asking rules by the priority, and get the first one. *)
       fst @@ List.hd_exn
       @@ List.sort
