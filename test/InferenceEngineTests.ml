@@ -28,7 +28,7 @@ module GraphTest = struct
 
   let test () =
     let trunks = identify_trunks sample_graph in
-    List.iter ~f:(fun trunk -> Trunk.pp trunk) trunks
+    List.iter ~f:(fun trunk -> G.Trunk.pp trunk) trunks
 end
 
 module GraphMakerTest = struct
@@ -391,7 +391,7 @@ module TestContextualSimEdge = struct
 
   open SimilarVertexPairExtractor
 
-  let all_trunks = ContextualFeatures.identify_trunks graph
+  let all_trunks = identify_trunks graph
 
   let trunk_similarity_map = TrunkPairExtractor.update_trunk_similarity_map all_trunks
 
@@ -429,7 +429,7 @@ module TestContextualSimEdge = struct
     let initial_map = TrunkSimilarityMap.init all_trunks in
     TrunkSimilarityMap.fold
       (fun ((t1, t2) as pair) _ acc ->
-        assert (not @@ Trunk.equal t1 t2) ;
+        assert (not @@ G.Trunk.equal t1 t2) ;
         let trunk_similarity = TrunkPairExtractor.get_trunk_similarity pair in
         TrunkSimilarityMap.remove pair acc |> TrunkSimilarityMap.add pair trunk_similarity )
       initial_map initial_map
@@ -506,7 +506,7 @@ module TestInitGraph = struct
   let graph = GraphMaker.init_graph json
 end
 
-module TestLoop = struct
+module TestLoop2 = struct
   (* now it should run smoothly... *)
 
   let json = Deserializer.deserialize_json ()
@@ -520,4 +520,10 @@ module TestLoop = struct
   let nodewise_featuremap = NodeWiseFeatures.init_feature_map graph
 
   let test () = loop initial_distmap received_responses graph nodewise_featuremap 1
+
+  (* uh..why annotation rule..?? *)
+
+  (* how does it pick propagation rules? *)
+
+
 end

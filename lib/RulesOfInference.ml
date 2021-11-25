@@ -263,7 +263,8 @@ module PropagationRules = struct
       method have successors with nodewise simlarity edge bearing the same @annotation *)
   let annotation_rule : t =
    fun (distmap : ProbMap.t) (new_fact : Response.t) (prev_facts : Response.t list) (graph : G.t) ->
-    (* assert that there is at least one successor with the same annotation. *)
+   (* assert that there is at least one successor with the same annotation. *)
+
     raise TODO
 
 
