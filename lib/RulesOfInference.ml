@@ -261,14 +261,14 @@ module PropagationRules = struct
 
   (** Propagate the same info to nodes with the same @annotations: requires that the new_fact's
       method have successors with nodewise simlarity edge bearing the same @annotation *)
-  let annotation_rule : t =
-   fun (distmap : ProbMap.t) (new_fact : Response.t) (prev_facts : Response.t list) (graph : G.t) ->
-   (* assert that there is at least one successor with the same annotation. *)
 
-    raise TODO
+  (* let annotation_rule : t = *)
+  (*  fun (distmap : ProbMap.t) (new_fact : Response.t) (prev_facts : Response.t list) (graph : G.t) -> *)
+  (*   (\* assert that there is at least one successor with the same annotation. *\) *)
+  (*   raise TODO *)
 
-
-  let all_rules = [contextual_similarity_rule; nodewise_similarity_propagation_rule; annotation_rule]
+  let all_rules =
+    [contextual_similarity_rule; nodewise_similarity_propagation_rule (* ; annotation_rule *)]
 end
 
 (* Use Random.int_incl for making a random integer. *)
@@ -342,6 +342,7 @@ module MetaRules = struct
     (** main logic of this submodule. *)
     let assign_priority_on_propagation_rules prop_rules (graph : G.t) =
       (* TEMP *)
+      let _ = assert false in
       List.map ~f:(fun rule -> (rule, 1)) prop_rules
 
 
