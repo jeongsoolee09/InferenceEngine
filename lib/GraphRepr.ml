@@ -82,6 +82,28 @@ module G = struct
 
   let is_leaf (vertex : V.t) (graph : t) : bool = Int.equal (out_degree graph vertex) 0
 
+
+  let any_label_preds (vertex: V.t) (graph: t) =
+    fold_edges (fun v1 v2 acc ->
+        if Vertex.equal v2 vertex then v1::acc else acc
+      ) graph []
+
+
+  let any_label_succs (vertex: V.t) (graph: t) =
+    fold_edges (fun v1 v2 acc ->
+        if Vertex.equal v1 vertex then v2::acc else acc
+      ) graph []
+
+
+  let is_pointing_to_each_other (v1: V.t) (v2: V.t) (graph: t) : bool =
+    let v2_is_v1's_succ =
+      List.mem ~equal:Vertex.equal (any_label_succs v1 graph)  v2
+    and v1_is_v2's_succ =
+      List.mem ~equal:Vertex.equal (any_label_succs v2 graph) v1
+    in
+    v2_is_v1's_succ && v1_is_v2's_succ
+
+
   let find_in_edges (vertex : V.t) (graph : t) : E.t list =
     fold_edges_e
       (fun ((_, label, v2) as edge) acc -> if V.equal vertex v2 then edge :: acc else acc)
