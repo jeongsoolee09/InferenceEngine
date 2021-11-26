@@ -519,11 +519,7 @@ module TestLoop2 = struct
 
   let nodewise_featuremap = NodeWiseFeatures.init_feature_map graph
 
-  let test () = loop initial_distmap received_responses graph nodewise_featuremap 1
-
-  (* uh..why annotation rule..?? *)
-
-  (* how does it pick propagation rules? *)
-
-
+  let test () =
+    loop initial_distmap received_responses graph nodewise_featuremap 1
 end
+
