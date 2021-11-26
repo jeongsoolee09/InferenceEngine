@@ -62,7 +62,7 @@ let rec loop (current_distmap : ProbMap.t) (received_responses : Response.t list
 module Visualizer = struct
   (** (1) output a dot file of this snapshot, (2) render a svg off the dot file, and (3) show the
       svg file. *)
-  let visualize (snapshot : G.t) : unit =
+  let visualize_at_the_face (snapshot : G.t) : unit =
     let open MakeGraph.GraphMaker in
     let now_timestring = make_now_string () in
     graph_to_dot snapshot ~filename:(F.asprintf "%s.dot" now_timestring) ;
