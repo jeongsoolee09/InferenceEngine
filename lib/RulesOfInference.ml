@@ -56,6 +56,11 @@ module Response = struct
         raise @@ Invalid_argument "this is not a response of a question asking for label"
 
 
+  let response_of_dist (method_ : string) (dist : ProbQuadruple.t) : t =
+    let label = ProbQuadruple.determine_label dist in
+    ForLabel (method_, label)
+
+
   let response_of_string_forlabel (method_ : string) (response_str : string) : t =
     match response_str with
     | "src" | "source" ->
@@ -89,7 +94,8 @@ end
 
 (** Rules for propagating facts *)
 module PropagationRules = struct
-  type t = ProbMap.t -> Response.t -> Response.t list -> G.t -> ProbMap.t
+  type t = ProbMap.t -> Response.t -> Response.t list -> G.t -> ProbMap.t * G.V.t list
+  (* the vertices here are the ones whose dists are affected. *)
 
   let is_internal_udf_vertex vertex graph =
     let data_flows_in = Int.( >= ) (List.length @@ G.df_preds vertex graph) 1
@@ -104,31 +110,34 @@ module PropagationRules = struct
 
   let internal_udf_vertex_is_none : t =
    fun (distmap : ProbMap.t) (new_fact : Response.t) (prev_facts : Response.t list) (graph : G.t) :
-       ProbMap.t ->
+       (ProbMap.t * G.V.t list) ->
     let this_method = Response.get_method new_fact in
     let this_method_vertices = G.this_method_vertices graph this_method in
     let this_method_trunks = this_method_vertices >>= find_trunks_containing_vertex graph in
-    List.fold
-      ~f:(fun big_acc trunk ->
-        List.fold
-          ~f:(fun smol_acc trunk_vertex ->
-            let succ_dist = ProbMap.find trunk_vertex distmap in
-            let new_dist =
-              { ProbQuadruple.src= succ_dist.src -. 0.1
-              ; ProbQuadruple.sin= succ_dist.sin -. 0.1
-              ; ProbQuadruple.san= succ_dist.san -. 0.1
-              ; ProbQuadruple.non= succ_dist.non +. 0.3 }
-            in
-            ProbMap.strong_update trunk_vertex new_dist smol_acc )
-          ~init:big_acc trunk )
-      ~init:distmap this_method_trunks
+    let distmap_propagated =
+      List.fold
+        ~f:(fun big_acc trunk ->
+          List.fold
+            ~f:(fun smol_acc trunk_vertex ->
+              let succ_dist = ProbMap.find trunk_vertex distmap in
+              let new_dist =
+                { ProbQuadruple.src= succ_dist.src -. 0.1
+                ; ProbQuadruple.sin= succ_dist.sin -. 0.1
+                ; ProbQuadruple.san= succ_dist.san -. 0.1
+                ; ProbQuadruple.non= succ_dist.non +. 0.3 }
+              in
+              ProbMap.strong_update trunk_vertex new_dist smol_acc )
+            ~init:big_acc trunk )
+        ~init:distmap this_method_trunks
+    in
+    (distmap_propagated, this_method_vertices)
 
 
   (** propagating to contextually similar vertices: requires that the new_fact's method have
       successors with contextual similarity edge *)
   let contextual_similarity_rule : t =
    fun (distmap : ProbMap.t) (new_fact : Response.t) (prev_facts : Response.t list) (graph : G.t) :
-       ProbMap.t ->
+       (ProbMap.t * G.V.t list) ->
     let new_fact_method = Response.get_method new_fact
     and new_fact_label = Response.get_label new_fact in
     let new_fact_method_vertices =
@@ -137,33 +146,36 @@ module PropagationRules = struct
     in
     let contextual_succs = new_fact_method_vertices >>= fun vertex -> G.cs_succs vertex graph in
     assert (Int.( >= ) (List.length contextual_succs) 1) ;
-    List.fold
-      ~f:(fun acc succ ->
-        let succ_dist = ProbMap.find succ distmap in
-        let new_dist =
-          match new_fact_label with
-          | Source ->
-              { ProbQuadruple.src= succ_dist.src +. 0.3
-              ; sin= succ_dist.sin -. 0.1
-              ; san= succ_dist.san -. 0.1
-              ; non= succ_dist.non -. 0.1 }
-          | Sink ->
-              { ProbQuadruple.src= succ_dist.src -. 0.1
-              ; sin= succ_dist.sin +. 0.3
-              ; san= succ_dist.san -. 0.1
-              ; non= succ_dist.non -. 0.1 }
-          | Sanitizer ->
-              { ProbQuadruple.src= succ_dist.src -. 0.1
-              ; sin= succ_dist.sin -. 0.1
-              ; san= succ_dist.san +. 0.3
-              ; non= succ_dist.non -. 0.1 }
-          | None ->
-              raise NotImplemented
-          | Indeterminate ->
-              failwith "Impossible"
-        in
-        ProbMap.strong_update succ new_dist acc )
-      contextual_succs ~init:distmap
+    let distmap_propagated =
+      List.fold
+        ~f:(fun acc succ ->
+          let succ_dist = ProbMap.find succ distmap in
+          let new_dist =
+            match new_fact_label with
+            | Source ->
+                { ProbQuadruple.src= succ_dist.src +. 0.3
+                ; sin= succ_dist.sin -. 0.1
+                ; san= succ_dist.san -. 0.1
+                ; non= succ_dist.non -. 0.1 }
+            | Sink ->
+                { ProbQuadruple.src= succ_dist.src -. 0.1
+                ; sin= succ_dist.sin +. 0.3
+                ; san= succ_dist.san -. 0.1
+                ; non= succ_dist.non -. 0.1 }
+            | Sanitizer ->
+                { ProbQuadruple.src= succ_dist.src -. 0.1
+                ; sin= succ_dist.sin -. 0.1
+                ; san= succ_dist.san +. 0.3
+                ; non= succ_dist.non -. 0.1 }
+            | None ->
+                raise NotImplemented
+            | Indeterminate ->
+                failwith "Impossible"
+          in
+          ProbMap.strong_update succ new_dist acc )
+        contextual_succs ~init:distmap
+    in
+    (distmap_propagated, contextual_succs)
 
 
   (** Propagate the same info to nodes that are similar nodewise: requires that the new_fact's
@@ -178,85 +190,88 @@ module PropagationRules = struct
     in
     let similarity_succs = new_fact_method_vertices >>= fun vertex -> G.ns_succs vertex graph in
     assert (Int.( >= ) (List.length similarity_succs) 1) ;
-    List.fold
-      ~f:(fun acc succ ->
-        let succ_dist = ProbMap.find succ distmap in
-        let new_dist =
-          match new_fact_label with
-          | Source ->
-              if G.is_root succ graph then
-                { ProbQuadruple.src= succ_dist.src +. 0.3
-                ; sin= succ_dist.sin -. 0.1
-                ; san= succ_dist.san -. 0.1
-                ; non= succ_dist.non -. 0.1 }
-              else if G.is_leaf succ graph then
-                { ProbQuadruple.src= succ_dist.src -. 0.1
-                ; sin= succ_dist.sin -. 0.1
-                ; san= succ_dist.san -. 0.1
-                ; non= succ_dist.non +. 0.3 }
-              else
-                (* bump the likelihood of the successor being a source *)
-                { ProbQuadruple.src= succ_dist.src +. 0.3
-                ; sin= succ_dist.sin -. 0.1
-                ; san= succ_dist.san -. 0.1
-                ; non= succ_dist.non -. 0.1 }
-          | Sink ->
-              if G.is_root succ graph then
-                { ProbQuadruple.src= succ_dist.src +. 0.3
-                ; sin= succ_dist.sin -. 0.1
-                ; san= succ_dist.san -. 0.1
-                ; non= succ_dist.non -. 0.1 }
-              else if G.is_leaf succ graph then
-                { ProbQuadruple.src= succ_dist.src -. 0.1
-                ; sin= succ_dist.sin -. 0.1
-                ; san= succ_dist.san -. 0.1
-                ; non= succ_dist.non +. 0.3 }
-              else
-                (* bump the likelihood of the successor being a source *)
-                { ProbQuadruple.src= succ_dist.src -. 0.1
-                ; sin= succ_dist.sin +. 0.3
-                ; san= succ_dist.san -. 0.1
-                ; non= succ_dist.non -. 0.1 }
-          | Sanitizer ->
-              if G.is_root succ graph then
-                { ProbQuadruple.src= succ_dist.src +. 0.3
-                ; sin= succ_dist.sin -. 0.1
-                ; san= succ_dist.san -. 0.1
-                ; non= succ_dist.non -. 0.1 }
-              else if G.is_leaf succ graph then
-                { ProbQuadruple.src= succ_dist.src -. 0.1
-                ; sin= succ_dist.sin -. 0.1
-                ; san= succ_dist.san -. 0.1
-                ; non= succ_dist.non +. 0.3 }
-              else
-                (* bump the likelihood of the successor being a source *)
-                { ProbQuadruple.src= succ_dist.src -. 0.1
-                ; sin= succ_dist.sin -. 0.1
-                ; san= succ_dist.san +. 0.3
-                ; non= succ_dist.non -. 0.1 }
-          | None ->
-              if G.is_root succ graph then
-                { ProbQuadruple.src= succ_dist.src +. 0.3
-                ; sin= succ_dist.sin -. 0.1
-                ; san= succ_dist.san -. 0.1
-                ; non= succ_dist.non -. 0.1 }
-              else if G.is_leaf succ graph then
-                { ProbQuadruple.src= succ_dist.src -. 0.1
-                ; sin= succ_dist.sin -. 0.1
-                ; san= succ_dist.san -. 0.1
-                ; non= succ_dist.non +. 0.3 }
-              else
-                (* bump the likelihood of the successor being a source *)
-                (* { ProbQuadruple.src= succ_dist.src -. 0.1 *)
-                (* ; sin= succ_dist.sin -. 0.1 *)
-                (* ; san= succ_dist.san -. 0.1 *)
-                (* ; non= succ_dist.non +. 0.3 } *)
-                raise NotImplemented
-          | Indeterminate ->
-              failwith "Impossible"
-        in
-        ProbMap.strong_update succ new_dist acc )
-      similarity_succs ~init:distmap
+    let distmap_propagated =
+      List.fold
+        ~f:(fun acc succ ->
+          let succ_dist = ProbMap.find succ distmap in
+          let new_dist =
+            match new_fact_label with
+            | Source ->
+                if G.is_root succ graph then
+                  { ProbQuadruple.src= succ_dist.src +. 0.3
+                  ; sin= succ_dist.sin -. 0.1
+                  ; san= succ_dist.san -. 0.1
+                  ; non= succ_dist.non -. 0.1 }
+                else if G.is_leaf succ graph then
+                  { ProbQuadruple.src= succ_dist.src -. 0.1
+                  ; sin= succ_dist.sin -. 0.1
+                  ; san= succ_dist.san -. 0.1
+                  ; non= succ_dist.non +. 0.3 }
+                else
+                  (* bump the likelihood of the successor being a source *)
+                  { ProbQuadruple.src= succ_dist.src +. 0.3
+                  ; sin= succ_dist.sin -. 0.1
+                  ; san= succ_dist.san -. 0.1
+                  ; non= succ_dist.non -. 0.1 }
+            | Sink ->
+                if G.is_root succ graph then
+                  { ProbQuadruple.src= succ_dist.src +. 0.3
+                  ; sin= succ_dist.sin -. 0.1
+                  ; san= succ_dist.san -. 0.1
+                  ; non= succ_dist.non -. 0.1 }
+                else if G.is_leaf succ graph then
+                  { ProbQuadruple.src= succ_dist.src -. 0.1
+                  ; sin= succ_dist.sin -. 0.1
+                  ; san= succ_dist.san -. 0.1
+                  ; non= succ_dist.non +. 0.3 }
+                else
+                  (* bump the likelihood of the successor being a source *)
+                  { ProbQuadruple.src= succ_dist.src -. 0.1
+                  ; sin= succ_dist.sin +. 0.3
+                  ; san= succ_dist.san -. 0.1
+                  ; non= succ_dist.non -. 0.1 }
+            | Sanitizer ->
+                if G.is_root succ graph then
+                  { ProbQuadruple.src= succ_dist.src +. 0.3
+                  ; sin= succ_dist.sin -. 0.1
+                  ; san= succ_dist.san -. 0.1
+                  ; non= succ_dist.non -. 0.1 }
+                else if G.is_leaf succ graph then
+                  { ProbQuadruple.src= succ_dist.src -. 0.1
+                  ; sin= succ_dist.sin -. 0.1
+                  ; san= succ_dist.san -. 0.1
+                  ; non= succ_dist.non +. 0.3 }
+                else
+                  (* bump the likelihood of the successor being a source *)
+                  { ProbQuadruple.src= succ_dist.src -. 0.1
+                  ; sin= succ_dist.sin -. 0.1
+                  ; san= succ_dist.san +. 0.3
+                  ; non= succ_dist.non -. 0.1 }
+            | None ->
+                if G.is_root succ graph then
+                  { ProbQuadruple.src= succ_dist.src +. 0.3
+                  ; sin= succ_dist.sin -. 0.1
+                  ; san= succ_dist.san -. 0.1
+                  ; non= succ_dist.non -. 0.1 }
+                else if G.is_leaf succ graph then
+                  { ProbQuadruple.src= succ_dist.src -. 0.1
+                  ; sin= succ_dist.sin -. 0.1
+                  ; san= succ_dist.san -. 0.1
+                  ; non= succ_dist.non +. 0.3 }
+                else
+                  (* bump the likelihood of the successor being a source *)
+                  (* { ProbQuadruple.src= succ_dist.src -. 0.1 *)
+                  (* ; sin= succ_dist.sin -. 0.1 *)
+                  (* ; san= succ_dist.san -. 0.1 *)
+                  (* ; non= succ_dist.non +. 0.3 } *)
+                  raise NotImplemented
+            | Indeterminate ->
+                failwith "Impossible"
+          in
+          ProbMap.strong_update succ new_dist acc )
+        similarity_succs ~init:distmap
+    in
+    (distmap_propagated, similarity_succs)
 
 
   (** Propagate the same info to nodes with the same @annotations: requires that the new_fact's
@@ -325,7 +340,9 @@ module MetaRules = struct
   (** the priority of propagation rules represent their application order. the smallest number
       represents the highest priority. *)
   module ForPropagation = struct
-    let take_subset_of_applicable_propagation_rules probmap new_fact response graph prop_rules =
+    let take_subset_of_applicable_propagation_rules (probmap : ProbMap.t) (new_fact : Response.t)
+        (prev_facts : Response.t list) (graph : G.t) (prop_rules : PropagationRules.t list) :
+        PropagationRules.t list =
       (* rule R is applicable to vertex V iff (def) V has successor with labeled edge required by rule R
                                           iff (def) the embedded assertion succeeds *)
       List.rev
@@ -333,7 +350,7 @@ module MetaRules = struct
            ~f:(fun acc prop_rule ->
              try
                (* try applying a prop_rule *)
-               let _ = prop_rule probmap new_fact response graph in
+               let _ = prop_rule probmap new_fact prev_facts graph in
                prop_rule :: acc
              with Assert_failure _ -> acc )
            ~init:[] prop_rules
@@ -395,3 +412,34 @@ module MetaRules = struct
            priority_assigned
   end
 end
+
+(** (1) receive a rule to propagate, (2) use that propagation rule, and (3) spawn itself to the
+    propagation targets. *)
+let rec propagator (new_fact : Response.t) (graph : G.t)
+    (rules_to_propagate : PropagationRules.t list) (prev_facts : Response.t list)
+    (prop_rule_pool : PropagationRules.t list) (distmap : ProbMap.t) : ProbMap.t =
+  if List.is_empty rules_to_propagate then distmap
+  else
+    (* if we can't propagate any further, terminate *)
+    let current_propagated_distmap, current_propagation_targets =
+      List.fold
+        ~f:(fun (distmap_acc, affected_vertices) (rule : PropagationRules.t) ->
+          let propagated_distmap, this_affected = rule distmap_acc new_fact prev_facts graph in
+          (propagated_distmap, affected_vertices @ this_affected) )
+        ~init:(distmap, []) rules_to_propagate
+    in
+    List.fold
+      ~f:(fun big_acc target ->
+        let applicable_rules =
+          MetaRules.ForPropagation.take_subset_of_applicable_propagation_rules distmap new_fact
+            prev_facts graph prop_rule_pool
+        in
+        List.fold
+          ~f:(fun smol_acc prop_rule ->
+            (* summarize this node's distribution into a Response.t! *)
+            let target_dist = ProbMap.find target current_propagated_distmap in
+            let target_rule_summary = Response.response_of_dist (fst target) target_dist in
+            propagator target_rule_summary graph applicable_rules (new_fact :: prev_facts)
+              prop_rule_pool smol_acc )
+          ~init:big_acc applicable_rules )
+      ~init:current_propagated_distmap current_propagation_targets
