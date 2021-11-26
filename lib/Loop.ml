@@ -21,6 +21,24 @@ module Saturation = struct
     ProbMap.for_all (fun _ quad -> dist_is_saturated quad) distmap
 end
 
+module Visualizer = struct
+  (** (1) output a dot file of this snapshot, (2) render a svg off the dot file, and (3) show the
+      svg file. *)
+  let visualize_at_the_face (snapshot : G.t) : unit =
+    let open MakeGraph.GraphMaker in
+    let now_timestring = make_now_string () in
+    graph_to_dot snapshot ~filename:(F.asprintf "%s.dot" now_timestring) ;
+    let dot_in_chan, dot_out_chan =
+      Unix.open_process (F.asprintf "dot -Tsvg -o %s.svg %s.dot" now_timestring now_timestring)
+    in
+    In_channel.close dot_in_chan ;
+    Out_channel.close dot_out_chan ;
+    Unix.sleep 3;
+    let open_in_chan, open_out_chan = Unix.open_process (F.asprintf "open %s.svg" now_timestring) in
+    In_channel.close open_in_chan ;
+    Out_channel.close open_out_chan
+end
+
 let rec loop (current_distmap : ProbMap.t) (received_responses : Response.t list) (graph : G.t)
     (nodewise_featuremap : FeatureMaps.NodeWiseFeatureMap.t) (count : int) : ProbMap.t =
   if Saturation.distmap_is_saturated current_distmap then current_distmap
@@ -53,25 +71,10 @@ let rec loop (current_distmap : ProbMap.t) (received_responses : Response.t list
     in
     let propagated =
       List.fold
-        ~f:(fun acc prop_rule -> fst @@ prop_rule acc response received_responses graph)
+        ~f:(fun acc prop_rule ->
+            propagator response graph propagation_rules_to_apply
+              received_responses PropagationRules.all_rules acc [])
         ~init:current_distmap propagation_rules_to_apply
     in
+    Visualizer.visualize_at_the_face graph;
     loop propagated (response :: received_responses) graph nodewise_featuremap (count + 1)
-
-
-module Visualizer = struct
-  (** (1) output a dot file of this snapshot, (2) render a svg off the dot file, and (3) show the
-      svg file. *)
-  let visualize_at_the_face (snapshot : G.t) : unit =
-    let open MakeGraph.GraphMaker in
-    let now_timestring = make_now_string () in
-    graph_to_dot snapshot ~filename:(F.asprintf "%s.dot" now_timestring) ;
-    let dot_in_chan, dot_out_chan =
-      Unix.open_process (F.asprintf "dot -Tsvg -o %s.svg %s.dot" now_timestring now_timestring)
-    in
-    In_channel.close dot_in_chan ;
-    Out_channel.close dot_out_chan ;
-    let open_in_chan, open_out_chan = Unix.open_process (F.asprintf "open %s.svg" now_timestring) in
-    In_channel.close open_in_chan ;
-    Out_channel.close open_out_chan
-end

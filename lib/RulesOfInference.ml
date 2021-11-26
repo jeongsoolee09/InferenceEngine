@@ -36,6 +36,14 @@ end
 module Response = struct
   type t = ForLabel of (string * TaintLabel.t) | ForYesOrNo of (string * TaintLabel.t * bool)
 
+  let to_string (response: t) : string =
+    match response with
+    | ForLabel (meth_, label) ->
+      F.asprintf "ForLabel (%s, %s)" meth_ (TaintLabel.to_string label)
+    | ForYesOrNo (meth_, label, bool) ->
+      F.asprintf "ForYesOrNo (%s, %s, %s)" meth_ (TaintLabel.to_string label) (Bool.to_string bool)
+
+
   let get_method (res : t) : string =
     match res with ForLabel (meth, _) -> meth | ForYesOrNo (meth, _, _) -> meth
 
@@ -111,6 +119,8 @@ module PropagationRules = struct
   let internal_udf_vertex_is_none : t =
    fun (distmap : ProbMap.t) (new_fact : Response.t) (prev_facts : Response.t list) (graph : G.t) :
        (ProbMap.t * G.V.t list) ->
+       Out_channel.output_string Out_channel.stdout "internal_udf_vertex_is_none chosen" ;
+       Out_channel.newline Out_channel.stdout;
     let this_method = Response.get_method new_fact in
     let this_method_vertices = G.this_method_vertices graph this_method in
     let this_method_trunks = this_method_vertices >>= find_trunks_containing_vertex graph in
@@ -138,6 +148,8 @@ module PropagationRules = struct
   let contextual_similarity_rule : t =
    fun (distmap : ProbMap.t) (new_fact : Response.t) (prev_facts : Response.t list) (graph : G.t) :
        (ProbMap.t * G.V.t list) ->
+       Out_channel.output_string Out_channel.stdout "contextual_similarity_rule chosen" ;
+       Out_channel.newline Out_channel.stdout;
     let new_fact_method = Response.get_method new_fact
     and new_fact_label = Response.get_label new_fact in
     let new_fact_method_vertices =
@@ -182,6 +194,8 @@ module PropagationRules = struct
       method have successors with nodewise simlarity edge *)
   let nodewise_similarity_propagation_rule : t =
    fun (distmap : ProbMap.t) (new_fact : Response.t) (prev_facts : Response.t list) (graph : G.t) ->
+   Out_channel.output_string Out_channel.stdout "nodewise_similarity_propagation_rule chosen" ;
+   Out_channel.newline Out_channel.stdout;
     let new_fact_method = Response.get_method new_fact
     and new_fact_label = Response.get_label new_fact in
     let new_fact_method_vertices =
@@ -358,8 +372,6 @@ module MetaRules = struct
 
     (** main logic of this submodule. *)
     let assign_priority_on_propagation_rules prop_rules (graph : G.t) =
-      (* TEMP *)
-      let _ = assert false in
       List.map ~f:(fun rule -> (rule, 1)) prop_rules
 
 
@@ -417,7 +429,10 @@ end
     propagation targets. *)
 let rec propagator (new_fact : Response.t) (graph : G.t)
     (rules_to_propagate : PropagationRules.t list) (prev_facts : Response.t list)
-    (prop_rule_pool : PropagationRules.t list) (distmap : ProbMap.t) : ProbMap.t =
+    (prop_rule_pool : PropagationRules.t list) (distmap : ProbMap.t)
+  (history: G.V.t list) : ProbMap.t =
+  Out_channel.output_string Out_channel.stdout (F.asprintf "propagator is called on %s" (Response.to_string new_fact)) ;
+  Out_channel.newline Out_channel.stdout;
   if List.is_empty rules_to_propagate then distmap
   else
     (* if we can't propagate any further, terminate *)
@@ -428,18 +443,20 @@ let rec propagator (new_fact : Response.t) (graph : G.t)
           (propagated_distmap, affected_vertices @ this_affected) )
         ~init:(distmap, []) rules_to_propagate
     in
+    let current_propagation_targets_no_again = List.filter ~f:(fun target ->
+        not @@ List.mem ~equal:Vertex.equal history target) current_propagation_targets in
     List.fold
       ~f:(fun big_acc target ->
-        let applicable_rules =
-          MetaRules.ForPropagation.take_subset_of_applicable_propagation_rules distmap new_fact
-            prev_facts graph prop_rule_pool
-        in
+          let target_dist = ProbMap.find target current_propagated_distmap in
+          (* summarize this node's distribution into a Response.t! *)
+          let target_rule_summary = Response.response_of_dist (fst target) target_dist in
+          let applicable_rules =
+            MetaRules.ForPropagation.take_subset_of_applicable_propagation_rules distmap target_rule_summary
+              prev_facts graph prop_rule_pool
+          in
         List.fold
           ~f:(fun smol_acc prop_rule ->
-            (* summarize this node's distribution into a Response.t! *)
-            let target_dist = ProbMap.find target current_propagated_distmap in
-            let target_rule_summary = Response.response_of_dist (fst target) target_dist in
-            propagator target_rule_summary graph applicable_rules (new_fact :: prev_facts)
-              prop_rule_pool smol_acc )
+              propagator target_rule_summary graph applicable_rules (new_fact :: prev_facts)
+                prop_rule_pool smol_acc (target::history) )
           ~init:big_acc applicable_rules )
-      ~init:current_propagated_distmap current_propagation_targets
+      ~init:current_propagated_distmap current_propagation_targets_no_again
