@@ -135,13 +135,7 @@ module G = struct
 
   let vertex_name (meth, locset) = F.asprintf "\"(%s, %s)\"" meth locset
 
-  exception TODO
-
-  let vertex_attributes (vertex : V.t) =
-    let distmap = raise TODO in
-    let vertex_dist = ProbMap.find vertex distmap in
-    if Saturation.dist_is_saturated vertex_dist then raise TODO else [`Shape `Box]
-
+  let vertex_attributes (vertex : V.t) = [`Shape `Box]
 
   let get_subgraph _ = None
 

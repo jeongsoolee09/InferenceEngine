@@ -1,5 +1,4 @@
 open GraphRepr
-open Probability
 open RulesOfInference
 open FeatureMaps
 
