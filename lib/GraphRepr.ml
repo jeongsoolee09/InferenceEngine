@@ -7,6 +7,72 @@ type json = Yojson.Basic.t
 module Set = Caml.Set
 module F = Format
 
+module TaintLabel = struct
+  type t = Source | Sink | Sanitizer | None | Indeterminate [@@deriving equal]
+
+  let to_string (label : t) : string =
+    match label with
+    | Source ->
+        "source"
+    | Sink ->
+        "sink"
+    | Sanitizer ->
+        "sanitizer"
+    | None ->
+        "none"
+    | Indeterminate ->
+        "indeterminate"
+end
+
+module ProbQuadruple = struct
+  type t = {src: float; sin: float; san: float; non: float}
+
+  let initial = {src= 0.25; sin= 0.25; san= 0.25; non= 0.25}
+
+  let check_sanity (dist : t) : unit =
+    let ( = ) = Float.( = ) and ( + ) = Float.( + ) in
+    assert (dist.src + dist.sin + dist.san + dist.non = float 1)
+
+
+  let winning_threshold = 0.1
+
+  let alist_of_dist (dist : t) : (string * float) list =
+    [("source", dist.src); ("sink", dist.sin); ("sanitizer", dist.san); ("none", dist.non)]
+
+
+  type label = TaintLabel.t
+
+  let label_of_string (str : string) : label =
+    match str with
+    | "source" ->
+        Source
+    | "sink" ->
+        Sink
+    | "sanitizer" ->
+        Sanitizer
+    | "none" ->
+        None
+    | "indeterminate" ->
+        Indeterminate
+    | otherwise ->
+        failwith ("invalid string: " ^ otherwise)
+
+
+  let to_string (quad : t) =
+    F.asprintf "{src= %f; sin= %f; san= %f; non= %f}" quad.src quad.sin quad.san quad.non
+
+
+  let determine_label (dist : t) : label =
+    let alist = alist_of_dist dist in
+    let sorted_decreasing =
+      List.rev @@ List.sort alist ~compare:(fun (_, v1) (_, v2) -> Float.compare v1 v2)
+    in
+    let label, v1 = List.nth_exn sorted_decreasing 0 in
+    let _, v2 = List.nth_exn sorted_decreasing 1 in
+    if Float.( >= ) (Float.( - ) v1 v2) winning_threshold then label_of_string label
+    else Indeterminate
+end
+
 module Vertex = struct
   type t = string * string [@@deriving compare, equal]
 
@@ -29,13 +95,53 @@ end
 module G = struct
   include Graph.Persistent.Digraph.ConcreteBidirectionalLabeled (Vertex) (EdgeLabel)
 
+  module ProbMap = struct
+    module VertexMap = Caml.Map.Make (Vertex)
+    include VertexMap
+
+    type t = ProbQuadruple.t VertexMap.t (* map from G.V.t to ProbQuadruple.t *)
+
+    let strong_update vertex new_ distmap = remove vertex distmap |> add vertex new_
+  end
+
+  module Saturation = struct
+    let saturated_parameter = 0.2 (* TEMP: subject to change *)
+
+    let dist_is_saturated (quad : ProbQuadruple.t) : bool =
+      let sorted = List.sort ~compare:Float.compare [quad.src; quad.sin; quad.san; quad.non] in
+      let first = List.nth_exn sorted 0 and second = List.nth_exn sorted 1 in
+      Float.( >= ) (first -. second) saturated_parameter
+
+
+    let distmap_is_saturated (distmap : ProbMap.t) : bool =
+      ProbMap.for_all (fun _ quad -> dist_is_saturated quad) distmap
+  end
+
+  (** make a map initialized with flat 0.25 distribution for every vertex. *)
+  let make_map_for_graph graph : ProbMap.t =
+    let all_vertices =
+      fold_vertex
+        (fun vertex acc -> if List.mem ~equal:Vertex.equal acc vertex then acc else vertex :: acc)
+        graph []
+    in
+    List.fold
+      ~f:(fun acc vertex -> ProbMap.add vertex ProbQuadruple.initial acc)
+      ~init:ProbMap.empty all_vertices
+
+
   let graph_attributes _ = []
 
   let default_vertex_attributes _ = []
 
   let vertex_name (meth, locset) = F.asprintf "\"(%s, %s)\"" meth locset
 
-  let vertex_attributes (_ : Vertex.t) = [`Shape `Box]
+  exception TODO
+
+  let vertex_attributes (vertex : V.t) =
+    let distmap = raise TODO in
+    let vertex_dist = ProbMap.find vertex distmap in
+    if Saturation.dist_is_saturated vertex_dist then raise TODO else [`Shape `Box]
+
 
   let get_subgraph _ = None
 
@@ -82,25 +188,17 @@ module G = struct
 
   let is_leaf (vertex : V.t) (graph : t) : bool = Int.equal (out_degree graph vertex) 0
 
-
-  let any_label_preds (vertex: V.t) (graph: t) =
-    fold_edges (fun v1 v2 acc ->
-        if Vertex.equal v2 vertex then v1::acc else acc
-      ) graph []
+  let any_label_preds (vertex : V.t) (graph : t) =
+    fold_edges (fun v1 v2 acc -> if Vertex.equal v2 vertex then v1 :: acc else acc) graph []
 
 
-  let any_label_succs (vertex: V.t) (graph: t) =
-    fold_edges (fun v1 v2 acc ->
-        if Vertex.equal v1 vertex then v2::acc else acc
-      ) graph []
+  let any_label_succs (vertex : V.t) (graph : t) =
+    fold_edges (fun v1 v2 acc -> if Vertex.equal v1 vertex then v2 :: acc else acc) graph []
 
 
-  let is_pointing_to_each_other (v1: V.t) (v2: V.t) (graph: t) : bool =
-    let v2_is_v1's_succ =
-      List.mem ~equal:Vertex.equal (any_label_succs v1 graph)  v2
-    and v1_is_v2's_succ =
-      List.mem ~equal:Vertex.equal (any_label_succs v2 graph) v1
-    in
+  let is_pointing_to_each_other (v1 : V.t) (v2 : V.t) (graph : t) : bool =
+    let v2_is_v1's_succ = List.mem ~equal:Vertex.equal (any_label_succs v1 graph) v2
+    and v1_is_v2's_succ = List.mem ~equal:Vertex.equal (any_label_succs v2 graph) v1 in
     v2_is_v1's_succ && v1_is_v2's_succ
 
 
@@ -683,3 +781,23 @@ let identify_trunks (graph : G.t) : G.Trunk.t list =
 let find_trunks_containing_vertex graph vertex =
   let all_trunks = identify_trunks graph in
   List.filter ~f:(fun trunk -> List.mem ~equal:Vertex.equal trunk vertex) all_trunks
+
+
+module Utils = struct
+  let df_succs (vertex : G.V.t) (graph : G.t) =
+    G.fold_edges_e List.cons graph []
+    |> List.filter ~f:(fun (_, label, _) -> EdgeLabel.equal label EdgeLabel.DataFlow)
+    >>| trd3
+
+
+  let ns_succs (vertex : G.V.t) (graph : G.t) =
+    G.fold_edges_e List.cons graph []
+    |> List.filter ~f:(fun (_, label, _) -> EdgeLabel.equal label EdgeLabel.NodeWiseSimilarity)
+    >>| trd3
+
+
+  let cs_succs (vertex : G.V.t) (graph : G.t) =
+    G.fold_edges_e List.cons graph []
+    |> List.filter ~f:(fun (_, label, _) -> EdgeLabel.equal label EdgeLabel.ContextualSimilarity)
+    >>| trd3
+end
