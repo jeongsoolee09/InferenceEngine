@@ -25,9 +25,9 @@ module Visualizer = struct
     Out_channel.close open_out_chan
 end
 
-let rec loop (current_distmap : G.ProbMap.t) (received_responses : Response.t list) (graph : G.t)
-    (nodewise_featuremap : FeatureMaps.NodeWiseFeatureMap.t) (count : int) : G.ProbMap.t =
-  if G.Saturation.distmap_is_saturated current_distmap then current_distmap
+let rec loop (current_snapshot : G.t) (received_responses : Response.t list)
+    (nodewise_featuremap : FeatureMaps.NodeWiseFeatureMap.t) (count : int) : G.t =
+  if G.Saturation.all_dists_in_graph_are_saturated current_snapshot then current_snapshot
   else
     (* find the most appropriate Asking Rule. *)
     let question_maker =
@@ -35,7 +35,7 @@ let rec loop (current_distmap : G.ProbMap.t) (received_responses : Response.t li
       (* TEMP Hardcoded *)
       AskingRules.ask_if_leaf_is_sink
     in
-    let question = question_maker graph received_responses nodewise_featuremap in
+    let question = question_maker current_snapshot received_responses nodewise_featuremap in
     let prompt = Question.make_prompt question in
     Out_channel.output_string Out_channel.stdout prompt ;
     Out_channel.flush Out_channel.stdout ;
@@ -52,15 +52,15 @@ let rec loop (current_distmap : G.ProbMap.t) (received_responses : Response.t li
     in
     (* sort applicable Propagation Rules by adequacy. *)
     let propagation_rules_to_apply =
-      MetaRules.ForPropagation.sort_propagation_rules_by_priority current_distmap response
-        received_responses graph
+      MetaRules.ForPropagation.sort_propagation_rules_by_priority current_snapshot response
+        received_responses
     in
     let propagated =
       List.fold
         ~f:(fun acc prop_rule ->
-          propagator response graph propagation_rules_to_apply received_responses
-            PropagationRules.all_rules acc [] )
-        ~init:current_distmap propagation_rules_to_apply
+          propagator response acc propagation_rules_to_apply received_responses
+            PropagationRules.all_rules [] )
+        ~init:current_snapshot propagation_rules_to_apply
     in
-    Visualizer.visualize_at_the_face graph ;
-    loop propagated (response :: received_responses) graph nodewise_featuremap (count + 1)
+    Visualizer.visualize_at_the_face current_snapshot ;
+    loop propagated (response :: received_responses) nodewise_featuremap (count + 1)

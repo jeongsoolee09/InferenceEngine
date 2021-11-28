@@ -370,11 +370,10 @@ module MetaRules = struct
       List.map ~f:(fun rule -> (rule, 1)) prop_rules
 
 
-    let sort_propagation_rules_by_priority probmap new_fact response graph : PropagationRules.t list
-        =
+    let sort_propagation_rules_by_priority graph new_fact responses : PropagationRules.t list =
       let priority_assigned =
         assign_priority_on_propagation_rules
-          (take_subset_of_applicable_propagation_rules graph new_fact response
+          (take_subset_of_applicable_propagation_rules graph new_fact responses
              PropagationRules.all_rules )
           graph
       in

@@ -118,8 +118,12 @@ module G = struct
       Float.( >= ) (first -. second) saturated_parameter
 
 
-    let distmap_is_saturated (distmap : ProbMap.t) : bool =
-      ProbMap.for_all (fun _ quad -> dist_is_saturated quad) distmap
+    let all_dists_in_graph_are_saturated (graph : t) : bool =
+      fold_vertex
+        (fun vertex acc ->
+          let dist = trd3 vertex in
+          dist_is_saturated dist && acc )
+        graph true
   end
 
   (** make a map initialized with flat 0.25 distribution for every vertex. *)
