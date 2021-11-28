@@ -137,15 +137,15 @@ module G = struct
     let label =
       match ProbQuadruple.determine_label dist with
       | Source ->
-          [`Color 1]
+          [`Fillcolor 0xf54260; `Style `Filled]
       | Sink ->
-          [`Color 2]
+          [`Fillcolor 0xf5e040; `Style `Filled]
       | Sanitizer ->
-          [`Color 3]
+          [`Fillcolor 0xf59140; `Style `Filled]
       | None ->
-          [`Color 4]
+          [`Fillcolor 0x58f540; `Style `Filled]
       | Indeterminate ->
-          []
+          [`Fillcolor 0xffffff; `Style `Filled]
     in
     shape @ label
 
