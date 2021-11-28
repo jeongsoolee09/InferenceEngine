@@ -25,7 +25,7 @@ module TaintLabel = struct
 end
 
 module ProbQuadruple = struct
-  type t = {src: float; sin: float; san: float; non: float}
+  type t = {src: float; sin: float; san: float; non: float} [@@deriving compare]
 
   let initial = {src= 0.25; sin= 0.25; san= 0.25; non= 0.25}
 
@@ -74,11 +74,16 @@ module ProbQuadruple = struct
 end
 
 module Vertex = struct
-  type t = string * string [@@deriving compare, equal]
+  type t = string * string * ProbQuadruple.t [@@deriving compare]
 
   let hash = Hashtbl.hash
 
-  let to_string ((procstring, locstring) : t) : string =
+  let equal ((meth1, locset1, _) : t) ((meth2, locset2, _) : t) : bool =
+    (* we ignore the quadruple in defining the identity: that's just an attribute *)
+    String.equal meth1 meth2 && String.equal locset1 locset2
+
+
+  let to_string ((procstring, locstring, _) : t) : string =
     F.asprintf "\"(\"%s\", \"%s\")\"" procstring locstring
 end
 
@@ -133,9 +138,25 @@ module G = struct
 
   let default_vertex_attributes _ = []
 
-  let vertex_name (meth, locset) = F.asprintf "\"(%s, %s)\"" meth locset
+  let vertex_name ((meth, locset, _) : V.t) : string = F.asprintf "\"(%s, %s)\"" meth locset
 
-  let vertex_attributes (vertex : V.t) = [`Shape `Box]
+  let vertex_attributes ((meth, locset, dist) : V.t) =
+    let shape = if Saturation.dist_is_saturated dist then [`Shape `Circle] else [`Shape `Box] in
+    let label =
+      match ProbQuadruple.determine_label dist with
+      | Source ->
+          [`Color 1]
+      | Sink ->
+          [`Color 2]
+      | Sanitizer ->
+          [`Color 3]
+      | None ->
+          [`Color 4]
+      | Indeterminate ->
+          []
+    in
+    shape @ label
+
 
   let get_subgraph _ = None
 
@@ -165,6 +186,13 @@ module G = struct
   end
 
   type trunk = Trunk.t
+
+  let strong_update_dist (target_vertex : V.t) (new_dist : ProbQuadruple.t) (graph : t) : t =
+    map_vertex
+      (fun ((meth, label, new_dist) as vertex) ->
+        if Vertex.equal vertex target_vertex then (meth, label, new_dist) else vertex )
+      graph
+
 
   let collect_roots (graph : t) : V.t list =
     fold_vertex
@@ -445,7 +473,7 @@ module G = struct
 
   let this_method_vertices (graph : t) (method_ : string) : V.t list =
     fold_vertex
-      (fun vertex acc -> if String.equal method_ (fst vertex) then vertex :: acc else acc)
+      (fun vertex acc -> if String.equal method_ (fst3 vertex) then vertex :: acc else acc)
       graph []
 
 
@@ -470,7 +498,7 @@ module G = struct
   let all_methods_of_graph (graph : t) : string list =
     let all_vertices = all_vertices_of_graph graph in
     let module StringSet = Caml.Set.Make (String) in
-    all_vertices >>| fst |> StringSet.of_list |> StringSet.elements
+    all_vertices >>| fst3 |> StringSet.of_list |> StringSet.elements
 end
 
 module PathUtils = struct
@@ -652,19 +680,19 @@ module VertexMaker = struct
   let vertex_of_chain_slice (chain_slice : ChainSlice.t) : G.V.t =
     match chain_slice with
     | DefineSlice (current, _, loc, _) ->
-        (current, loc)
+        (current, loc, ProbQuadruple.initial)
     | CallSlice (current, callee, loc, _) ->
-        (callee, loc)
+        (callee, loc, ProbQuadruple.initial)
     | VoidCallSlice (current, callee, loc, _) ->
-        (callee, loc)
+        (callee, loc, ProbQuadruple.initial)
     | RedefineSlice (current, loc, _) ->
-        (current, loc)
+        (current, loc, ProbQuadruple.initial)
     | DeadSlice current ->
-        (current, "")
+        (current, "", ProbQuadruple.initial)
     | DeadByCycleSlice current ->
-        (current, "")
+        (current, "", ProbQuadruple.initial)
     | Temp (current, loc) ->
-        (current, loc)
+        (current, loc, ProbQuadruple.initial)
 
 
   module VertexSet = Set.Make (Vertex)
@@ -744,7 +772,11 @@ module EdgeMaker = struct
     else chain_slices
 
 
-  let process_chainslices chainslices = chainslices |> process_head_define
+  let process_chainslices chainslices =
+    (* Are there any more processors needed? IDK *)
+    let processors = [process_head_define] in
+    List.fold ~f:(fun acc processor -> processor acc) ~init:chainslices processors
+
 
   let edge_list_of_chain_slice_list (chain_slices : ChainSlice.t list) : G.E.t list =
     let processed = process_chainslices chain_slices in

@@ -102,14 +102,13 @@ end
 
 (** Rules for propagating facts *)
 module PropagationRules = struct
-  type t = G.ProbMap.t -> Response.t -> Response.t list -> G.t -> G.ProbMap.t * G.V.t list
-  (* the vertices here are the ones whose dists are affected. *)
+  type t = G.t -> Response.t -> Response.t list -> G.t * Vertex.t list
 
   let is_internal_udf_vertex vertex graph =
     let data_flows_in = Int.( >= ) (List.length @@ G.df_preds vertex graph) 1
     and data_flows_out = Int.( >= ) (List.length @@ G.df_succs vertex graph) 1
     and is_udf =
-      let meth = fst vertex in
+      let meth = fst3 vertex in
       let all_udfs = Deserializer.deserialize_method_txt () in
       List.mem ~equal:String.equal all_udfs meth
     in
@@ -117,51 +116,47 @@ module PropagationRules = struct
 
 
   let internal_udf_vertex_is_none : t =
-   fun (distmap : G.ProbMap.t) (new_fact : Response.t) (prev_facts : Response.t list) (graph : G.t)
-       : (G.ProbMap.t * G.V.t list) ->
+   fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ->
     Out_channel.output_string Out_channel.stdout "internal_udf_vertex_is_none chosen" ;
     Out_channel.newline Out_channel.stdout ;
     let this_method = Response.get_method new_fact in
     let this_method_vertices = G.this_method_vertices graph this_method in
     let this_method_trunks = this_method_vertices >>= find_trunks_containing_vertex graph in
-    let distmap_propagated =
-      List.fold
-        ~f:(fun big_acc trunk ->
-          List.fold
-            ~f:(fun smol_acc trunk_vertex ->
-              let succ_dist = G.ProbMap.find trunk_vertex distmap in
-              let new_dist =
-                { ProbQuadruple.src= succ_dist.src -. 0.1
-                ; ProbQuadruple.sin= succ_dist.sin -. 0.1
-                ; ProbQuadruple.san= succ_dist.san -. 0.1
-                ; ProbQuadruple.non= succ_dist.non +. 0.3 }
-              in
-              G.ProbMap.strong_update trunk_vertex new_dist smol_acc )
-            ~init:big_acc trunk )
-        ~init:distmap this_method_trunks
-    in
-    (distmap_propagated, this_method_vertices)
+    List.fold
+      ~f:(fun big_acc trunk ->
+        List.fold
+          ~f:(fun (graph_acc, affected_vertices) trunk_vertex ->
+            let succ_dist = trd3 trunk_vertex in
+            let new_dist =
+              { ProbQuadruple.src= succ_dist.src -. 0.1
+              ; ProbQuadruple.sin= succ_dist.sin -. 0.1
+              ; ProbQuadruple.san= succ_dist.san -. 0.1
+              ; ProbQuadruple.non= succ_dist.non +. 0.3 }
+            in
+            (G.strong_update_dist trunk_vertex new_dist graph_acc, trunk_vertex :: affected_vertices)
+            )
+          ~init:big_acc trunk )
+      ~init:(graph, []) this_method_trunks
 
 
   (** propagating to contextually similar vertices: requires that the new_fact's method have
       successors with contextual similarity edge *)
   let contextual_similarity_rule : t =
-   fun (distmap : G.ProbMap.t) (new_fact : Response.t) (prev_facts : Response.t list) (graph : G.t)
-       : (G.ProbMap.t * G.V.t list) ->
+   fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ->
     Out_channel.output_string Out_channel.stdout "contextual_similarity_rule chosen" ;
     Out_channel.newline Out_channel.stdout ;
     let new_fact_method = Response.get_method new_fact
     and new_fact_label = Response.get_label new_fact in
     let new_fact_method_vertices =
       G.all_vertices_of_graph graph
-      |> List.filter ~f:(fun (meth, _) -> String.equal meth new_fact_method)
+      |> List.filter ~f:(fun (meth, _, _) -> String.equal meth new_fact_method)
     in
     let contextual_succs = new_fact_method_vertices >>= fun vertex -> G.cs_succs vertex graph in
     assert (Int.( >= ) (List.length contextual_succs) 1) ;
-    let distmap_propagated =
+    let propagated =
       List.fold
         ~f:(fun acc succ ->
-          let succ_dist = G.ProbMap.find succ distmap in
+          let succ_dist = trd3 succ in
           let new_dist =
             match new_fact_label with
             | Source ->
@@ -184,30 +179,30 @@ module PropagationRules = struct
             | Indeterminate ->
                 failwith "Impossible"
           in
-          G.ProbMap.strong_update succ new_dist acc )
-        contextual_succs ~init:distmap
+          G.strong_update_dist succ new_dist acc )
+        contextual_succs ~init:graph
     in
-    (distmap_propagated, contextual_succs)
+    (propagated, contextual_succs)
 
 
   (** Propagate the same info to nodes that are similar nodewise: requires that the new_fact's
       method have successors with nodewise simlarity edge *)
   let nodewise_similarity_propagation_rule : t =
-   fun (distmap : G.ProbMap.t) (new_fact : Response.t) (prev_facts : Response.t list) (graph : G.t) ->
+   fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ->
     Out_channel.output_string Out_channel.stdout "nodewise_similarity_propagation_rule chosen" ;
     Out_channel.newline Out_channel.stdout ;
     let new_fact_method = Response.get_method new_fact
     and new_fact_label = Response.get_label new_fact in
     let new_fact_method_vertices =
       G.all_vertices_of_graph graph
-      |> List.filter ~f:(fun (meth, _) -> String.equal meth new_fact_method)
+      |> List.filter ~f:(fun (meth, _, _) -> String.equal meth new_fact_method)
     in
     let similarity_succs = new_fact_method_vertices >>= fun vertex -> G.ns_succs vertex graph in
     assert (Int.( >= ) (List.length similarity_succs) 1) ;
-    let distmap_propagated =
+    let propagated =
       List.fold
         ~f:(fun acc succ ->
-          let succ_dist = G.ProbMap.find succ distmap in
+          let succ_dist = trd3 succ in
           let new_dist =
             match new_fact_label with
             | Source ->
@@ -282,10 +277,10 @@ module PropagationRules = struct
             | Indeterminate ->
                 failwith "Impossible"
           in
-          G.ProbMap.strong_update succ new_dist acc )
-        similarity_succs ~init:distmap
+          G.strong_update_dist succ new_dist acc )
+        similarity_succs ~init:graph
     in
-    (distmap_propagated, similarity_succs)
+    (propagated, similarity_succs)
 
 
   (** Propagate the same info to nodes with the same @annotations: requires that the new_fact's
@@ -313,10 +308,10 @@ module AskingRules = struct
     let random_leaf =
       (* Utils.random_select_elem all_leaves *)
       (* TEMP Hardcoded *)
-      ("void PrintStream.println(String)", "{ line 43 }")
+      ("void PrintStream.println(String)", "{ line 43 }", ProbQuadruple.initial)
     in
-    (* Question.AskingForConfirmation (fst random_leaf, TaintLabel.Sink) *)
-    Question.AskingForLabel (fst random_leaf)
+    (* Question.AskingForConfirmation (fst3 random_leaf, TaintLabel.Sink) *)
+    Question.AskingForLabel (fst3 random_leaf)
 
 
   let ask_if_root_is_source (graph : G.t) (received_responses : Response.t list)
@@ -327,8 +322,8 @@ module AskingRules = struct
       let random_index = Random.int_incl 0 (List.length all_roots - 1) in
       List.nth_exn all_roots random_index
     in
-    (* Question.AskingForConfirmation (fst random_root, TaintLabel.Source) *)
-    Question.AskingForLabel (fst random_root)
+    (* Question.AskingForConfirmation (fst3 random_root, TaintLabel.Source) *)
+    Question.AskingForLabel (fst3 random_root)
 
 
   (** ask a method from a foreign package of its label. *)
@@ -338,13 +333,13 @@ module AskingRules = struct
       G.fold_vertex
         (fun vertex acc ->
           let open NodeWiseFeatures in
-          if SingleFeature.bool_of_feature @@ SingleFeature.is_framework_code (fst vertex) then
+          if SingleFeature.bool_of_feature @@ SingleFeature.is_framework_code (fst3 vertex) then
             vertex :: acc
           else acc )
         graph []
     in
     let random_foreign_vertex = Utils.random_select_elem all_foreign_package_vertices in
-    Question.AskingForLabel (fst random_foreign_vertex)
+    Question.AskingForLabel (fst3 random_foreign_vertex)
 
 
   let all_rules = [ask_if_leaf_is_sink; ask_if_root_is_source; ask_foreign_package_label]
@@ -354,8 +349,8 @@ module MetaRules = struct
   (** the priority of propagation rules represent their application order. the smallest number
       represents the highest priority. *)
   module ForPropagation = struct
-    let take_subset_of_applicable_propagation_rules (probmap : G.ProbMap.t) (new_fact : Response.t)
-        (prev_facts : Response.t list) (graph : G.t) (prop_rules : PropagationRules.t list) :
+    let take_subset_of_applicable_propagation_rules (graph : G.t) (new_fact : Response.t)
+        (prev_facts : Response.t list) (prop_rules : PropagationRules.t list) :
         PropagationRules.t list =
       (* rule R is applicable to vertex V iff (def) V has successor with labeled edge required by rule R
                                           iff (def) the embedded assertion succeeds *)
@@ -364,7 +359,7 @@ module MetaRules = struct
            ~f:(fun acc prop_rule ->
              try
                (* try applying a prop_rule *)
-               let _ = prop_rule probmap new_fact prev_facts graph in
+               let _ = prop_rule graph new_fact prev_facts in
                prop_rule :: acc
              with Assert_failure _ -> acc )
            ~init:[] prop_rules
@@ -379,7 +374,7 @@ module MetaRules = struct
         =
       let priority_assigned =
         assign_priority_on_propagation_rules
-          (take_subset_of_applicable_propagation_rules probmap new_fact response graph
+          (take_subset_of_applicable_propagation_rules graph new_fact response
              PropagationRules.all_rules )
           graph
       in
@@ -429,20 +424,19 @@ end
     propagation targets. *)
 let rec propagator (new_fact : Response.t) (graph : G.t)
     (rules_to_propagate : PropagationRules.t list) (prev_facts : Response.t list)
-    (prop_rule_pool : PropagationRules.t list) (distmap : G.ProbMap.t) (history : G.V.t list) :
-    G.ProbMap.t =
+    (prop_rule_pool : PropagationRules.t list) (history : G.V.t list) : G.t =
   Out_channel.output_string Out_channel.stdout
     (F.asprintf "propagator is called on %s" (Response.to_string new_fact)) ;
   Out_channel.newline Out_channel.stdout ;
-  if List.is_empty rules_to_propagate then distmap
+  if List.is_empty rules_to_propagate then graph
   else
     (* if we can't propagate any further, terminate *)
     let current_propagated_distmap, current_propagation_targets =
       List.fold
         ~f:(fun (distmap_acc, affected_vertices) (rule : PropagationRules.t) ->
-          let propagated_distmap, this_affected = rule distmap_acc new_fact prev_facts graph in
+          let propagated_distmap, this_affected = rule graph new_fact prev_facts in
           (propagated_distmap, affected_vertices @ this_affected) )
-        ~init:(distmap, []) rules_to_propagate
+        ~init:(graph, []) rules_to_propagate
     in
     let current_propagation_targets_no_again =
       List.filter
@@ -451,16 +445,16 @@ let rec propagator (new_fact : Response.t) (graph : G.t)
     in
     List.fold
       ~f:(fun big_acc target ->
-        let target_dist = G.ProbMap.find target current_propagated_distmap in
+        let target_dist = trd3 target in
         (* summarize this node's distribution into a Response.t! *)
-        let target_rule_summary = Response.response_of_dist (fst target) target_dist in
+        let target_rule_summary = Response.response_of_dist (fst3 target) target_dist in
         let applicable_rules =
-          MetaRules.ForPropagation.take_subset_of_applicable_propagation_rules distmap
-            target_rule_summary prev_facts graph prop_rule_pool
+          MetaRules.ForPropagation.take_subset_of_applicable_propagation_rules graph
+            target_rule_summary prev_facts prop_rule_pool
         in
         List.fold
           ~f:(fun smol_acc prop_rule ->
-            propagator target_rule_summary graph applicable_rules (new_fact :: prev_facts)
-              prop_rule_pool smol_acc (target :: history) )
+            propagator target_rule_summary smol_acc applicable_rules (new_fact :: prev_facts)
+              prop_rule_pool (target :: history) )
           ~init:big_acc applicable_rules )
-      ~init:current_propagated_distmap current_propagation_targets_no_again
+      ~init:graph current_propagation_targets_no_again

@@ -20,7 +20,7 @@ module GraphMaker = struct
   let remove_bogus (graph : G.t) =
     let boguses =
       G.fold_vertex
-        (fun ((meth, _) as vertex) acc -> if String.is_empty meth then vertex :: acc else acc)
+        (fun ((meth, _, _) as vertex) acc -> if String.is_empty meth then vertex :: acc else acc)
         graph []
     in
     List.fold ~f:(fun acc bogus -> G.remove_vertex acc bogus) ~init:graph boguses
@@ -52,9 +52,10 @@ module GraphMaker = struct
   (* so sad... *)
   let hardcode_ns_edge (graph : G.t) : G.t =
     let hardcode_ns_edges =
-      [ ( ("int[] JdbcTemplate.batchUpdate(String,List)", "{ line 33 }")
+      [ ( ("int[] JdbcTemplate.batchUpdate(String,List)", "{ line 33 }", ProbQuadruple.initial)
         , EdgeLabel.NodeWiseSimilarity
-        , ("Map JdbcTemplate.queryForMap(String,Object[])", "{ line 37 }") ) ]
+        , ("Map JdbcTemplate.queryForMap(String,Object[])", "{ line 37 }", ProbQuadruple.initial) )
+      ]
     in
     List.fold
       ~f:(fun acc (v1, label, v2) ->
@@ -65,12 +66,12 @@ module GraphMaker = struct
   (* so sad... *)
   let hardcode_cs_edge (graph : G.t) : G.t =
     let hardcode_cs_edges =
-      [ ( ("String Scanner.nextLine()", "{ line 25 }")
+      [ ( ("String Scanner.nextLine()", "{ line 25 }", ProbQuadruple.initial)
         , EdgeLabel.ContextualSimilarity
-        , ("Map JdbcTemplate.queryForMap(String,Object[])", "{ line 37 }") )
-      ; ( ("int[] JdbcTemplate.batchUpdate(String,List)", "{ line 33 }")
+        , ("Map JdbcTemplate.queryForMap(String,Object[])", "{ line 37 }", ProbQuadruple.initial) )
+      ; ( ("int[] JdbcTemplate.batchUpdate(String,List)", "{ line 33 }", ProbQuadruple.initial)
         , EdgeLabel.ContextualSimilarity
-        , ("void PrintStream.println(String)", "{ line 43 }") ) ]
+        , ("void PrintStream.println(String)", "{ line 43 }", ProbQuadruple.initial) ) ]
     in
     List.fold
       ~f:(fun acc (v1, label, v2) ->

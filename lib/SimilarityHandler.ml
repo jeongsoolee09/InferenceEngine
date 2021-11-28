@@ -179,12 +179,12 @@ module SimilarVertexPairExtractor = struct
       let bidirectional_carpro =
         let* bidirectional1 = trunk1_bidirectional graph in
         let* bidirectional2 = trunk2_bidirectional graph in
-        return (fst bidirectional1, fst bidirectional2)
+        return (fst3 bidirectional1, fst3 bidirectional2)
       in
       match (trunk1_redefines, trunk2_redefines) with
       | [], [] | [], _ | _, [] ->
           (* there cannot be any redefine pairs: do nothing regarding redefines *)
-          [(fst trunk1_root, fst trunk2_root); (fst trunk1_leaf, fst trunk2_leaf)]
+          [(fst3 trunk1_root, fst3 trunk2_root); (fst3 trunk1_leaf, fst3 trunk2_leaf)]
           @ bidirectional_carpro
       | _, _ ->
           (* we can make redefine pairs: make a carpro of redefines *)
@@ -192,9 +192,9 @@ module SimilarVertexPairExtractor = struct
           let redefines_carpro =
             let* redefine1 = trunk1_redefines in
             let* redefine2 = trunk2_redefines in
-            return (fst redefine1, fst redefine2)
+            return (fst3 redefine1, fst3 redefine2)
           in
-          [(fst trunk1_root, fst trunk2_root); (fst trunk1_leaf, fst trunk2_leaf)]
+          [(fst3 trunk1_root, fst3 trunk2_root); (fst3 trunk1_leaf, fst3 trunk2_leaf)]
           @ bidirectional_carpro @ redefines_carpro
 
 
@@ -208,11 +208,11 @@ module SimilarVertexPairExtractor = struct
       in
       let trunk_a_processed =
         trunk_a
-        |> List.filter ~f:(fun vertex -> String.equal trunk_a_similar (fst vertex))
+        |> List.filter ~f:(fun vertex -> String.equal trunk_a_similar (fst3 vertex))
         |> List.stable_dedup |> with_list_index
       and trunk_b_processed =
         trunk_b
-        |> List.filter ~f:(fun vertex -> String.equal trunk_b_similar (fst vertex))
+        |> List.filter ~f:(fun vertex -> String.equal trunk_b_similar (fst3 vertex))
         |> List.stable_dedup |> with_list_index
       in
       if Int.( >= ) (List.length trunk_a) (List.length trunk_b) then
@@ -225,7 +225,7 @@ module SimilarVertexPairExtractor = struct
                 ~f:(fun ((current_min, _) as current_min_tuple) ((a_index, a_elem) as a_tuple) ->
                   let diff = Int.abs (Int.( - ) a_index b_index) in
                   if diff <= current_min then a_tuple else current_min_tuple )
-                ~init:(Int.max_value, ("", ""))
+                ~init:(Int.max_value, ("", "", ProbQuadruple.initial))
                 trunk_a_processed
             in
             (b_elem, snd a_elem_with_smallest_diff) :: acc )
@@ -240,7 +240,7 @@ module SimilarVertexPairExtractor = struct
                 ~f:(fun ((current_min, _) as current_min_tuple) ((b_index, b_elem) as b_tuple) ->
                   let diff = Int.abs (Int.( - ) b_index a_index) in
                   if diff <= current_min then b_tuple else current_min_tuple )
-                ~init:(Int.max_value, ("", ""))
+                ~init:(Int.max_value, ("", "", ProbQuadruple.initial))
                 trunk_b_processed
             in
             (a_elem, snd b_elem_with_smallest_diff) :: acc )
@@ -287,9 +287,9 @@ module EstablishSimEdges = struct
     NodeWiseSimilarityMap.fold
       (fun (method1, method2) _ acc ->
         let method1_vertices =
-          List.filter ~f:(fun (meth, _) -> String.equal meth method1) all_vertices
+          List.filter ~f:(fun (meth, _, _) -> String.equal meth method1) all_vertices
         and method2_vertices =
-          List.filter ~f:(fun (meth, _) -> String.equal meth method2) all_vertices
+          List.filter ~f:(fun (meth, _, _) -> String.equal meth method2) all_vertices
         in
         (* we'll use smart_pairup_vertices to ensure we don't connect two distant vertices. *)
         let smart_pairedup : (Vertex.t * Vertex.t) list =
