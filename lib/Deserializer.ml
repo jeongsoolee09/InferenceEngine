@@ -6,6 +6,7 @@ type json = Yojson.Basic.t
 
 module Json = Yojson.Basic
 
+exception TODO
 (* NOTE: this module will become useless when integrated, so keep it simple! *)
 
 let deserialize_config () =
@@ -33,3 +34,8 @@ let deserialize_skip_func () : string list =
   In_channel.read_lines (project_root ^ "skip_func.txt")
   |> List.filter ~f:(not << String.is_prefix ~prefix:"__")
   |> List.filter ~f:(not << String.is_empty)
+
+
+let deserialize_dot () =
+  (* let module ParseDot = Graph.Dot.Parse () *)
+  raise TODO

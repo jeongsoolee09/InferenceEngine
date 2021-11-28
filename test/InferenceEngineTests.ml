@@ -6,7 +6,6 @@ open InfixOperators
 open ContextualFeatures
 open MakeGraph
 open SimilarityHandler
-open Probability
 open Loop
 
 module GraphTest = struct
@@ -519,7 +518,5 @@ module TestLoop2 = struct
 
   let nodewise_featuremap = NodeWiseFeatures.init_feature_map graph
 
-  let test () =
-    loop initial_distmap received_responses graph nodewise_featuremap 1
+  let test () = loop initial_distmap received_responses graph nodewise_featuremap 1
 end
-
