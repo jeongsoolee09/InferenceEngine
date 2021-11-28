@@ -157,11 +157,11 @@ module G = struct
   let edge_attributes (_, label, _) =
     match label with
     | EdgeLabel.DataFlow ->
-        [`Label "DF"; `Color 1]
+        [`Label "DF"; `Color 0x000000]
     | EdgeLabel.NodeWiseSimilarity ->
-        [`Label "NS"; `Color 2]
+        [`Label "NS"; `Color 0xf54260]
     | EdgeLabel.ContextualSimilarity ->
-        [`Label "CS"; `Color 3]
+        [`Label "CS"; `Color 0x3480eb]
 
 
   let pp_vertex = vertex_name
