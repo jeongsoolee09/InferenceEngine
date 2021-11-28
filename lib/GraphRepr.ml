@@ -25,7 +25,7 @@ module TaintLabel = struct
 end
 
 module ProbQuadruple = struct
-  type t = {src: float; sin: float; san: float; non: float} [@@deriving compare]
+  type t = {src: float; sin: float; san: float; non: float} [@@deriving compare, equal]
 
   let initial = {src= 0.25; sin= 0.25; san= 0.25; non= 0.25}
 
@@ -125,6 +125,48 @@ module G = struct
           dist_is_saturated dist && acc )
         graph true
   end
+
+exception TODO
+
+let lookup_dist_for_meth_and_loc (meth: string) (loc: string) (graph: t) : ProbQuadruple.t =
+  let res_opt = fold_vertex (fun (target_meth, target_loc, dist) acc ->
+if String.equal meth target_meth && String.equal loc target_loc then Some dist else acc
+    ) graph None in
+  match res_opt with
+  | Some dist -> dist
+  | None -> failwithf "could not find dist for (\"%s\", \"%s\")" meth loc ()
+
+  let print_snapshot_diff_verbose prev_snapshot next_snapshot =
+    let all_pairs_without_dist = fold_vertex (fun (meth, loc, _) acc ->
+        (meth, loc)::acc
+      ) prev_snapshot [] in
+    let diff = List.fold ~f:(fun acc (meth, loc) ->
+        let prev_snapshot_dist = lookup_dist_for_meth_and_loc meth loc prev_snapshot
+        and next_snapshot_dist = lookup_dist_for_meth_and_loc meth loc next_snapshot in
+        if not @@ ProbQuadruple.equal prev_snapshot_dist next_snapshot_dist then
+          ((meth, loc), prev_snapshot_dist, next_snapshot_dist)::acc else acc
+      ) all_pairs_without_dist ~init:[] in
+    List.iter ~f:(fun ((meth, loc), prev_dist, next_dist) ->
+        Out_channel.output_string Out_channel.stdout @@ F.asprintf "Vertex (%s, %s) was updated from %s to %s" meth loc (ProbQuadruple.to_string prev_dist) (ProbQuadruple.to_string next_dist);
+        Out_channel.newline Out_channel.stdout ;
+        Out_channel.newline Out_channel.stdout
+      ) diff
+
+  let print_snapshot_diff prev_snapshot next_snapshot =
+    let all_pairs_without_dist = fold_vertex (fun (meth, loc, _) acc ->
+        (meth, loc)::acc
+      ) prev_snapshot [] in
+    let diff = List.fold ~f:(fun acc (meth, loc) ->
+        let prev_snapshot_label = ProbQuadruple.determine_label @@ lookup_dist_for_meth_and_loc meth loc prev_snapshot
+        and next_snapshot_label = ProbQuadruple.determine_label @@ lookup_dist_for_meth_and_loc meth loc next_snapshot in
+        if not @@ TaintLabel.equal prev_snapshot_label next_snapshot_label then
+          ((meth, loc), prev_snapshot_label, next_snapshot_label)::acc else acc
+      ) all_pairs_without_dist ~init:[] in
+    List.iter ~f:(fun ((meth, loc), prev_label, next_label) ->
+        Out_channel.output_string Out_channel.stdout @@ F.asprintf "Vertex (%s, %s) was updated from %s to %s" meth loc (TaintLabel.to_string prev_label) (TaintLabel.to_string next_label);
+        Out_channel.newline Out_channel.stdout ;
+        Out_channel.newline Out_channel.stdout
+      ) diff
 
   let graph_attributes _ = []
 
