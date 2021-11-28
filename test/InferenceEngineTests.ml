@@ -512,8 +512,6 @@ module TestLoop2 = struct
 
   let graph = GraphMaker.init_graph json
 
-  let initial_distmap = make_map_for_graph graph
-
   let received_responses = []
 
   let nodewise_featuremap = NodeWiseFeatures.init_feature_map graph

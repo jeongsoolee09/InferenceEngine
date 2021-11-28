@@ -126,18 +126,6 @@ module G = struct
         graph true
   end
 
-  (** make a map initialized with flat 0.25 distribution for every vertex. *)
-  let make_map_for_graph graph : ProbMap.t =
-    let all_vertices =
-      fold_vertex
-        (fun vertex acc -> if List.mem ~equal:Vertex.equal acc vertex then acc else vertex :: acc)
-        graph []
-    in
-    List.fold
-      ~f:(fun acc vertex -> ProbMap.add vertex ProbQuadruple.initial acc)
-      ~init:ProbMap.empty all_vertices
-
-
   let graph_attributes _ = []
 
   let default_vertex_attributes _ = []
