@@ -23,3 +23,21 @@ module Int = Core_kernel.Int;;
 module Float = Core_kernel.Float;;
 
 open InferenceEngineLib;;
+
+open GraphRepr;;
+open ListMonad;;
+open InfixOperators;;
+open ContextualFeatures;;
+open MakeGraph;;
+open SimilarityHandler;;
+open Loop;;
+
+let json = Deserializer.deserialize_json ();;
+
+let graph = GraphMaker.init_graph json;;
+
+let received_responses = [];;
+
+let nodewise_featuremap = NodeWiseFeatures.init_feature_map graph;;
+
+let test () = loop graph received_responses nodewise_featuremap 1;;
