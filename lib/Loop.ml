@@ -25,6 +25,75 @@ module Visualizer = struct
     Out_channel.close open_out_chan
 end
 
+(* since the same history should be global to all propagator calls, we should declare it as a ref *)
+
+let propagation_history = ref []
+
+let have_been_before vertex = List.mem ~equal:Vertex.equal !propagation_history vertex
+
+let have_been_before_method method_ =
+  List.fold
+    ~f:(fun acc vertex -> String.equal (fst3 vertex) method_ || acc)
+    ~init:false !propagation_history
+
+
+let add_to_history vertex = propagation_history := vertex :: !propagation_history
+
+let reset_history () = propagation_history := []
+
+let print_history () =
+  Out_channel.output_string Out_channel.stdout "current history: [" ;
+  List.iter
+    ~f:(fun vertex -> Out_channel.output_string Out_channel.stdout (Vertex.to_string vertex ^ "; "))
+    !propagation_history ;
+  Out_channel.output_string Out_channel.stdout "]" ;
+  Out_channel.newline Out_channel.stdout
+
+
+(** (1) receive a rule to propagate, (2) use that propagation rule, and (3) spawn itself to the
+    propagation targets. *)
+let rec propagator (new_fact : Response.t) (graph : G.t)
+    (rules_to_propagate : PropagationRules.t list) (prev_facts : Response.t list)
+    (prop_rule_pool : PropagationRules.t list) : G.t =
+  if List.is_empty rules_to_propagate then (* if we can't propagate any further, terminate *)
+    graph
+  else if have_been_before_method (Response.get_method new_fact) then graph
+  else (
+    Out_channel.output_string Out_channel.stdout "==============================" ;
+    Out_channel.newline Out_channel.stdout ;
+    Out_channel.output_string Out_channel.stdout
+      (F.asprintf "propagator is propagating on %s" (Response.to_string new_fact)) ;
+    Out_channel.newline Out_channel.stdout ;
+    let current_visiting_vertices = G.this_method_vertices graph (Response.get_method new_fact) in
+    print_history () ;
+    List.iter ~f:add_to_history current_visiting_vertices ;
+    let current_propagated_distmap, current_propagation_targets =
+      List.fold
+        ~f:(fun (distmap_acc, affected_vertices) (rule : PropagationRules.t) ->
+          let propagated_distmap, this_affected = rule graph new_fact prev_facts in
+          (propagated_distmap, affected_vertices @ this_affected) )
+        ~init:(graph, []) rules_to_propagate
+    in
+    List.fold
+      ~f:(fun big_acc target ->
+        if have_been_before target then big_acc
+        else
+          let target_dist = trd3 target in
+          (* summarize this node's distribution into a Response.t! *)
+          let target_rule_summary = Response.response_of_dist (fst3 target) target_dist in
+          let applicable_rules =
+            MetaRules.ForPropagation.take_subset_of_applicable_propagation_rules graph
+              target_rule_summary prev_facts prop_rule_pool
+          in
+          List.fold
+            ~f:(fun smol_acc prop_rule ->
+              propagator target_rule_summary smol_acc applicable_rules
+                (target_rule_summary :: new_fact :: prev_facts)
+                prop_rule_pool )
+            ~init:big_acc applicable_rules )
+      ~init:graph current_propagation_targets )
+
+
 let rec loop (current_snapshot : G.t) (received_responses : Response.t list)
     (nodewise_featuremap : FeatureMaps.NodeWiseFeatureMap.t) (count : int) : G.t =
   if G.Saturation.all_dists_in_graph_are_saturated current_snapshot then current_snapshot
@@ -59,7 +128,7 @@ let rec loop (current_snapshot : G.t) (received_responses : Response.t list)
       List.fold
         ~f:(fun acc prop_rule ->
           propagator response acc propagation_rules_to_apply received_responses
-            PropagationRules.all_rules [] )
+            PropagationRules.all_rules )
         ~init:current_snapshot propagation_rules_to_apply
     in
     Visualizer.visualize_at_the_face current_snapshot ;

@@ -143,8 +143,8 @@ module PropagationRules = struct
       successors with contextual similarity edge *)
   let contextual_similarity_rule : t =
    fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ->
-    Out_channel.output_string Out_channel.stdout "contextual_similarity_rule chosen" ;
-    Out_channel.newline Out_channel.stdout ;
+    (* Out_channel.output_string Out_channel.stdout "contextual_similarity_rule chosen" ; *)
+    (* Out_channel.newline Out_channel.stdout ; *)
     let new_fact_method = Response.get_method new_fact
     and new_fact_label = Response.get_label new_fact in
     let new_fact_method_vertices =
@@ -175,9 +175,12 @@ module PropagationRules = struct
                 ; san= succ_dist.san +. 0.3
                 ; non= succ_dist.non -. 0.1 }
             | None ->
-                raise NotImplemented
+                { ProbQuadruple.src= succ_dist.src -. 0.1
+                ; sin= succ_dist.sin -. 0.1
+                ; san= succ_dist.san -. 0.1
+                ; non= succ_dist.non +. 0.3 }
             | Indeterminate ->
-                failwith "Impossible"
+                succ_dist
           in
           G.strong_update_dist succ new_dist acc )
         contextual_succs ~init:graph
@@ -189,8 +192,8 @@ module PropagationRules = struct
       method have successors with nodewise simlarity edge *)
   let nodewise_similarity_propagation_rule : t =
    fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ->
-    Out_channel.output_string Out_channel.stdout "nodewise_similarity_propagation_rule chosen" ;
-    Out_channel.newline Out_channel.stdout ;
+    (* Out_channel.output_string Out_channel.stdout "nodewise_similarity_propagation_rule chosen" ; *)
+    (* Out_channel.newline Out_channel.stdout ; *)
     let new_fact_method = Response.get_method new_fact
     and new_fact_label = Response.get_label new_fact in
     let new_fact_method_vertices =
@@ -275,7 +278,7 @@ module PropagationRules = struct
                   (* ; non= succ_dist.non +. 0.3 } *)
                   raise NotImplemented
             | Indeterminate ->
-                failwith "Impossible"
+                succ_dist
           in
           G.strong_update_dist succ new_dist acc )
         similarity_succs ~init:graph
@@ -418,42 +421,3 @@ module MetaRules = struct
            priority_assigned
   end
 end
-
-(** (1) receive a rule to propagate, (2) use that propagation rule, and (3) spawn itself to the
-    propagation targets. *)
-let rec propagator (new_fact : Response.t) (graph : G.t)
-    (rules_to_propagate : PropagationRules.t list) (prev_facts : Response.t list)
-    (prop_rule_pool : PropagationRules.t list) (history : G.V.t list) : G.t =
-  Out_channel.output_string Out_channel.stdout
-    (F.asprintf "propagator is called on %s" (Response.to_string new_fact)) ;
-  Out_channel.newline Out_channel.stdout ;
-  if List.is_empty rules_to_propagate then graph
-  else
-    (* if we can't propagate any further, terminate *)
-    let current_propagated_distmap, current_propagation_targets =
-      List.fold
-        ~f:(fun (distmap_acc, affected_vertices) (rule : PropagationRules.t) ->
-          let propagated_distmap, this_affected = rule graph new_fact prev_facts in
-          (propagated_distmap, affected_vertices @ this_affected) )
-        ~init:(graph, []) rules_to_propagate
-    in
-    let current_propagation_targets_no_again =
-      List.filter
-        ~f:(fun target -> not @@ List.mem ~equal:Vertex.equal history target)
-        current_propagation_targets
-    in
-    List.fold
-      ~f:(fun big_acc target ->
-        let target_dist = trd3 target in
-        (* summarize this node's distribution into a Response.t! *)
-        let target_rule_summary = Response.response_of_dist (fst3 target) target_dist in
-        let applicable_rules =
-          MetaRules.ForPropagation.take_subset_of_applicable_propagation_rules graph
-            target_rule_summary prev_facts prop_rule_pool
-        in
-        List.fold
-          ~f:(fun smol_acc prop_rule ->
-            propagator target_rule_summary smol_acc applicable_rules (new_fact :: prev_facts)
-              prop_rule_pool (target :: history) )
-          ~init:big_acc applicable_rules )
-      ~init:graph current_propagation_targets_no_again
