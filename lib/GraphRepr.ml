@@ -147,7 +147,7 @@ if String.equal meth target_meth && String.equal loc target_loc then Some dist e
           ((meth, loc), prev_snapshot_dist, next_snapshot_dist)::acc else acc
       ) all_pairs_without_dist ~init:[] in
     List.iter ~f:(fun ((meth, loc), prev_dist, next_dist) ->
-        Out_channel.output_string Out_channel.stdout @@ F.asprintf "Vertex (%s, %s) was updated from %s to %s" meth loc (ProbQuadruple.to_string prev_dist) (ProbQuadruple.to_string next_dist);
+        Out_channel.output_string Out_channel.stdout @@ F.asprintf "Vertex (%s, %s)'s dist was updated from %s to %s" meth loc (ProbQuadruple.to_string prev_dist) (ProbQuadruple.to_string next_dist);
         Out_channel.newline Out_channel.stdout ;
         Out_channel.newline Out_channel.stdout
       ) diff
@@ -163,7 +163,7 @@ if String.equal meth target_meth && String.equal loc target_loc then Some dist e
           ((meth, loc), prev_snapshot_label, next_snapshot_label)::acc else acc
       ) all_pairs_without_dist ~init:[] in
     List.iter ~f:(fun ((meth, loc), prev_label, next_label) ->
-        Out_channel.output_string Out_channel.stdout @@ F.asprintf "Vertex (%s, %s) was updated from %s to %s" meth loc (TaintLabel.to_string prev_label) (TaintLabel.to_string next_label);
+        Out_channel.output_string Out_channel.stdout @@ F.asprintf "Vertex (%s, %s)'s label was updated from %s to %s" meth loc (TaintLabel.to_string prev_label) (TaintLabel.to_string next_label);
         Out_channel.newline Out_channel.stdout ;
         Out_channel.newline Out_channel.stdout
       ) diff
