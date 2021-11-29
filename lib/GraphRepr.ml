@@ -86,7 +86,7 @@ module Vertex = struct
 
 
   let to_string ((procstring, locstring, _) : t) : string =
-    F.asprintf "(%s, %s)" procstring locstring
+    F.asprintf "(\"%s\", \"%s\")" procstring locstring
 
 
   let vertex_list_to_string (lst : t list) : string =
@@ -892,6 +892,25 @@ module EdgeMaker = struct
     >>| parse_skip_func
 
 
+  let there's_define_frontend_tmp_var_at_the_end (chain_slices : ChainSlice.t list) :
+      ChainSlice.t option =
+    let is_frontend_tmp_var_ap = String.is_prefix ~prefix:"($" in
+    let rec find_frontend_tmp_var current =
+      match current with
+      | [] ->
+          None
+      | chainslice :: t -> (
+        match chainslice with
+        | ChainSlice.DeadSlice _ ->
+            find_frontend_tmp_var t
+        | ChainSlice.DefineSlice (_, ap, _, _) ->
+            if is_frontend_tmp_var_ap ap then Some chainslice else None
+        | _ ->
+            None )
+    in
+    find_frontend_tmp_var chain_slices
+
+
   let process_head_define (chain_slices : ChainSlice.t list) : ChainSlice.t list =
     let head_define = List.hd_exn chain_slices in
     let define_current_method_field, location_field, define_using_field =
@@ -908,11 +927,14 @@ module EdgeMaker = struct
     else chain_slices
 
 
-  let process_chainslices chainslices =
+  let process_chainslices (chainslices : ChainSlice.t list) : ChainSlice.t list =
     (* Are there any more processors needed? IDK *)
     let processors = [process_head_define] in
     List.fold ~f:(fun acc processor -> processor acc) ~init:chainslices processors
 
+
+  (* let trim_edges (chainslices: ChainSlice.t list) : ChainSlice.t list = *)
+  (*   let wf *)
 
   let edge_list_of_chain_slice_list (chain_slices : ChainSlice.t list) : G.E.t list =
     let processed = process_chainslices chain_slices in
@@ -923,7 +945,8 @@ module EdgeMaker = struct
 
   let get_all_edges (raw_json : json) : G.E.t list =
     ChainSliceManager.wrapped_chain_list_of_raw_json raw_json
-    >>| ChainSliceManager.chain_slice_list_of_wrapped_chain >>| ChainRefiners.delete_inner_deads
+    >>| ChainSliceManager.chain_slice_list_of_wrapped_chain
+    >>| ( (*ChainRefiners.remove_define_frontend_tmp_var_at_the_end >> *) ChainRefiners.delete_inner_deads)
     >>= edge_list_of_chain_slice_list
 end
 

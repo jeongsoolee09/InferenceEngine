@@ -113,7 +113,7 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t) (previous_sn
                 ~init:big_acc applicable_rules
             in
             if Option.is_some previous_snapshot then
-              G.print_snapshot_diff propagated (Option.value_exn previous_snapshot) ;
+              G.print_snapshot_diff (Option.value_exn previous_snapshot) propagated ;
             propagated ) )
       ~init:propagated_snapshot current_propagation_targets )
 
@@ -155,5 +155,5 @@ let rec loop (current_snapshot : G.t) (received_responses : Response.t list)
             PropagationRules.all_rules )
         ~init:current_snapshot propagation_rules_to_apply
     in
-    Visualizer.visualize_at_the_face current_snapshot ;
+    Visualizer.visualize_at_the_face propagated ;
     loop propagated (response :: received_responses) nodewise_featuremap (count + 1)

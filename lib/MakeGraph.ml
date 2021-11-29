@@ -85,7 +85,7 @@ module GraphMaker = struct
       (* |> EstablishSimEdges.make_nodewise_sim_edge |> EstablishSimEdges.make_contextual_sim_edge *)
       (* |> remove_bogus *)
       G.empty |> batch_add_vertex json |> batch_add_edge json |> hardcode_ns_edge
-      |> hardcode_cs_edge
+      |> hardcode_cs_edge |> (fun graph ->  G.remove_edge graph ("int[] JdbcTemplate.batchUpdate(String,List)", "{ line 33 }", ProbQuadruple.initial) ("void RelationalDataAccessApplication.run()", "{ line 33 }", ProbQuadruple.initial))
     in
     graph_to_dot out ~filename:(make_now_string () ^ ".dot") ;
     out
