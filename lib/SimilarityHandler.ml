@@ -148,7 +148,8 @@ module SimilarVertexPairExtractor = struct
       let is_dangling node =
         Int.( = ) (List.length (G.succ graph node)) 1
         &&
-        let in_edges = G.find_in_edges node graph and succ = List.hd_exn (G.succ graph node) in
+        let in_edges = G.find_in_edges (G.LiteralVertex.of_vertex node) graph
+        and succ = List.hd_exn (G.succ graph node) in
         let edge_shooter, _, _ = List.hd_exn in_edges in
         Int.( = ) (List.length in_edges) 1 && G.V.equal edge_shooter succ
       in

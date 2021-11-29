@@ -104,11 +104,11 @@ end
 module PropagationRules = struct
   type t = G.t -> Response.t -> Response.t list -> G.t * Vertex.t list
 
-  let is_internal_udf_vertex vertex graph =
+  let is_internal_udf_vertex (vertex : G.LiteralVertex.t) (graph : G.t) =
     let data_flows_in = Int.( >= ) (List.length @@ G.df_preds vertex graph) 1
     and data_flows_out = Int.( >= ) (List.length @@ G.df_succs vertex graph) 1
     and is_udf =
-      let meth = fst3 vertex in
+      let meth = fst vertex in
       let all_udfs = Deserializer.deserialize_method_txt () in
       List.mem ~equal:String.equal all_udfs meth
     in
@@ -143,20 +143,22 @@ module PropagationRules = struct
       successors with contextual similarity edge *)
   let contextual_similarity_rule : t =
    fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ->
-    (* Out_channel.output_string Out_channel.stdout "contextual_similarity_rule chosen" ; *)
-    (* Out_channel.newline Out_channel.stdout ; *)
     let new_fact_method = Response.get_method new_fact
     and new_fact_label = Response.get_label new_fact in
     let new_fact_method_vertices =
       G.all_vertices_of_graph graph
       |> List.filter ~f:(fun (meth, _, _) -> String.equal meth new_fact_method)
     in
-    let contextual_succs = new_fact_method_vertices >>= fun vertex -> G.cs_succs vertex graph in
+    let contextual_succs =
+      new_fact_method_vertices >>= fun vertex -> G.cs_succs (G.LiteralVertex.of_vertex vertex) graph
+    in
+    Out_channel.print_endline
+    @@ F.asprintf "contextual_succs: %s" (Vertex.vertex_list_to_string contextual_succs) ;
     assert (Int.( >= ) (List.length contextual_succs) 1) ;
     let propagated =
       List.fold
         ~f:(fun acc succ ->
-          let succ_dist = trd3 succ in
+          let succ_meth, succ_label, succ_dist = succ in
           let new_dist =
             match new_fact_label with
             | Source ->
@@ -182,6 +184,10 @@ module PropagationRules = struct
             | Indeterminate ->
                 succ_dist
           in
+          Out_channel.fprintf Out_channel.stdout
+            "%s propagated its info to %s (contextual), its dist is now %s\n" new_fact_method
+            succ_meth
+            (ProbQuadruple.to_string new_dist) ;
           G.strong_update_dist succ new_dist acc )
         contextual_succs ~init:graph
     in
@@ -192,29 +198,29 @@ module PropagationRules = struct
       method have successors with nodewise simlarity edge *)
   let nodewise_similarity_propagation_rule : t =
    fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ->
-    (* Out_channel.output_string Out_channel.stdout "nodewise_similarity_propagation_rule chosen" ; *)
-    (* Out_channel.newline Out_channel.stdout ; *)
     let new_fact_method = Response.get_method new_fact
     and new_fact_label = Response.get_label new_fact in
     let new_fact_method_vertices =
       G.all_vertices_of_graph graph
       |> List.filter ~f:(fun (meth, _, _) -> String.equal meth new_fact_method)
     in
-    let similarity_succs = new_fact_method_vertices >>= fun vertex -> G.ns_succs vertex graph in
+    let similarity_succs =
+      new_fact_method_vertices >>= fun vertex -> G.ns_succs (G.LiteralVertex.of_vertex vertex) graph
+    in
     assert (Int.( >= ) (List.length similarity_succs) 1) ;
     let propagated =
       List.fold
         ~f:(fun acc succ ->
-          let succ_dist = trd3 succ in
+          let succ_meth, succ_label, succ_dist = succ in
           let new_dist =
             match new_fact_label with
             | Source ->
-                if G.is_root succ graph then
+                if G.is_root (G.LiteralVertex.of_vertex succ) graph then
                   { ProbQuadruple.src= succ_dist.src +. 0.3
                   ; sin= succ_dist.sin -. 0.1
                   ; san= succ_dist.san -. 0.1
                   ; non= succ_dist.non -. 0.1 }
-                else if G.is_leaf succ graph then
+                else if G.is_leaf (G.LiteralVertex.of_vertex succ) graph then
                   { ProbQuadruple.src= succ_dist.src -. 0.1
                   ; sin= succ_dist.sin -. 0.1
                   ; san= succ_dist.san -. 0.1
@@ -226,12 +232,12 @@ module PropagationRules = struct
                   ; san= succ_dist.san -. 0.1
                   ; non= succ_dist.non -. 0.1 }
             | Sink ->
-                if G.is_root succ graph then
+                if G.is_root (G.LiteralVertex.of_vertex succ) graph then
                   { ProbQuadruple.src= succ_dist.src +. 0.3
                   ; sin= succ_dist.sin -. 0.1
                   ; san= succ_dist.san -. 0.1
                   ; non= succ_dist.non -. 0.1 }
-                else if G.is_leaf succ graph then
+                else if G.is_leaf (G.LiteralVertex.of_vertex succ) graph then
                   { ProbQuadruple.src= succ_dist.src -. 0.1
                   ; sin= succ_dist.sin -. 0.1
                   ; san= succ_dist.san -. 0.1
@@ -243,12 +249,12 @@ module PropagationRules = struct
                   ; san= succ_dist.san -. 0.1
                   ; non= succ_dist.non -. 0.1 }
             | Sanitizer ->
-                if G.is_root succ graph then
+                if G.is_root (G.LiteralVertex.of_vertex succ) graph then
                   { ProbQuadruple.src= succ_dist.src +. 0.3
                   ; sin= succ_dist.sin -. 0.1
                   ; san= succ_dist.san -. 0.1
                   ; non= succ_dist.non -. 0.1 }
-                else if G.is_leaf succ graph then
+                else if G.is_leaf (G.LiteralVertex.of_vertex succ) graph then
                   { ProbQuadruple.src= succ_dist.src -. 0.1
                   ; sin= succ_dist.sin -. 0.1
                   ; san= succ_dist.san -. 0.1
@@ -260,12 +266,12 @@ module PropagationRules = struct
                   ; san= succ_dist.san +. 0.3
                   ; non= succ_dist.non -. 0.1 }
             | None ->
-                if G.is_root succ graph then
+                if G.is_root (G.LiteralVertex.of_vertex succ) graph then
                   { ProbQuadruple.src= succ_dist.src +. 0.3
                   ; sin= succ_dist.sin -. 0.1
                   ; san= succ_dist.san -. 0.1
                   ; non= succ_dist.non -. 0.1 }
-                else if G.is_leaf succ graph then
+                else if G.is_leaf (G.LiteralVertex.of_vertex succ) graph then
                   { ProbQuadruple.src= succ_dist.src -. 0.1
                   ; sin= succ_dist.sin -. 0.1
                   ; san= succ_dist.san -. 0.1
@@ -280,6 +286,10 @@ module PropagationRules = struct
             | Indeterminate ->
                 succ_dist
           in
+          Out_channel.fprintf Out_channel.stdout
+            "%s propagated its info to %s (nodewise), its dist is now %s\n" new_fact_method
+            succ_meth
+            (ProbQuadruple.to_string new_dist) ;
           G.strong_update_dist succ new_dist acc )
         similarity_succs ~init:graph
     in

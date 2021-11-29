@@ -29,6 +29,8 @@ module ProbQuadruple = struct
 
   let initial = {src= 0.25; sin= 0.25; san= 0.25; non= 0.25}
 
+  let dummy = {src= 0.; sin= 0.; san= 0.; non= 0.}
+
   let check_sanity (dist : t) : unit =
     let ( = ) = Float.( = ) and ( + ) = Float.( + ) in
     assert (dist.src + dist.sin + dist.san + dist.non = float 1)
@@ -84,7 +86,12 @@ module Vertex = struct
 
 
   let to_string ((procstring, locstring, _) : t) : string =
-    F.asprintf "\"(\"%s\", \"%s\")\"" procstring locstring
+    F.asprintf "(%s, %s)" procstring locstring
+
+
+  let vertex_list_to_string (lst : t list) : string =
+    let accumed = List.fold ~f:(fun acc vertex -> acc ^ to_string vertex ^ "; ") ~init:"" lst in
+    F.asprintf "[%s]" accumed
 end
 
 module EdgeLabel = struct
@@ -98,7 +105,29 @@ module VertexPair = struct
 end
 
 module G = struct
-  include Graph.Persistent.Digraph.ConcreteBidirectionalLabeled (Vertex) (EdgeLabel)
+  module BiDiGraph = Graph.Persistent.Digraph.ConcreteBidirectionalLabeled (Vertex) (EdgeLabel)
+  include BiDiGraph
+
+  module LiteralVertex = struct
+    type t = string * string [@@deriving compare, equal]
+
+    let to_vertex ((meth, loc) : t) (graph : BiDiGraph.t) : Vertex.t =
+      let res_opt =
+        fold_vertex
+          (fun ((target_meth, target_loc, dist) as vertex) acc ->
+            if String.equal meth target_meth && String.equal loc target_loc then Some vertex
+            else acc )
+          graph None
+      in
+      match res_opt with
+      | Some vertex ->
+          vertex
+      | None ->
+          failwithf "could not find dist for (\"%s\", \"%s\")" meth loc ()
+
+
+    let of_vertex ((str1, str2, _) : Vertex.t) : t = (str1, str2)
+  end
 
   module ProbMap = struct
     module VertexMap = Caml.Map.Make (Vertex)
@@ -126,47 +155,71 @@ module G = struct
         graph true
   end
 
-exception TODO
+  let lookup_dist_for_meth_and_loc (meth : string) (loc : string) (graph : t) : ProbQuadruple.t =
+    let res_opt =
+      fold_vertex
+        (fun (target_meth, target_loc, dist) acc ->
+          if String.equal meth target_meth && String.equal loc target_loc then Some dist else acc )
+        graph None
+    in
+    match res_opt with
+    | Some dist ->
+        dist
+    | None ->
+        failwithf "could not find dist for (\"%s\", \"%s\")" meth loc ()
 
-let lookup_dist_for_meth_and_loc (meth: string) (loc: string) (graph: t) : ProbQuadruple.t =
-  let res_opt = fold_vertex (fun (target_meth, target_loc, dist) acc ->
-if String.equal meth target_meth && String.equal loc target_loc then Some dist else acc
-    ) graph None in
-  match res_opt with
-  | Some dist -> dist
-  | None -> failwithf "could not find dist for (\"%s\", \"%s\")" meth loc ()
 
   let print_snapshot_diff_verbose prev_snapshot next_snapshot =
-    let all_pairs_without_dist = fold_vertex (fun (meth, loc, _) acc ->
-        (meth, loc)::acc
-      ) prev_snapshot [] in
-    let diff = List.fold ~f:(fun acc (meth, loc) ->
-        let prev_snapshot_dist = lookup_dist_for_meth_and_loc meth loc prev_snapshot
-        and next_snapshot_dist = lookup_dist_for_meth_and_loc meth loc next_snapshot in
-        if not @@ ProbQuadruple.equal prev_snapshot_dist next_snapshot_dist then
-          ((meth, loc), prev_snapshot_dist, next_snapshot_dist)::acc else acc
-      ) all_pairs_without_dist ~init:[] in
-    List.iter ~f:(fun ((meth, loc), prev_dist, next_dist) ->
-        Out_channel.output_string Out_channel.stdout @@ F.asprintf "Vertex (%s, %s)'s dist was updated from %s to %s" meth loc (ProbQuadruple.to_string prev_dist) (ProbQuadruple.to_string next_dist);
+    let all_pairs_without_dist =
+      fold_vertex (fun (meth, loc, _) acc -> (meth, loc) :: acc) prev_snapshot []
+    in
+    let diff =
+      List.fold
+        ~f:(fun acc (meth, loc) ->
+          let prev_snapshot_dist = lookup_dist_for_meth_and_loc meth loc prev_snapshot
+          and next_snapshot_dist = lookup_dist_for_meth_and_loc meth loc next_snapshot in
+          if not @@ ProbQuadruple.equal prev_snapshot_dist next_snapshot_dist then
+            ((meth, loc), prev_snapshot_dist, next_snapshot_dist) :: acc
+          else acc )
+        all_pairs_without_dist ~init:[]
+    in
+    List.iter
+      ~f:(fun ((meth, loc), prev_dist, next_dist) ->
+        Out_channel.output_string Out_channel.stdout
+        @@ F.asprintf "Vertex (%s, %s)'s dist was updated from %s to %s" meth loc
+             (ProbQuadruple.to_string prev_dist)
+             (ProbQuadruple.to_string next_dist) ;
         Out_channel.newline Out_channel.stdout ;
-        Out_channel.newline Out_channel.stdout
-      ) diff
+        Out_channel.newline Out_channel.stdout )
+      diff
+
 
   let print_snapshot_diff prev_snapshot next_snapshot =
-    let all_pairs_without_dist = fold_vertex (fun (meth, loc, _) acc ->
-        (meth, loc)::acc
-      ) prev_snapshot [] in
-    let diff = List.fold ~f:(fun acc (meth, loc) ->
-        let prev_snapshot_label = ProbQuadruple.determine_label @@ lookup_dist_for_meth_and_loc meth loc prev_snapshot
-        and next_snapshot_label = ProbQuadruple.determine_label @@ lookup_dist_for_meth_and_loc meth loc next_snapshot in
-        if not @@ TaintLabel.equal prev_snapshot_label next_snapshot_label then
-          ((meth, loc), prev_snapshot_label, next_snapshot_label)::acc else acc
-      ) all_pairs_without_dist ~init:[] in
-    List.iter ~f:(fun ((meth, loc), prev_label, next_label) ->
-        Out_channel.output_string Out_channel.stdout @@ F.asprintf "Vertex (%s, %s)'s label was updated from %s to %s" meth loc (TaintLabel.to_string prev_label) (TaintLabel.to_string next_label);
+    let all_pairs_without_dist =
+      fold_vertex (fun (meth, loc, _) acc -> (meth, loc) :: acc) prev_snapshot []
+    in
+    let diff =
+      List.fold
+        ~f:(fun acc (meth, loc) ->
+          let prev_snapshot_label =
+            ProbQuadruple.determine_label @@ lookup_dist_for_meth_and_loc meth loc prev_snapshot
+          and next_snapshot_label =
+            ProbQuadruple.determine_label @@ lookup_dist_for_meth_and_loc meth loc next_snapshot
+          in
+          if not @@ TaintLabel.equal prev_snapshot_label next_snapshot_label then
+            ((meth, loc), prev_snapshot_label, next_snapshot_label) :: acc
+          else acc )
+        all_pairs_without_dist ~init:[]
+    in
+    List.iter
+      ~f:(fun ((meth, loc), prev_label, next_label) ->
+        Out_channel.output_string Out_channel.stdout
+        @@ F.asprintf "Vertex (%s, %s)'s label was updated from %s to %s" meth loc
+             (TaintLabel.to_string prev_label) (TaintLabel.to_string next_label) ;
         Out_channel.newline Out_channel.stdout ;
-        Out_channel.newline Out_channel.stdout
-      ) diff
+        Out_channel.newline Out_channel.stdout )
+      diff
+
 
   let graph_attributes _ = []
 
@@ -240,73 +293,93 @@ if String.equal meth target_meth && String.equal loc target_loc then Some dist e
       graph []
 
 
-  let is_root (vertex : V.t) (graph : t) : bool = Int.equal (in_degree graph vertex) 0
-
-  let is_leaf (vertex : V.t) (graph : t) : bool = Int.equal (out_degree graph vertex) 0
-
-  let any_label_preds (vertex : V.t) (graph : t) =
-    fold_edges (fun v1 v2 acc -> if Vertex.equal v2 vertex then v1 :: acc else acc) graph []
+  let is_root (vertex : LiteralVertex.t) (graph : t) : bool =
+    Int.equal (in_degree graph (LiteralVertex.to_vertex vertex graph)) 0
 
 
-  let any_label_succs (vertex : V.t) (graph : t) =
-    fold_edges (fun v1 v2 acc -> if Vertex.equal v1 vertex then v2 :: acc else acc) graph []
+  let is_leaf (vertex : LiteralVertex.t) (graph : t) : bool =
+    Int.equal (out_degree graph (LiteralVertex.to_vertex vertex graph)) 0
 
 
-  let is_pointing_to_each_other (v1 : V.t) (v2 : V.t) (graph : t) : bool =
-    let v2_is_v1's_succ = List.mem ~equal:Vertex.equal (any_label_succs v1 graph) v2
-    and v1_is_v2's_succ = List.mem ~equal:Vertex.equal (any_label_succs v2 graph) v1 in
-    v2_is_v1's_succ && v1_is_v2's_succ
-
-
-  let find_in_edges (vertex : V.t) (graph : t) : E.t list =
-    fold_edges_e
-      (fun ((_, label, v2) as edge) acc -> if V.equal vertex v2 then edge :: acc else acc)
+  let any_label_preds (vertex : LiteralVertex.t) (graph : t) =
+    fold_edges
+      (fun v1 v2 acc ->
+        if Vertex.equal v2 (LiteralVertex.to_vertex vertex graph) then v1 :: acc else acc )
       graph []
 
 
-  let df_preds (vertex : V.t) (graph : t) =
+  let any_label_succs (vertex : LiteralVertex.t) (graph : t) =
+    fold_edges
+      (fun v1 v2 acc ->
+        if Vertex.equal v1 (LiteralVertex.to_vertex vertex graph) then v2 :: acc else acc )
+      graph []
+
+
+  let is_pointing_to_each_other (v1 : LiteralVertex.t) (v2 : LiteralVertex.t) (graph : t) : bool =
+    let v2_is_v1's_succ =
+      List.mem ~equal:Vertex.equal (any_label_succs v1 graph) (LiteralVertex.to_vertex v2 graph)
+    and v1_is_v2's_succ =
+      List.mem ~equal:Vertex.equal (any_label_succs v2 graph) (LiteralVertex.to_vertex v1 graph)
+    in
+    v2_is_v1's_succ && v1_is_v2's_succ
+
+
+  let find_in_edges (vertex : LiteralVertex.t) (graph : t) : E.t list =
+    fold_edges_e
+      (fun ((_, label, v2) as edge) acc ->
+        if V.equal (LiteralVertex.to_vertex vertex graph) v2 then edge :: acc else acc )
+      graph []
+
+
+  let df_preds (vertex : LiteralVertex.t) (graph : t) : Vertex.t list =
     fold_edges_e List.cons graph []
     |> List.filter ~f:(fun (_, label, v2) ->
-           Vertex.equal vertex v2 && EdgeLabel.equal label EdgeLabel.DataFlow )
+           Vertex.equal (LiteralVertex.to_vertex vertex graph) v2
+           && EdgeLabel.equal label EdgeLabel.DataFlow )
     >>| fst3
 
 
-  let ns_preds (vertex : V.t) (graph : t) =
+  let ns_preds (vertex : LiteralVertex.t) (graph : t) : Vertex.t list =
     fold_edges_e List.cons graph []
     |> List.filter ~f:(fun (_, label, v2) ->
-           Vertex.equal vertex v2 && EdgeLabel.equal label EdgeLabel.NodeWiseSimilarity )
+           Vertex.equal (LiteralVertex.to_vertex vertex graph) v2
+           && EdgeLabel.equal label EdgeLabel.NodeWiseSimilarity )
     >>| fst3
 
 
-  let cs_preds (vertex : V.t) (graph : t) =
+  let cs_preds (vertex : LiteralVertex.t) (graph : t) : Vertex.t list =
     fold_edges_e List.cons graph []
     |> List.filter ~f:(fun (_, label, v2) ->
-           Vertex.equal vertex v2 && EdgeLabel.equal label EdgeLabel.ContextualSimilarity )
+           Vertex.equal (LiteralVertex.to_vertex vertex graph) v2
+           && EdgeLabel.equal label EdgeLabel.ContextualSimilarity )
     >>| fst3
 
 
-  let df_succs (vertex : V.t) (graph : t) =
+  let df_succs (vertex : LiteralVertex.t) (graph : t) : Vertex.t list =
     fold_edges_e List.cons graph []
     |> List.filter ~f:(fun (v, label, _) ->
-           Vertex.equal vertex v && EdgeLabel.equal label EdgeLabel.DataFlow )
+           Vertex.equal (LiteralVertex.to_vertex vertex graph) v
+           && EdgeLabel.equal label EdgeLabel.DataFlow )
     >>| trd3
 
 
-  let ns_succs (vertex : V.t) (graph : t) =
+  let ns_succs (vertex : LiteralVertex.t) (graph : t) : Vertex.t list =
     fold_edges_e List.cons graph []
     |> List.filter ~f:(fun (v, label, _) ->
-           Vertex.equal vertex v && EdgeLabel.equal label EdgeLabel.NodeWiseSimilarity )
+           Vertex.equal (LiteralVertex.to_vertex vertex graph) v
+           && EdgeLabel.equal label EdgeLabel.NodeWiseSimilarity )
     >>| trd3
 
 
-  let cs_succs (vertex : V.t) (graph : t) =
+  let cs_succs (vertex : LiteralVertex.t) (graph : t) : Vertex.t list =
     fold_edges_e List.cons graph []
     |> List.filter ~f:(fun (v, label, _) ->
-           Vertex.equal vertex v && EdgeLabel.equal label EdgeLabel.ContextualSimilarity )
+           Vertex.equal (LiteralVertex.to_vertex vertex graph) v
+           && EdgeLabel.equal label EdgeLabel.ContextualSimilarity )
     >>| trd3
 
 
-  let get_df_edges (graph : t) =
+  let get_df_edges (graph : t) : E.t list =
     fold_edges_e List.cons graph []
     |> List.filter ~f:(fun (_, label, _) -> EdgeLabel.equal label EdgeLabel.DataFlow)
 
@@ -321,70 +394,84 @@ if String.equal meth target_meth && String.equal loc target_loc then Some dist e
     |> List.filter ~f:(fun (_, label, _) -> EdgeLabel.equal label EdgeLabel.ContextualSimilarity)
 
 
-  let get_df_succs (graph : t) (vertex : V.t) : V.t list =
+  let get_df_succs (graph : t) (vertex : LiteralVertex.t) : V.t list =
     let out_df_edges =
       fold_edges_e
         (fun ((v1, label, _) as edge) acc ->
-          if Vertex.equal v1 vertex && EdgeLabel.equal label EdgeLabel.DataFlow then edge :: acc
+          if
+            Vertex.equal v1 (LiteralVertex.to_vertex vertex graph)
+            && EdgeLabel.equal label EdgeLabel.DataFlow
+          then edge :: acc
           else acc )
         graph []
     in
     out_df_edges >>| trd3
 
 
-  let get_ns_succs (graph : t) (vertex : V.t) : V.t list =
+  let get_ns_succs (graph : t) (vertex : LiteralVertex.t) : V.t list =
     let out_ns_edges =
       fold_edges_e
         (fun ((v1, label, _) as edge) acc ->
-          if Vertex.equal v1 vertex && EdgeLabel.equal label EdgeLabel.NodeWiseSimilarity then
-            edge :: acc
+          if
+            Vertex.equal v1 (LiteralVertex.to_vertex vertex graph)
+            && EdgeLabel.equal label EdgeLabel.NodeWiseSimilarity
+          then edge :: acc
           else acc )
         graph []
     in
     out_ns_edges >>| trd3
 
 
-  let get_cs_succs (graph : t) (vertex : V.t) : V.t list =
+  let get_cs_succs (graph : t) (vertex : LiteralVertex.t) : V.t list =
     let out_cs_edges =
       fold_edges_e
         (fun ((v1, label, _) as edge) acc ->
-          if Vertex.equal v1 vertex && EdgeLabel.equal label EdgeLabel.ContextualSimilarity then
-            edge :: acc
+          if
+            Vertex.equal v1 (LiteralVertex.to_vertex vertex graph)
+            && EdgeLabel.equal label EdgeLabel.ContextualSimilarity
+          then edge :: acc
           else acc )
         graph []
     in
     out_cs_edges >>| trd3
 
 
-  let get_df_preds (graph : t) (vertex : V.t) : V.t list =
+  let get_df_preds (graph : t) (vertex : LiteralVertex.t) : V.t list =
     let in_df_edges =
       fold_edges_e
         (fun ((_, label, v2) as edge) acc ->
-          if Vertex.equal v2 vertex && EdgeLabel.equal label EdgeLabel.DataFlow then edge :: acc
+          if
+            Vertex.equal v2 (LiteralVertex.to_vertex vertex graph)
+            && EdgeLabel.equal label EdgeLabel.DataFlow
+          then edge :: acc
           else acc )
         graph []
     in
     in_df_edges >>| fst3
 
 
-  let get_ns_preds (graph : t) (vertex : V.t) : V.t list =
+  let get_ns_preds (graph : t) (vertex : LiteralVertex.t) : V.t list =
     let in_ns_edges =
       fold_edges_e
         (fun ((_, label, v2) as edge) acc ->
-          if Vertex.equal v2 vertex && EdgeLabel.equal label EdgeLabel.NodeWiseSimilarity then
-            edge :: acc
+          if
+            Vertex.equal v2 (LiteralVertex.to_vertex vertex graph)
+            && EdgeLabel.equal label EdgeLabel.NodeWiseSimilarity
+          then edge :: acc
           else acc )
         graph []
     in
     in_ns_edges >>| fst3
 
 
-  let get_cs_preds (graph : t) (vertex : V.t) : V.t list =
+  let get_cs_preds (graph : t) (vertex : LiteralVertex.t) : V.t list =
     let in_cs_edges =
       fold_edges_e
         (fun ((_, label, v2) as edge) acc ->
-          if Vertex.equal v2 vertex && EdgeLabel.equal label EdgeLabel.ContextualSimilarity then
-            edge :: acc
+          if
+            Vertex.equal v2 (LiteralVertex.to_vertex vertex graph)
+            && EdgeLabel.equal label EdgeLabel.ContextualSimilarity
+          then edge :: acc
           else acc )
         graph []
     in
@@ -560,28 +647,35 @@ module PathUtils = struct
 
   (** For every leaf, print paths to the leaf from the given source, where the given graph may
       contain a cycle, using a customized DFS algorithm **)
-  let enumerate_paths_from_source_to_leaves (graph : G.t) (source : G.V.t) : G.V.t list list =
-    let rec inner (current : G.V.t) (smol_acc : G.V.t list) (big_acc : G.V.t list list)
-        (current_havebeenmap : HaveBeenMap.t) : G.V.t list list =
+  let enumerate_paths_from_source_to_leaves (graph : G.t) (source : G.LiteralVertex.t) :
+      G.V.t list list =
+    let rec inner (current : G.LiteralVertex.t) (smol_acc : Vertex.t list)
+        (big_acc : Vertex.t list list) (current_havebeenmap : HaveBeenMap.t) : G.V.t list list =
       if G.is_leaf current graph then List.rev smol_acc :: big_acc
       else
-        let children = G.succ graph current in
+        let children = G.succ graph (G.LiteralVertex.to_vertex current graph) in
         List.fold
           ~f:(fun acc child ->
-            if HaveBeenMap.find (current, child) current_havebeenmap >= 1 then acc
+            if
+              HaveBeenMap.find (G.LiteralVertex.to_vertex current graph, child) current_havebeenmap
+              >= 1
+            then acc
             else
               let current_alist_updated =
-                HaveBeenMap.update (current, child) increment_option current_havebeenmap
+                HaveBeenMap.update
+                  (G.LiteralVertex.to_vertex current graph, child)
+                  increment_option current_havebeenmap
               in
-              inner child (child :: smol_acc) acc current_alist_updated )
+              inner (G.LiteralVertex.of_vertex child) (child :: smol_acc) acc current_alist_updated
+            )
           ~init:big_acc children
     in
-    inner source [source] [] (HaveBeenMap.init graph)
+    inner source [G.LiteralVertex.to_vertex source graph] [] (HaveBeenMap.init graph)
 
 
   (** Find all paths from the given source to the given destination. **)
-  let find_path_from_source_to_dest (graph : G.t) (source : G.V.t) (dest : G.V.t) : G.V.t list list
-      =
+  let find_path_from_source_to_dest (graph : G.t) (source : G.LiteralVertex.t) (dest : G.V.t) :
+      G.V.t list list =
     enumerate_paths_from_source_to_leaves graph source
     |> List.filter ~f:(fun path -> List.mem ~equal:G.V.equal path dest)
     >>| List.take_while ~f:(fun vertex -> not @@ G.V.equal vertex dest)
@@ -835,7 +929,8 @@ let identify_trunks (graph : G.t) : G.Trunk.t list =
   in
   (* now, find the path between the root and the leaf. *)
   reachable_root_and_leaf_pairs
-  >>= fun (root, leaf) -> PathUtils.find_path_from_source_to_dest graph root leaf
+  >>= fun (root, leaf) ->
+  PathUtils.find_path_from_source_to_dest graph (G.LiteralVertex.of_vertex root) leaf
 
 
 let find_trunks_containing_vertex graph vertex =
