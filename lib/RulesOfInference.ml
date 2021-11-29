@@ -227,12 +227,12 @@ module PropagationRules = struct
           let new_dist =
             match new_fact_label with
             | Source ->
-                if G.is_root (G.LiteralVertex.of_vertex succ) graph then
+                if G.is_df_root (G.LiteralVertex.of_vertex succ) graph then
                   { ProbQuadruple.src= succ_dist.src +. 0.3
                   ; sin= succ_dist.sin -. 0.1
                   ; san= succ_dist.san -. 0.1
                   ; non= succ_dist.non -. 0.1 }
-                else if G.is_leaf (G.LiteralVertex.of_vertex succ) graph then
+                else if G.is_df_leaf (G.LiteralVertex.of_vertex succ) graph then
                   { ProbQuadruple.src= succ_dist.src -. 0.1
                   ; sin= succ_dist.sin -. 0.1
                   ; san= succ_dist.san -. 0.1
@@ -244,12 +244,12 @@ module PropagationRules = struct
                   ; san= succ_dist.san -. 0.1
                   ; non= succ_dist.non -. 0.1 }
             | Sink ->
-                if G.is_root (G.LiteralVertex.of_vertex succ) graph then
+                if G.is_df_root (G.LiteralVertex.of_vertex succ) graph then
                   { ProbQuadruple.src= succ_dist.src +. 0.3
                   ; sin= succ_dist.sin -. 0.1
                   ; san= succ_dist.san -. 0.1
                   ; non= succ_dist.non -. 0.1 }
-                else if G.is_leaf (G.LiteralVertex.of_vertex succ) graph then
+                else if G.is_df_leaf (G.LiteralVertex.of_vertex succ) graph then
                   { ProbQuadruple.src= succ_dist.src -. 0.1
                   ; sin= succ_dist.sin -. 0.1
                   ; san= succ_dist.san -. 0.1
@@ -261,12 +261,12 @@ module PropagationRules = struct
                   ; san= succ_dist.san -. 0.1
                   ; non= succ_dist.non -. 0.1 }
             | Sanitizer ->
-                if G.is_root (G.LiteralVertex.of_vertex succ) graph then
+                if G.is_df_root (G.LiteralVertex.of_vertex succ) graph then
                   { ProbQuadruple.src= succ_dist.src +. 0.3
                   ; sin= succ_dist.sin -. 0.1
                   ; san= succ_dist.san -. 0.1
                   ; non= succ_dist.non -. 0.1 }
-                else if G.is_leaf (G.LiteralVertex.of_vertex succ) graph then
+                else if G.is_df_leaf (G.LiteralVertex.of_vertex succ) graph then
                   { ProbQuadruple.src= succ_dist.src -. 0.1
                   ; sin= succ_dist.sin -. 0.1
                   ; san= succ_dist.san -. 0.1
@@ -278,12 +278,12 @@ module PropagationRules = struct
                   ; san= succ_dist.san +. 0.3
                   ; non= succ_dist.non -. 0.1 }
             | None ->
-                if G.is_root (G.LiteralVertex.of_vertex succ) graph then
+                if G.is_df_root (G.LiteralVertex.of_vertex succ) graph then
                   { ProbQuadruple.src= succ_dist.src +. 0.3
                   ; sin= succ_dist.sin -. 0.1
                   ; san= succ_dist.san -. 0.1
                   ; non= succ_dist.non -. 0.1 }
-                else if G.is_leaf (G.LiteralVertex.of_vertex succ) graph then
+                else if G.is_df_leaf (G.LiteralVertex.of_vertex succ) graph then
                   { ProbQuadruple.src= succ_dist.src -. 0.1
                   ; sin= succ_dist.sin -. 0.1
                   ; san= succ_dist.san -. 0.1

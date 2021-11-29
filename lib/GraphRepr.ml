@@ -379,6 +379,14 @@ module G = struct
     >>| trd3
 
 
+  let is_df_root (vertex : LiteralVertex.t) (graph : t) : bool =
+    Int.equal (List.length (df_preds vertex graph)) 0
+
+
+  let is_df_leaf (vertex : LiteralVertex.t) (graph : t) : bool =
+    Int.equal (List.length (df_succs vertex graph)) 0
+
+
   let get_df_edges (graph : t) : E.t list =
     fold_edges_e List.cons graph []
     |> List.filter ~f:(fun (_, label, _) -> EdgeLabel.equal label EdgeLabel.DataFlow)
