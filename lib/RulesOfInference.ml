@@ -102,7 +102,7 @@ end
 
 (** Rules for propagating facts *)
 module PropagationRules = struct
-  type t = G.t -> Response.t -> Response.t list -> G.t * Vertex.t list
+  type t = G.t -> Response.t -> Response.t list -> dry_run:bool -> G.t * Vertex.t list
 
   let is_internal_udf_vertex (vertex : G.LiteralVertex.t) (graph : G.t) =
     let data_flows_in = Int.( >= ) (List.length @@ G.df_preds vertex graph) 1
@@ -116,7 +116,7 @@ module PropagationRules = struct
 
 
   let internal_udf_vertex_is_none : t =
-   fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ->
+   fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ~(dry_run : bool) ->
     Out_channel.output_string Out_channel.stdout "internal_udf_vertex_is_none chosen" ;
     Out_channel.newline Out_channel.stdout ;
     let this_method = Response.get_method new_fact in
@@ -142,7 +142,7 @@ module PropagationRules = struct
   (** propagating to contextually similar vertices: requires that the new_fact's method have
       successors with contextual similarity edge *)
   let contextual_similarity_rule : t =
-   fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ->
+   fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ~(dry_run : bool) ->
     let new_fact_method = Response.get_method new_fact
     and new_fact_label = Response.get_label new_fact in
     let new_fact_method_vertices =
@@ -152,9 +152,9 @@ module PropagationRules = struct
     let contextual_succs =
       new_fact_method_vertices >>= fun vertex -> G.cs_succs (G.LiteralVertex.of_vertex vertex) graph
     in
+    assert (Int.( >= ) (List.length contextual_succs) 1) ;
     Out_channel.print_endline
     @@ F.asprintf "contextual_succs: %s" (Vertex.vertex_list_to_string contextual_succs) ;
-    assert (Int.( >= ) (List.length contextual_succs) 1) ;
     let propagated =
       List.fold
         ~f:(fun acc succ ->
@@ -184,10 +184,11 @@ module PropagationRules = struct
             | Indeterminate ->
                 succ_dist
           in
-          Out_channel.fprintf Out_channel.stdout
-            "%s propagated its info to %s (contextual), its dist is now %s\n" new_fact_method
-            succ_meth
-            (ProbQuadruple.to_string new_dist) ;
+          if not dry_run then
+            Out_channel.fprintf Out_channel.stdout
+              "%s propagated its info to %s (contextual), its dist is now %s\n" new_fact_method
+              succ_meth
+              (ProbQuadruple.to_string new_dist) ;
           G.strong_update_dist succ new_dist acc )
         contextual_succs ~init:graph
     in
@@ -197,7 +198,7 @@ module PropagationRules = struct
   (** Propagate the same info to nodes that are similar nodewise: requires that the new_fact's
       method have successors with nodewise simlarity edge *)
   let nodewise_similarity_propagation_rule : t =
-   fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ->
+   fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ~(dry_run : bool) ->
     let new_fact_method = Response.get_method new_fact
     and new_fact_label = Response.get_label new_fact in
     let new_fact_method_vertices =
@@ -208,6 +209,8 @@ module PropagationRules = struct
       new_fact_method_vertices >>= fun vertex -> G.ns_succs (G.LiteralVertex.of_vertex vertex) graph
     in
     assert (Int.( >= ) (List.length similarity_succs) 1) ;
+    Out_channel.print_endline
+    @@ F.asprintf "nodewise_succs: %s" (Vertex.vertex_list_to_string similarity_succs) ;
     let propagated =
       List.fold
         ~f:(fun acc succ ->
@@ -286,10 +289,11 @@ module PropagationRules = struct
             | Indeterminate ->
                 succ_dist
           in
-          Out_channel.fprintf Out_channel.stdout
-            "%s propagated its info to %s (nodewise), its dist is now %s\n" new_fact_method
-            succ_meth
-            (ProbQuadruple.to_string new_dist) ;
+          if not dry_run then
+            Out_channel.fprintf Out_channel.stdout
+              "%s propagated its info to %s (nodewise), its dist is now %s\n" new_fact_method
+              succ_meth
+              (ProbQuadruple.to_string new_dist) ;
           G.strong_update_dist succ new_dist acc )
         similarity_succs ~init:graph
     in
@@ -372,7 +376,7 @@ module MetaRules = struct
            ~f:(fun acc prop_rule ->
              try
                (* try applying a prop_rule *)
-               let _ = prop_rule graph new_fact prev_facts in
+               let _ = prop_rule graph new_fact prev_facts ~dry_run:true in
                prop_rule :: acc
              with Assert_failure _ -> acc )
            ~init:[] prop_rules

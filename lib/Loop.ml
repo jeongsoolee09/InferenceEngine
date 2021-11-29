@@ -70,24 +70,32 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t) (previous_sn
     @@ F.asprintf "current_visitng_vertices: %s"
          (Vertex.vertex_list_to_string current_visiting_vertices) ;
     List.iter ~f:add_to_history current_visiting_vertices ;
-    let current_propagated_distmap, current_propagation_targets =
+    let _, current_propagation_targets =
       List.fold
         ~f:(fun (distmap_acc, affected_vertices) (rule : PropagationRules.t) ->
-          let propagated_distmap, this_affected = rule current_snapshot new_fact prev_facts in
+          let propagated_distmap, this_affected =
+            rule current_snapshot new_fact prev_facts ~dry_run:true
+          in
           (propagated_distmap, affected_vertices @ this_affected) )
         ~init:(current_snapshot, []) rules_to_propagate
     in
     List.fold
       ~f:(fun big_acc target ->
-        if have_been_before target then big_acc
+        if have_been_before target || List.mem ~equal:Vertex.equal current_visiting_vertices target
+        then big_acc
         else (
           Out_channel.print_endline
-          @@ F.asprintf "propagator is iterating on %s" (Vertex.to_string target) ;
-          if have_been_before target then big_acc
+          @@ F.asprintf "\npropagator is iterating on %s" (Vertex.to_string target) ;
+          if
+            have_been_before target || List.mem ~equal:Vertex.equal current_visiting_vertices target
+          then big_acc
           else
             let target_dist = trd3 target in
             (* summarize this node's distribution into a Response.t! *)
             let target_rule_summary = Response.response_of_dist (fst3 target) target_dist in
+            Out_channel.print_endline
+            @@ F.asprintf "\ntarget_rule_summary of %s: %s\n" (fst3 target)
+                 (Response.to_string target_rule_summary) ;
             let applicable_rules =
               MetaRules.ForPropagation.take_subset_of_applicable_propagation_rules current_snapshot
                 target_rule_summary prev_facts prop_rule_pool
