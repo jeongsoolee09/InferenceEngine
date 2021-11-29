@@ -70,13 +70,12 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t) (previous_sn
     @@ F.asprintf "current_visitng_vertices: %s"
          (Vertex.vertex_list_to_string current_visiting_vertices) ;
     List.iter ~f:add_to_history current_visiting_vertices ;
-    let _, current_propagation_targets =
+    (* do the propagation *)
+    let propagated_snapshot, current_propagation_targets =
       List.fold
-        ~f:(fun (distmap_acc, affected_vertices) (rule : PropagationRules.t) ->
-          let propagated_distmap, this_affected =
-            rule current_snapshot new_fact prev_facts ~dry_run:true
-          in
-          (propagated_distmap, affected_vertices @ this_affected) )
+        ~f:(fun (snapshot_acc, affected_vertices) (rule : PropagationRules.t) ->
+          let propagated, this_affected = rule snapshot_acc new_fact prev_facts ~dry_run:false in
+          (propagated, affected_vertices @ this_affected) )
         ~init:(current_snapshot, []) rules_to_propagate
     in
     List.fold
@@ -90,12 +89,17 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t) (previous_sn
             have_been_before target || List.mem ~equal:Vertex.equal current_visiting_vertices target
           then big_acc
           else
-            let target_dist = trd3 target in
+            let target_meth, target_loc, target_dist = target in
             (* summarize this node's distribution into a Response.t! *)
-            let target_rule_summary = Response.response_of_dist (fst3 target) target_dist in
+            let target_rule_summary =
+              Response.response_of_dist (fst3 target)
+                (G.lookup_dist_for_meth_and_loc target_meth target_loc propagated_snapshot)
+            in
             Out_channel.print_endline
-            @@ F.asprintf "\ntarget_rule_summary of %s: %s\n" (fst3 target)
-                 (Response.to_string target_rule_summary) ;
+            @@ F.asprintf "\ntarget_rule_summary of %s: %s, dist: %s\n" (fst3 target)
+                 (Response.to_string target_rule_summary)
+                 (ProbQuadruple.to_string
+                    (G.lookup_dist_for_meth_and_loc target_meth target_loc propagated_snapshot) ) ;
             let applicable_rules =
               MetaRules.ForPropagation.take_subset_of_applicable_propagation_rules current_snapshot
                 target_rule_summary prev_facts prop_rule_pool
@@ -111,7 +115,7 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t) (previous_sn
             if Option.is_some previous_snapshot then
               G.print_snapshot_diff propagated (Option.value_exn previous_snapshot) ;
             propagated ) )
-      ~init:current_snapshot current_propagation_targets )
+      ~init:propagated_snapshot current_propagation_targets )
 
 
 let rec loop (current_snapshot : G.t) (received_responses : Response.t list)

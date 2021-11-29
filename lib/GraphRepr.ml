@@ -276,7 +276,7 @@ module G = struct
 
   let strong_update_dist (target_vertex : V.t) (new_dist : ProbQuadruple.t) (graph : t) : t =
     map_vertex
-      (fun ((meth, label, new_dist) as vertex) ->
+      (fun ((meth, label, _) as vertex) ->
         if Vertex.equal vertex target_vertex then (meth, label, new_dist) else vertex )
       graph
 
