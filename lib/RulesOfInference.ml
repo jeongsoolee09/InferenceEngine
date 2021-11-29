@@ -117,6 +117,15 @@ module PropagationRules = struct
 
   let internal_udf_vertex_is_none : t =
    fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ~(dry_run : bool) ->
+    let new_fact_method = Response.get_method new_fact in
+    let new_fact_method_vertices =
+      G.all_vertices_of_graph graph
+      |> List.filter ~f:(fun (meth, _, _) -> String.equal meth new_fact_method)
+    in
+    let df_succs =
+      new_fact_method_vertices >>= fun vertex -> G.df_succs (G.LiteralVertex.of_vertex vertex) graph
+    in
+    assert (Int.( >= ) (List.length df_succs) 1) ;
     Out_channel.output_string Out_channel.stdout "internal_udf_vertex_is_none chosen" ;
     Out_channel.newline Out_channel.stdout ;
     let this_method = Response.get_method new_fact in
