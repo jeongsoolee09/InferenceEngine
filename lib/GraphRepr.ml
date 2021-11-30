@@ -387,6 +387,20 @@ module G = struct
     Int.equal (List.length (df_succs vertex graph)) 0
 
 
+  let collect_df_roots (graph : t) : V.t list =
+    fold_vertex
+      (fun vertex acc ->
+        if is_df_root (LiteralVertex.of_vertex vertex) graph then vertex :: acc else acc )
+      graph []
+
+
+  let collect_df_leaves (graph : t) : V.t list =
+    fold_vertex
+      (fun vertex acc ->
+        if is_df_leaf (LiteralVertex.of_vertex vertex) graph then vertex :: acc else acc )
+      graph []
+
+
   let get_df_edges (graph : t) : E.t list =
     fold_edges_e List.cons graph []
     |> List.filter ~f:(fun (_, label, _) -> EdgeLabel.equal label EdgeLabel.DataFlow)
@@ -486,25 +500,6 @@ module G = struct
     in_cs_edges >>| fst3
 
 
-  let collect_df_roots (graph : t) : V.t list =
-    fold_vertex
-      (fun vertex vertex_acc ->
-        let df_in_degree_of_vertex =
-          let out_df_edges =
-            fold_edges_e
-              (fun ((_, label, v2) as edge) edge_acc ->
-                if Vertex.equal v2 vertex && EdgeLabel.equal label EdgeLabel.DataFlow then
-                  edge :: edge_acc
-                else edge_acc )
-              graph []
-          in
-          List.length out_df_edges
-        in
-        let vertex_is_df_root = Int.equal df_in_degree_of_vertex 0 in
-        if vertex_is_df_root then vertex :: vertex_acc else vertex_acc )
-      graph []
-
-
   let collect_ns_roots (graph : t) : V.t list =
     fold_vertex
       (fun vertex vertex_acc ->
@@ -540,25 +535,6 @@ module G = struct
         in
         let vertex_is_cs_root = Int.equal cs_in_degree_of_vertex 0 in
         if vertex_is_cs_root then vertex :: vertex_acc else vertex_acc )
-      graph []
-
-
-  let collect_df_leaves (graph : t) : V.t list =
-    fold_vertex
-      (fun vertex vertex_acc ->
-        let df_out_degree_of_vertex =
-          let out_df_edges =
-            fold_edges_e
-              (fun ((v1, label, _) as edge) edge_acc ->
-                if Vertex.equal v1 vertex && EdgeLabel.equal label EdgeLabel.DataFlow then
-                  edge :: edge_acc
-                else edge_acc )
-              graph []
-          in
-          List.length out_df_edges
-        in
-        let vertex_is_df_leaf = Int.equal df_out_degree_of_vertex 0 in
-        if vertex_is_df_leaf then vertex :: vertex_acc else vertex_acc )
       graph []
 
 
@@ -608,7 +584,7 @@ module G = struct
 
   module GUndirected = Graph.Persistent.Graph.Concrete (Vertex)
 
-  let to_undirected (graph : t) =
+  let to_undirected (graph : t) : GUndirected.t =
     let vertices = fold_vertex List.cons graph [] in
     let edges = fold_edges (fun v1 v2 acc -> (v1, v2) :: acc) graph [] in
     GUndirected.empty
@@ -616,6 +592,13 @@ module G = struct
          List.fold ~f:(fun acc vertex -> GUndirected.add_vertex acc vertex) ~init:graph vertices )
     |> fun graph ->
     List.fold ~f:(fun acc (v1, v2) -> GUndirected.add_edge acc v1 v2) ~init:graph edges
+
+
+  let leave_only_df_edges (graph : t) : t =
+    fold_edges_e
+      (fun ((_, label, _) as edge) acc ->
+        if not @@ EdgeLabel.equal EdgeLabel.DataFlow label then remove_edge_e acc edge else acc )
+      graph graph
 
 
   let all_vertices_of_graph (graph : t) : V.t list =
@@ -946,22 +929,23 @@ module EdgeMaker = struct
   let get_all_edges (raw_json : json) : G.E.t list =
     ChainSliceManager.wrapped_chain_list_of_raw_json raw_json
     >>| ChainSliceManager.chain_slice_list_of_wrapped_chain
-    >>| ( (*ChainRefiners.remove_define_frontend_tmp_var_at_the_end >> *) ChainRefiners.delete_inner_deads)
-    >>= edge_list_of_chain_slice_list
+    >>| (*ChainRefiners.remove_define_frontend_tmp_var_at_the_end >> *)
+    ChainRefiners.delete_inner_deads >>= edge_list_of_chain_slice_list
 end
 
 let identify_trunks (graph : G.t) : G.Trunk.t list =
-  let roots = G.collect_roots graph in
-  let leaves = G.collect_leaves graph in
+  let df_only_graph = G.leave_only_df_edges graph in
+  let roots = G.collect_df_roots df_only_graph in
+  let leaves = G.collect_df_leaves df_only_graph in
   let carpro = roots >>= fun root -> leaves >>= fun leaf -> return (root, leaf) in
   (* not all leaves are reachable from all roots. So we filter out unreachable (root, leaf) pairs. *)
   let reachable_root_and_leaf_pairs =
-    List.filter ~f:(fun (root, leaf) -> PathUtils.is_reachable root leaf graph) carpro
+    List.filter ~f:(fun (root, leaf) -> PathUtils.is_reachable root leaf df_only_graph) carpro
   in
   (* now, find the path between the root and the leaf. *)
   reachable_root_and_leaf_pairs
   >>= fun (root, leaf) ->
-  PathUtils.find_path_from_source_to_dest graph (G.LiteralVertex.of_vertex root) leaf
+  PathUtils.find_path_from_source_to_dest df_only_graph (G.LiteralVertex.of_vertex root) leaf
 
 
 let find_trunks_containing_vertex graph vertex =

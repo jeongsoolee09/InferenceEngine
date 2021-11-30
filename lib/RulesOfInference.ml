@@ -110,7 +110,13 @@ module PropagationRules = struct
     and is_udf =
       let meth = fst vertex in
       let all_udfs = Deserializer.deserialize_method_txt () in
-      List.mem ~equal:String.equal all_udfs meth
+      List.exists
+        ~f:(fun str ->
+          let open NodeWiseFeatures.SingleFeature in
+          let classname = string_of_feature @@ extract_class_name_from_id meth in
+          let methname = string_of_feature @@ extract_method_name_from_id meth in
+          String.is_substring ~substring:(classname ^ "." ^ methname) str )
+        all_udfs
     in
     data_flows_in && data_flows_out && is_udf
 
@@ -128,24 +134,27 @@ module PropagationRules = struct
     assert (Int.( >= ) (List.length df_succs) 1) ;
     Out_channel.output_string Out_channel.stdout "internal_udf_vertex_is_none chosen" ;
     Out_channel.newline Out_channel.stdout ;
-    let this_method = Response.get_method new_fact in
-    let this_method_vertices = G.this_method_vertices graph this_method in
-    let this_method_trunks = this_method_vertices >>= find_trunks_containing_vertex graph in
-    List.fold
-      ~f:(fun big_acc trunk ->
-        List.fold
-          ~f:(fun (graph_acc, affected_vertices) trunk_vertex ->
-            let succ_dist = trd3 trunk_vertex in
+    let propagated =
+      List.fold
+        ~f:(fun acc succ ->
+          let succ_meth, succ_loc, succ_dist = succ in
+          if not @@ is_internal_udf_vertex (G.LiteralVertex.of_vertex succ) graph then acc
+          else
             let new_dist =
               { ProbQuadruple.src= succ_dist.src -. 0.1
               ; ProbQuadruple.sin= succ_dist.sin -. 0.1
               ; ProbQuadruple.san= succ_dist.san -. 0.1
               ; ProbQuadruple.non= succ_dist.non +. 0.3 }
             in
-            (G.strong_update_dist trunk_vertex new_dist graph_acc, trunk_vertex :: affected_vertices)
-            )
-          ~init:big_acc trunk )
-      ~init:(graph, []) this_method_trunks
+            if not dry_run then
+              Out_channel.fprintf Out_channel.stdout
+                "%s propagated its info to %s (internal_vertex_none), its dist is now %s\n"
+                new_fact_method (fst3 succ)
+                (ProbQuadruple.to_string new_dist) ;
+            G.strong_update_dist succ new_dist acc )
+        ~init:graph df_succs
+    in
+    (propagated, df_succs)
 
 
   (** propagating to contextually similar vertices: requires that the new_fact's method have
@@ -318,7 +327,7 @@ module PropagationRules = struct
   (*   raise TODO *)
 
   let all_rules =
-    [contextual_similarity_rule; nodewise_similarity_propagation_rule (* ; annotation_rule *)]
+    [contextual_similarity_rule; nodewise_similarity_propagation_rule; internal_udf_vertex_is_none]
 end
 
 (* Use Random.int_incl for making a random integer. *)
@@ -336,7 +345,6 @@ module AskingRules = struct
       (* TEMP Hardcoded *)
       ("void PrintStream.println(String)", "{ line 43 }", ProbQuadruple.initial)
     in
-    (* Question.AskingForConfirmation (fst3 random_leaf, TaintLabel.Sink) *)
     Question.AskingForLabel (fst3 random_leaf)
 
 
@@ -348,7 +356,6 @@ module AskingRules = struct
       let random_index = Random.int_incl 0 (List.length all_roots - 1) in
       List.nth_exn all_roots random_index
     in
-    (* Question.AskingForConfirmation (fst3 random_root, TaintLabel.Source) *)
     Question.AskingForLabel (fst3 random_root)
 
 
