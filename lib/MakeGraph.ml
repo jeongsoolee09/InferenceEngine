@@ -47,45 +47,11 @@ module GraphMaker = struct
     Out_channel.close out_channel
 
 
-  exception TODO
-
-  (* so sad... *)
-  let hardcode_ns_edge (graph : G.t) : G.t =
-    let hardcode_ns_edges =
-      [ ( ("int[] JdbcTemplate.batchUpdate(String,List)", "{ line 33 }", ProbQuadruple.initial)
-        , EdgeLabel.NodeWiseSimilarity
-        , ("Map JdbcTemplate.queryForMap(String,Object[])", "{ line 37 }", ProbQuadruple.initial) )
-      ]
-    in
-    List.fold
-      ~f:(fun acc (v1, label, v2) ->
-        G.add_edge_e acc (v1, label, v2) |> fun graph -> G.add_edge_e graph (v2, label, v1) )
-      ~init:graph hardcode_ns_edges
-
-
-  (* so sad... *)
-  let hardcode_cs_edge (graph : G.t) : G.t =
-    let hardcode_cs_edges =
-      [ ( ("String Scanner.nextLine()", "{ line 25 }", ProbQuadruple.initial)
-        , EdgeLabel.ContextualSimilarity
-        , ("Map JdbcTemplate.queryForMap(String,Object[])", "{ line 37 }", ProbQuadruple.initial) )
-      ; ( ("int[] JdbcTemplate.batchUpdate(String,List)", "{ line 33 }", ProbQuadruple.initial)
-        , EdgeLabel.ContextualSimilarity
-        , ("void PrintStream.println(String)", "{ line 43 }", ProbQuadruple.initial) ) ]
-    in
-    List.fold
-      ~f:(fun acc (v1, label, v2) ->
-        G.add_edge_e acc (v1, label, v2) |> fun graph -> G.add_edge_e graph (v2, label, v1) )
-      ~init:graph hardcode_cs_edges
-
-
   let init_graph (json : json) : G.t =
     let out =
-      (* G.empty |> batch_add_vertex json |> batch_add_edge json *)
-      (* |> EstablishSimEdges.make_nodewise_sim_edge |> EstablishSimEdges.make_contextual_sim_edge *)
-      (* |> remove_bogus *)
-      G.empty |> batch_add_vertex json |> batch_add_edge json |> hardcode_ns_edge
-      |> hardcode_cs_edge |> (fun graph ->  G.remove_edge graph ("int[] JdbcTemplate.batchUpdate(String,List)", "{ line 33 }", ProbQuadruple.initial) ("void RelationalDataAccessApplication.run()", "{ line 33 }", ProbQuadruple.initial))
+      G.empty |> batch_add_vertex json |> batch_add_edge json
+      |> EstablishSimEdges.make_nodewise_sim_edge |> EstablishSimEdges.make_contextual_sim_edge
+      |> remove_bogus
     in
     graph_to_dot out ~filename:(make_now_string () ^ ".dot") ;
     out
