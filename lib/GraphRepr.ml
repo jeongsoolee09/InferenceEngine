@@ -322,60 +322,28 @@ module G = struct
       graph []
 
 
-  let df_preds (vertex : LiteralVertex.t) (graph : t) : Vertex.t list =
+  let get_preds (vertex : LiteralVertex.t) (graph : t) ~(label : EdgeLabel.t) : Vertex.t list =
     fold_edges_e List.cons graph []
-    |> List.filter ~f:(fun (_, label, v2) ->
+    |> List.filter ~f:(fun (_, target_label, v2) ->
            Vertex.equal (LiteralVertex.to_vertex vertex graph) v2
-           && EdgeLabel.equal label EdgeLabel.DataFlow )
+           && EdgeLabel.equal label target_label )
     >>| fst3
 
 
-  let ns_preds (vertex : LiteralVertex.t) (graph : t) : Vertex.t list =
+  let get_succs (vertex : LiteralVertex.t) (graph : t) ~(label : EdgeLabel.t) : Vertex.t list =
     fold_edges_e List.cons graph []
-    |> List.filter ~f:(fun (_, label, v2) ->
-           Vertex.equal (LiteralVertex.to_vertex vertex graph) v2
-           && EdgeLabel.equal label EdgeLabel.NodeWiseSimilarity )
-    >>| fst3
-
-
-  let cs_preds (vertex : LiteralVertex.t) (graph : t) : Vertex.t list =
-    fold_edges_e List.cons graph []
-    |> List.filter ~f:(fun (_, label, v2) ->
-           Vertex.equal (LiteralVertex.to_vertex vertex graph) v2
-           && EdgeLabel.equal label EdgeLabel.ContextualSimilarity )
-    >>| fst3
-
-
-  let df_succs (vertex : LiteralVertex.t) (graph : t) : Vertex.t list =
-    fold_edges_e List.cons graph []
-    |> List.filter ~f:(fun (v, label, _) ->
+    |> List.filter ~f:(fun (v, target_label, _) ->
            Vertex.equal (LiteralVertex.to_vertex vertex graph) v
-           && EdgeLabel.equal label EdgeLabel.DataFlow )
-    >>| trd3
-
-
-  let ns_succs (vertex : LiteralVertex.t) (graph : t) : Vertex.t list =
-    fold_edges_e List.cons graph []
-    |> List.filter ~f:(fun (v, label, _) ->
-           Vertex.equal (LiteralVertex.to_vertex vertex graph) v
-           && EdgeLabel.equal label EdgeLabel.NodeWiseSimilarity )
-    >>| trd3
-
-
-  let cs_succs (vertex : LiteralVertex.t) (graph : t) : Vertex.t list =
-    fold_edges_e List.cons graph []
-    |> List.filter ~f:(fun (v, label, _) ->
-           Vertex.equal (LiteralVertex.to_vertex vertex graph) v
-           && EdgeLabel.equal label EdgeLabel.ContextualSimilarity )
+           && EdgeLabel.equal label target_label )
     >>| trd3
 
 
   let is_df_root (vertex : LiteralVertex.t) (graph : t) : bool =
-    Int.equal (List.length (df_preds vertex graph)) 0
+    Int.equal (List.length (get_preds vertex graph ~label:EdgeLabel.DataFlow)) 0
 
 
   let is_df_leaf (vertex : LiteralVertex.t) (graph : t) : bool =
-    Int.equal (List.length (df_succs vertex graph)) 0
+    Int.equal (List.length (get_succs vertex graph ~label:EdgeLabel.DataFlow)) 0
 
 
   let collect_df_roots (graph : t) : V.t list =
@@ -392,28 +360,18 @@ module G = struct
       graph []
 
 
-  let get_df_edges (graph : t) : E.t list =
+  let get_edges (graph : t) ~(label : EdgeLabel.t) : E.t list =
     fold_edges_e List.cons graph []
-    |> List.filter ~f:(fun (_, label, _) -> EdgeLabel.equal label EdgeLabel.DataFlow)
+    |> List.filter ~f:(fun (_, target_label, _) -> EdgeLabel.equal label target_label)
 
 
-  let get_ns_edges (graph : t) =
-    fold_edges_e List.cons graph []
-    |> List.filter ~f:(fun (_, label, _) -> EdgeLabel.equal label EdgeLabel.NodeWiseSimilarity)
-
-
-  let get_cs_edges (graph : t) =
-    fold_edges_e List.cons graph []
-    |> List.filter ~f:(fun (_, label, _) -> EdgeLabel.equal label EdgeLabel.ContextualSimilarity)
-
-
-  let get_df_succs (graph : t) (vertex : LiteralVertex.t) : V.t list =
+  let get_succs (graph : t) (vertex : LiteralVertex.t) ~(label : EdgeLabel.t) : V.t list =
     let out_df_edges =
       fold_edges_e
-        (fun ((v1, label, _) as edge) acc ->
+        (fun ((v1, target_label, _) as edge) acc ->
           if
             Vertex.equal v1 (LiteralVertex.to_vertex vertex graph)
-            && EdgeLabel.equal label EdgeLabel.DataFlow
+            && EdgeLabel.equal target_label label
           then edge :: acc
           else acc )
         graph []
@@ -421,150 +379,18 @@ module G = struct
     out_df_edges >>| trd3
 
 
-  let get_ns_succs (graph : t) (vertex : LiteralVertex.t) : V.t list =
-    let out_ns_edges =
-      fold_edges_e
-        (fun ((v1, label, _) as edge) acc ->
-          if
-            Vertex.equal v1 (LiteralVertex.to_vertex vertex graph)
-            && EdgeLabel.equal label EdgeLabel.NodeWiseSimilarity
-          then edge :: acc
-          else acc )
-        graph []
-    in
-    out_ns_edges >>| trd3
-
-
-  let get_cs_succs (graph : t) (vertex : LiteralVertex.t) : V.t list =
-    let out_cs_edges =
-      fold_edges_e
-        (fun ((v1, label, _) as edge) acc ->
-          if
-            Vertex.equal v1 (LiteralVertex.to_vertex vertex graph)
-            && EdgeLabel.equal label EdgeLabel.ContextualSimilarity
-          then edge :: acc
-          else acc )
-        graph []
-    in
-    out_cs_edges >>| trd3
-
-
-  let get_df_preds (graph : t) (vertex : LiteralVertex.t) : V.t list =
+  let get_preds (graph : t) (vertex : LiteralVertex.t) ~(label : EdgeLabel.t) : V.t list =
     let in_df_edges =
       fold_edges_e
-        (fun ((_, label, v2) as edge) acc ->
+        (fun ((_, target_label, v2) as edge) acc ->
           if
             Vertex.equal v2 (LiteralVertex.to_vertex vertex graph)
-            && EdgeLabel.equal label EdgeLabel.DataFlow
+            && EdgeLabel.equal target_label label
           then edge :: acc
           else acc )
         graph []
     in
     in_df_edges >>| fst3
-
-
-  let get_ns_preds (graph : t) (vertex : LiteralVertex.t) : V.t list =
-    let in_ns_edges =
-      fold_edges_e
-        (fun ((_, label, v2) as edge) acc ->
-          if
-            Vertex.equal v2 (LiteralVertex.to_vertex vertex graph)
-            && EdgeLabel.equal label EdgeLabel.NodeWiseSimilarity
-          then edge :: acc
-          else acc )
-        graph []
-    in
-    in_ns_edges >>| fst3
-
-
-  let get_cs_preds (graph : t) (vertex : LiteralVertex.t) : V.t list =
-    let in_cs_edges =
-      fold_edges_e
-        (fun ((_, label, v2) as edge) acc ->
-          if
-            Vertex.equal v2 (LiteralVertex.to_vertex vertex graph)
-            && EdgeLabel.equal label EdgeLabel.ContextualSimilarity
-          then edge :: acc
-          else acc )
-        graph []
-    in
-    in_cs_edges >>| fst3
-
-
-  let collect_ns_roots (graph : t) : V.t list =
-    fold_vertex
-      (fun vertex vertex_acc ->
-        let ns_in_degree_of_vertex =
-          let out_ns_edges =
-            fold_edges_e
-              (fun ((_, label, v2) as edge) edge_acc ->
-                if Vertex.equal v2 vertex && EdgeLabel.equal label EdgeLabel.NodeWiseSimilarity then
-                  edge :: edge_acc
-                else edge_acc )
-              graph []
-          in
-          List.length out_ns_edges
-        in
-        let vertex_is_ns_root = Int.equal ns_in_degree_of_vertex 0 in
-        if vertex_is_ns_root then vertex :: vertex_acc else vertex_acc )
-      graph []
-
-
-  let collect_cs_roots (graph : t) : V.t list =
-    fold_vertex
-      (fun vertex vertex_acc ->
-        let cs_in_degree_of_vertex =
-          let out_cs_edges =
-            fold_edges_e
-              (fun ((_, label, v2) as edge) edge_acc ->
-                if Vertex.equal v2 vertex && EdgeLabel.equal label EdgeLabel.ContextualSimilarity
-                then edge :: edge_acc
-                else edge_acc )
-              graph []
-          in
-          List.length out_cs_edges
-        in
-        let vertex_is_cs_root = Int.equal cs_in_degree_of_vertex 0 in
-        if vertex_is_cs_root then vertex :: vertex_acc else vertex_acc )
-      graph []
-
-
-  let collect_ns_leaves (graph : t) : V.t list =
-    fold_vertex
-      (fun vertex vertex_acc ->
-        let ns_out_degree_of_vertex =
-          let out_ns_edges =
-            fold_edges_e
-              (fun ((v1, label, _) as edge) edge_acc ->
-                if Vertex.equal v1 vertex && EdgeLabel.equal label EdgeLabel.NodeWiseSimilarity then
-                  edge :: edge_acc
-                else edge_acc )
-              graph []
-          in
-          List.length out_ns_edges
-        in
-        let vertex_is_ns_leaf = Int.equal ns_out_degree_of_vertex 0 in
-        if vertex_is_ns_leaf then vertex :: vertex_acc else vertex_acc )
-      graph []
-
-
-  let collect_cs_leaves (graph : t) : V.t list =
-    fold_vertex
-      (fun vertex vertex_acc ->
-        let cs_out_degree_of_vertex =
-          let out_cs_edges =
-            fold_edges_e
-              (fun ((v1, label, _) as edge) edge_acc ->
-                if Vertex.equal v1 vertex && EdgeLabel.equal label EdgeLabel.ContextualSimilarity
-                then edge :: edge_acc
-                else edge_acc )
-              graph []
-          in
-          List.length out_cs_edges
-        in
-        let vertex_is_cs_leaf = Int.equal cs_out_degree_of_vertex 0 in
-        if vertex_is_cs_leaf then vertex :: vertex_acc else vertex_acc )
-      graph []
 
 
   let this_method_vertices (graph : t) (method_ : string) : V.t list =
@@ -933,23 +759,3 @@ let identify_trunks (graph : G.t) : G.Trunk.t list =
 let find_trunks_containing_vertex graph vertex =
   let all_trunks = identify_trunks graph in
   List.filter ~f:(fun trunk -> List.mem ~equal:Vertex.equal trunk vertex) all_trunks
-
-
-module Utils = struct
-  let df_succs (vertex : G.V.t) (graph : G.t) =
-    G.fold_edges_e List.cons graph []
-    |> List.filter ~f:(fun (_, label, _) -> EdgeLabel.equal label EdgeLabel.DataFlow)
-    >>| trd3
-
-
-  let ns_succs (vertex : G.V.t) (graph : G.t) =
-    G.fold_edges_e List.cons graph []
-    |> List.filter ~f:(fun (_, label, _) -> EdgeLabel.equal label EdgeLabel.NodeWiseSimilarity)
-    >>| trd3
-
-
-  let cs_succs (vertex : G.V.t) (graph : G.t) =
-    G.fold_edges_e List.cons graph []
-    |> List.filter ~f:(fun (_, label, _) -> EdgeLabel.equal label EdgeLabel.ContextualSimilarity)
-    >>| trd3
-end

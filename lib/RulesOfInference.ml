@@ -105,8 +105,10 @@ module PropagationRules = struct
   type t = G.t -> Response.t -> Response.t list -> dry_run:bool -> G.t * Vertex.t list
 
   let is_internal_udf_vertex (vertex : G.LiteralVertex.t) (graph : G.t) =
-    let data_flows_in = Int.( >= ) (List.length @@ G.df_preds vertex graph) 1
-    and data_flows_out = Int.( >= ) (List.length @@ G.df_succs vertex graph) 1
+    let data_flows_in =
+      Int.( >= ) (List.length @@ G.get_preds graph vertex ~label:EdgeLabel.DataFlow) 1
+    and data_flows_out =
+      Int.( >= ) (List.length @@ G.get_succs graph vertex ~label:EdgeLabel.DataFlow) 1
     and is_udf =
       let meth = fst vertex in
       let all_udfs = Deserializer.deserialize_method_txt () in
@@ -129,7 +131,9 @@ module PropagationRules = struct
       |> List.filter ~f:(fun (meth, _, _) -> String.equal meth new_fact_method)
     in
     let df_succs =
-      new_fact_method_vertices >>= fun vertex -> G.df_succs (G.LiteralVertex.of_vertex vertex) graph
+      new_fact_method_vertices
+      >>= fun vertex ->
+      G.get_succs graph (G.LiteralVertex.of_vertex vertex) ~label:EdgeLabel.DataFlow
     in
     assert (Int.( >= ) (List.length df_succs) 1) ;
     Out_channel.output_string Out_channel.stdout "internal_udf_vertex_is_none chosen" ;
@@ -168,7 +172,9 @@ module PropagationRules = struct
       |> List.filter ~f:(fun (meth, _, _) -> String.equal meth new_fact_method)
     in
     let contextual_succs =
-      new_fact_method_vertices >>= fun vertex -> G.cs_succs (G.LiteralVertex.of_vertex vertex) graph
+      new_fact_method_vertices
+      >>= fun vertex ->
+      G.get_succs graph (G.LiteralVertex.of_vertex vertex) ~label:EdgeLabel.ContextualSimilarity
     in
     assert (Int.( >= ) (List.length contextual_succs) 1) ;
     Out_channel.print_endline
@@ -224,7 +230,9 @@ module PropagationRules = struct
       |> List.filter ~f:(fun (meth, _, _) -> String.equal meth new_fact_method)
     in
     let similarity_succs =
-      new_fact_method_vertices >>= fun vertex -> G.ns_succs (G.LiteralVertex.of_vertex vertex) graph
+      new_fact_method_vertices
+      >>= fun vertex ->
+      G.get_succs graph (G.LiteralVertex.of_vertex vertex) ~label:EdgeLabel.NodeWiseSimilarity
     in
     assert (Int.( >= ) (List.length similarity_succs) 1) ;
     Out_channel.print_endline
