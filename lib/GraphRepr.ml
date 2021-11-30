@@ -910,7 +910,9 @@ module EdgeMaker = struct
 
   let get_all_edges (raw_json : json) : G.E.t list =
     ChainSliceManager.wrapped_chain_list_of_raw_json raw_json
-    >>| ChainSliceManager.chain_slice_list_of_wrapped_chain >>= edge_list_of_chain_slice_list
+    >>| ChainSliceManager.chain_slice_list_of_wrapped_chain
+    >>| (*ChainRefiners.remove_define_frontend_tmp_var_at_the_end >> *)
+    ChainRefiners.delete_inner_deads >>= edge_list_of_chain_slice_list
 end
 
 let identify_trunks (graph : G.t) : G.Trunk.t list =
