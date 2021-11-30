@@ -556,3 +556,66 @@ module InternalNodeNoneTest = struct
 
   (* no... *)
 end
+
+module TestContextualBogus = struct
+  (** given a trunk pair, get the pairs of methods that are contextually similar to each other. *)
+
+  let trunk_finder ~(start : G.LiteralVertex.t) ~(end_ : G.LiteralVertex.t) (graph : G.t) :
+      trunk list =
+    let all_trunks = identify_trunks graph in
+    List.filter
+      ~f:(fun trunk ->
+        Vertex.equal (G.LiteralVertex.to_vertex start graph) (List.hd_exn trunk)
+        && Vertex.equal (G.LiteralVertex.to_vertex end_ graph) (List.last_exn trunk) )
+      all_trunks
+
+
+  let v1 = ("Map JdbcTemplate.queryForMap(String,Object[])", "{ line 37 }")
+
+  let v2 = ("void PrintStream.println(String)", "{ line 43 }")
+
+  let _ = G.collect_df_roots graph
+
+  let _ = G.collect_df_leaves graph
+
+  let _ = trunk_finder ~start:v1 ~end_:v2 graph
+
+  let df_only_graph = G.leave_only_df_edges graph
+
+  let _ = Visualizer.visualize_at_the_face df_only_graph
+
+  let _ =
+    PathUtils.is_reachable
+      (G.LiteralVertex.to_vertex v1 df_only_graph)
+      (G.LiteralVertex.to_vertex v2 df_only_graph)
+      df_only_graph
+
+
+  let identify_trunks (graph : G.t) : G.Trunk.t list =
+    let df_only_graph = G.leave_only_df_edges graph in
+    let roots = G.collect_df_roots df_only_graph in
+    let leaves = G.collect_df_leaves df_only_graph in
+    let carpro = roots >>= fun root -> leaves >>= fun leaf -> return (root, leaf) in
+    (* not all leaves are reachable from all roots. So we filter out unreachable (root, leaf) pairs. *)
+    let reachable_root_and_leaf_pairs =
+      List.filter ~f:(fun (root, leaf) -> PathUtils.is_reachable root leaf df_only_graph) carpro
+    in
+    (* now, find the path between the root and the leaf. *)
+    reachable_root_and_leaf_pairs
+    >>= fun (root, leaf) ->
+    PathUtils.find_path_from_source_to_dest df_only_graph (G.LiteralVertex.of_vertex root) leaf
+
+
+  (** Find all paths from the given source to the given destination. **)
+  let find_path_from_source_to_dest (graph : G.t) (source : G.LiteralVertex.t) (dest : G.V.t) :
+      G.V.t list list =
+    PathUtils.enumerate_paths_from_source_to_leaves graph source
+    |> List.filter ~f:(fun path -> List.mem ~equal:G.V.equal path dest)
+    >>| List.take_while ~f:(fun vertex -> not @@ G.V.equal vertex dest)
+    >>| fun list -> List.append list [dest]
+
+
+  let _ = find_path_from_source_to_dest df_only_graph v1 (G.LiteralVertex.to_vertex v2 graph)
+
+  (* find_path_from_source_to_dest is malfunctioning! *)
+end
