@@ -31,6 +31,7 @@ open ContextualFeatures;;
 open MakeGraph;;
 open SimilarityHandler;;
 open Loop;;
+open RulesOfInference;;
 
 let json = Deserializer.deserialize_json ();;
 
