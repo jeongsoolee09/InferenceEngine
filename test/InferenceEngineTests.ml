@@ -516,5 +516,43 @@ module TestLoop2 = struct
 
   let nodewise_featuremap = NodeWiseFeatures.init_feature_map graph
 
-  let test () = loop initial_distmap received_responses graph nodewise_featuremap 1
+  let test () = loop graph received_responses nodewise_featuremap 1
+end
+
+module InternalNodeNoneTest = struct
+  let response1 = Response.ForLabel ("void PrintStream.println(String)", TaintLabel.Sink)
+
+  let response2 =
+    Response.ForLabel ("Map JdbcTemplate.queryForMap(String,Object[])", TaintLabel.Source)
+
+
+  let _ = MetaRules.ForPropagation.sort_propagation_rules_by_priority graph response1 []
+
+  let _ = MetaRules.ForPropagation.sort_propagation_rules_by_priority graph response2 []
+
+  let queryForMap_vertices =
+    G.this_method_vertices graph "Map JdbcTemplate.queryForMap(String,Object[])"
+
+
+  let _ = queryForMap_vertices >>= find_trunks_containing_vertex graph
+
+  let find_trunks_containing_vertex graph vertex =
+    let all_trunks = identify_trunks graph in
+    List.filter ~f:(fun trunk -> List.mem ~equal:Vertex.equal trunk vertex) all_trunks
+
+
+  (* identify_trunks is the problem! *)
+
+  let vertex = ("void RelationalDataAccessApplication.printer(Map)", "{ line 41 }")
+
+  let data_flows_in = Int.( >= ) (List.length @@ G.df_preds vertex graph) 1
+
+  let data_flows_out = Int.( >= ) (List.length @@ G.df_succs vertex graph) 1
+
+  let is_udf =
+    let meth = fst vertex in
+    let all_udfs = Deserializer.deserialize_method_txt () in
+    List.mem ~equal:String.equal all_udfs meth
+
+  (* no... *)
 end
