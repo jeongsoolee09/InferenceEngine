@@ -129,15 +129,6 @@ module G = struct
     let of_vertex ((str1, str2, _) : Vertex.t) : t = (str1, str2)
   end
 
-  module ProbMap = struct
-    module VertexMap = Caml.Map.Make (Vertex)
-    include VertexMap
-
-    type t = ProbQuadruple.t VertexMap.t (* map from G.V.t to ProbQuadruple.t *)
-
-    let strong_update vertex new_ distmap = remove vertex distmap |> add vertex new_
-  end
-
   module Saturation = struct
     let saturated_parameter = 0.2 (* TEMP: subject to change *)
 
@@ -670,6 +661,7 @@ module PathUtils = struct
     enumerate_paths_from_source_to_leaves graph source
     |> List.filter ~f:(fun path -> List.mem ~equal:G.V.equal path dest)
     >>| List.take_while ~f:(fun vertex -> not @@ G.V.equal vertex dest)
+    >>| fun list -> List.append list [dest]
 end
 
 module Dot = Graph.Graphviz.Dot (G)
@@ -839,40 +831,55 @@ module VertexMaker = struct
 end
 
 module ChainRefiners = struct
-  let delete_inner_deads (chain_slices : ChainSlice.t list) : ChainSlice.t list =
-    (* print_endline "==================================================" ; *)
-    (* print_endline @@ "before chain: " ^ ChainSlice.pp_chain chain_slices ; *)
-    let all_but_last = List.drop_last_exn chain_slices in
-    let dead_filtered =
-      List.filter
-        ~f:(fun chain_slice ->
-          (* if ChainSlice.is_dead chain_slice || ChainSlice.is_deadbycycle chain_slice then *)
-          (*   print_endline @@ ChainSlice.pp chain_slice ; *)
-          (not @@ ChainSlice.is_dead chain_slice) && (not @@ ChainSlice.is_deadbycycle chain_slice)
-          )
-        all_but_last
-    in
-    (* print_endline @@ "\nafter chain: " *)
-    (* ^ ChainSlice.pp_chain (dead_filtered @ [List.last_exn chain_slices]) ; *)
-    dead_filtered
-end
-
-module EdgeMaker = struct
-  let make_bicycle_chain (list : 'a list) : ('a * 'a) list =
-    let all_but_last = List.drop_last_exn list and all_but_first = List.tl_exn list in
-    List.zip_exn all_but_last all_but_first
-
-
   let parse_skip_func (raw_signature : string) : string =
     let pattern = Str.regexp ".*\\.\\(.+\\)(.*)" in
     assert (Str.string_match pattern raw_signature 0) ;
     Str.matched_group 1 raw_signature
 
 
-  let skip_func_method_names =
-    Deserializer.deserialize_skip_func ()
-    |> List.filter ~f:(fun str -> not @@ String.is_prefix ~prefix:"__" str)
-    >>| parse_skip_func
+  let delete_inner_deads (chain_slices : ChainSlice.t list) : ChainSlice.t list =
+    let all_but_last = List.drop_last_exn chain_slices in
+    let dead_filtered =
+      List.filter
+        ~f:(fun chain_slice ->
+          (not @@ ChainSlice.is_dead chain_slice) && (not @@ ChainSlice.is_deadbycycle chain_slice)
+          )
+        all_but_last
+    in
+    dead_filtered
+
+
+  (** make a stub slice in front of the define slice of the chain. *)
+  let process_head_define (chain_slices : ChainSlice.t list) : ChainSlice.t list =
+    let head_define = List.hd_exn chain_slices in
+    let define_current_method_field, location_field, define_using_field =
+      match head_define with
+      | DefineSlice (current_method, _, location, using_method) ->
+          (current_method, location, using_method)
+      | _ ->
+          failwith "ahahahahah"
+    in
+    let skip_func_method_names =
+      Deserializer.deserialize_skip_func ()
+      |> List.filter ~f:(fun str -> not @@ String.is_prefix ~prefix:"__" str)
+      >>| parse_skip_func
+    in
+    if
+      (not @@ String.equal define_current_method_field define_using_field)
+      && List.mem ~equal:String.equal skip_func_method_names (parse_skip_func define_using_field)
+    then Temp (define_using_field, location_field) :: chain_slices
+    else chain_slices
+
+
+  let process_chainslices (chainslices : ChainSlice.t list) : ChainSlice.t list =
+    let processors = [delete_inner_deads; process_head_define] in
+    List.fold ~f:(fun acc processor -> processor acc) ~init:chainslices processors
+end
+
+module EdgeMaker = struct
+  let make_bicycle_chain (list : 'a list) : ('a * 'a) list =
+    let all_but_last = List.drop_last_exn list and all_but_first = List.tl_exn list in
+    List.zip_exn all_but_last all_but_first
 
 
   let there's_define_frontend_tmp_var_at_the_end (chain_slices : ChainSlice.t list) :
@@ -891,36 +898,11 @@ module EdgeMaker = struct
         | _ ->
             None )
     in
-    find_frontend_tmp_var chain_slices
+    find_frontend_tmp_var (List.rev chain_slices)
 
-
-  let process_head_define (chain_slices : ChainSlice.t list) : ChainSlice.t list =
-    let head_define = List.hd_exn chain_slices in
-    let define_current_method_field, location_field, define_using_field =
-      match head_define with
-      | DefineSlice (current_method, _, location, using_method) ->
-          (current_method, location, using_method)
-      | _ ->
-          failwith "ahahahahah"
-    in
-    if
-      (not @@ String.equal define_current_method_field define_using_field)
-      && List.mem ~equal:String.equal skip_func_method_names (parse_skip_func define_using_field)
-    then Temp (define_using_field, location_field) :: chain_slices
-    else chain_slices
-
-
-  let process_chainslices (chainslices : ChainSlice.t list) : ChainSlice.t list =
-    (* Are there any more processors needed? IDK *)
-    let processors = [process_head_define] in
-    List.fold ~f:(fun acc processor -> processor acc) ~init:chainslices processors
-
-
-  (* let trim_edges (chainslices: ChainSlice.t list) : ChainSlice.t list = *)
-  (*   let wf *)
 
   let edge_list_of_chain_slice_list (chain_slices : ChainSlice.t list) : G.E.t list =
-    let processed = process_chainslices chain_slices in
+    let processed = ChainRefiners.process_chainslices chain_slices in
     let vertices = processed >>| VertexMaker.vertex_of_chain_slice in
     let bicycle_chain = make_bicycle_chain vertices in
     bicycle_chain >>| fun (v1, v2) -> (v1, EdgeLabel.DataFlow, v2)
@@ -928,9 +910,7 @@ module EdgeMaker = struct
 
   let get_all_edges (raw_json : json) : G.E.t list =
     ChainSliceManager.wrapped_chain_list_of_raw_json raw_json
-    >>| ChainSliceManager.chain_slice_list_of_wrapped_chain
-    >>| (*ChainRefiners.remove_define_frontend_tmp_var_at_the_end >> *)
-    ChainRefiners.delete_inner_deads >>= edge_list_of_chain_slice_list
+    >>| ChainSliceManager.chain_slice_list_of_wrapped_chain >>= edge_list_of_chain_slice_list
 end
 
 let identify_trunks (graph : G.t) : G.Trunk.t list =
