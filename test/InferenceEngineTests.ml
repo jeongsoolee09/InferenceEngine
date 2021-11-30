@@ -362,9 +362,12 @@ module Notebook12 = struct
   let _ = find_path_from_source_to_dest df_only_graph v1 (G.LiteralVertex.to_vertex v2 graph)
 
   (* find_path_from_source_to_dest is malfunctioning! *)
+
+  (* done! *)
 end
 
 module Notebook13 = struct
+  (* TODO *)
   let trunk1 =
     [ ( "Map JdbcTemplate.queryForMap(String,Object[])"
       , "{ line 37 }"
@@ -413,4 +416,40 @@ module Notebook13 = struct
       , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} ) ]
 end
 
-module Notebook14 = struct end
+module Notebook14 = struct
+  open EdgeMaker
+
+  let get_all_edges (raw_json : json) : G.E.t list =
+    ChainSliceManager.wrapped_chain_list_of_raw_json raw_json
+    >>| ChainSliceManager.chain_slice_list_of_wrapped_chain
+    >>| (*ChainRefiners.remove_define_frontend_tmp_var_at_the_end >> *)
+    ChainRefiners.delete_inner_deads >>= edge_list_of_chain_slice_list
+
+
+  open ChainSliceManager
+
+  let all_edges_real = get_all_edges @@ Deserializer.deserialize_json ()
+
+  let _ =
+    List.filter
+      ~f:(fun ((meth, _, _), _, _) ->
+        String.equal meth "int[] JdbcTemplate.batchUpdate(String,List)" )
+      all_edges_real
+
+
+  (* just for confirmation... *)
+  let _ =
+    List.filter
+      ~f:(fun ((meth, _, _), _, _) -> String.equal meth "String Scanner.nextLine()")
+      all_edges_real
+
+
+  let _ =
+    G.iter_edges_e
+      (fun (((meth, _, _), _, (meth2, _, _)) as edge) ->
+        if String.equal meth "int[] JdbcTemplate.batchUpdate(String,List)" then print_endline meth2
+        )
+      graph
+
+  (* done! *)
+end
