@@ -163,6 +163,15 @@ module SimilarVertexPairExtractor = struct
       let trunk1_root = List.hd_exn trunk1 and trunk2_root = List.hd_exn trunk2 in
       (* 2. trunk's leaves are similar *)
       let trunk1_leaf = List.last_exn trunk1 and trunk2_leaf = List.last_exn trunk2 in
+      let root_pair_list =
+        if Vertex.equal trunk1_root trunk2_root then
+          [(fst3 trunk1_root, fst3 trunk2_root); (fst3 trunk2_root, fst3 trunk1_root)]
+        else []
+      and leaf_pair_list =
+        if Vertex.equal trunk1_leaf trunk2_leaf then
+          [(fst3 trunk1_leaf, fst3 trunk2_leaf); (fst3 trunk2_leaf, fst3 trunk1_leaf)]
+        else []
+      in
       (* 3. trunks's redefines are similar *)
       let all_redefine_slices =
         RedefineHandler.collect_redefines @@ Deserializer.deserialize_json ()
@@ -172,6 +181,14 @@ module SimilarVertexPairExtractor = struct
       and trunk2_redefines =
         List.filter ~f:(RedefineHandler.is_redefine_vertex all_redefine_slices) trunk2
       in
+      (* we can make redefine pairs: make a carpro of redefines *)
+      (* TODO: making a carpro is naive. The logic should be refined *)
+      let redefines_carpro =
+        let* redefine1 = trunk1_redefines in
+        let* redefine2 = trunk2_redefines in
+        if not @@ Vertex.equal redefine1 redefine2 then return (fst3 redefine1, fst3 redefine2)
+        else []
+      in
       (* what if redefine is missing on one side? *)
       (* 4. trunks's method with bidirectional edges are similar *)
       let trunk1_bidirectional = find_bidirectionals_in_trunk trunk1
@@ -180,23 +197,10 @@ module SimilarVertexPairExtractor = struct
       let bidirectional_carpro =
         let* bidirectional1 = trunk1_bidirectional graph in
         let* bidirectional2 = trunk2_bidirectional graph in
-        return (fst3 bidirectional1, fst3 bidirectional2)
+        if Vertex.equal bidirectional1 bidirectional2 then []
+        else return (fst3 bidirectional1, fst3 bidirectional2)
       in
-      match (trunk1_redefines, trunk2_redefines) with
-      | [], [] | [], _ | _, [] ->
-          (* there cannot be any redefine pairs: do nothing regarding redefines *)
-          [(fst3 trunk1_root, fst3 trunk2_root); (fst3 trunk1_leaf, fst3 trunk2_leaf)]
-          @ bidirectional_carpro
-      | _, _ ->
-          (* we can make redefine pairs: make a carpro of redefines *)
-          (* TODO: making a carpro is naive. The logic should be refined *)
-          let redefines_carpro =
-            let* redefine1 = trunk1_redefines in
-            let* redefine2 = trunk2_redefines in
-            return (fst3 redefine1, fst3 redefine2)
-          in
-          [(fst3 trunk1_root, fst3 trunk2_root); (fst3 trunk1_leaf, fst3 trunk2_leaf)]
-          @ bidirectional_carpro @ redefines_carpro
+      root_pair_list @ leaf_pair_list @ bidirectional_carpro @ redefines_carpro
 
 
     (** pairup similar vertices, also putting list indices into consideration. e.g. if a and b are
