@@ -4,10 +4,13 @@ open GraphRepr
 open ListMonad
 open InfixOperators
 open ContextualFeatures
-open MakeGraph
 open SimilarityHandler
 open Loop
 open RulesOfInference
+open Yojson.Basic
+module Json = Yojson.Basic
+
+type json = Json.t
 
 let json = Deserializer.deserialize_json ()
 
@@ -66,7 +69,7 @@ module Notebook3 = struct
 
   let target_vertex = ("void PrintStream.println(String)", "{ line 43 }")
 
-  let test () = G.cs_succs target_vertex with_sim_edges
+  let test () = G.get_succs with_sim_edges target_vertex ~label:EdgeLabel.ContextualSimilarity
 
   (* no... this is not working.... *)
 end
@@ -183,13 +186,13 @@ module Notebook6 = struct
 
   let target_vertex = ("void PrintStream.println(String)", "{ line 43 }")
 
-  let test () = G.cs_succs target_vertex with_sim_edges
+  let test () = G.get_succs with_sim_edges target_vertex ~label:EdgeLabel.ContextualSimilarity
 
-  let df_edges = G.get_df_edges graph
+  let df_edges = G.get_edges graph ~label:EdgeLabel.DataFlow
 
-  let ns_edges = G.get_ns_edges graph
+  let ns_edges = G.get_edges graph ~label:EdgeLabel.NodeWiseSimilarity
 
-  let cs_edges = G.get_cs_edges graph
+  let cs_edges = G.get_edges graph ~label:EdgeLabel.ContextualSimilarity
 
   (* no sim edges at all!! *)
 
@@ -217,9 +220,9 @@ module Notebook7 = struct
 
   let testgraph = SimilarityHandler.EstablishSimEdges.make_contextual_sim_edge graph
 
-  let _ = G.get_cs_edges testgraph
+  let _ = G.get_edges testgraph ~label:EdgeLabel.ContextualSimilarity
 
-  let _ = List.length @@ G.get_cs_edges testgraph
+  let _ = List.length @@ G.get_edges testgraph ~label:EdgeLabel.ContextualSimilarity
 
   (* working fine *)
 end
@@ -291,9 +294,13 @@ module Notebook11 = struct
 
   let vertex = ("void RelationalDataAccessApplication.printer(Map)", "{ line 41 }")
 
-  let data_flows_in = Int.( >= ) (List.length @@ G.df_preds vertex graph) 1
+  let data_flows_in =
+    Int.( >= ) (List.length @@ G.get_preds graph vertex ~label:EdgeLabel.DataFlow) 1
 
-  let data_flows_out = Int.( >= ) (List.length @@ G.df_succs vertex graph) 1
+
+  let data_flows_out =
+    Int.( >= ) (List.length @@ G.get_succs graph vertex ~label:EdgeLabel.DataFlow) 1
+
 
   let is_udf =
     let meth = fst vertex in
@@ -322,7 +329,7 @@ module Notebook12 = struct
 
   let _ = trunk_finder ~start:v1 ~end_:v2 graph
 
-  let _ = trunk_finder ~start:v3 ~end_:v4 df_only_graph
+  let _ = trunk_finder ~start:v3 ~end_:v4 graph
 
   let _ = Visualizer.visualize_at_the_face df_only_graph
 
@@ -368,6 +375,7 @@ end
 
 module Notebook13 = struct
   (* TODO *)
+
   let trunk1 =
     [ ( "Map JdbcTemplate.queryForMap(String,Object[])"
       , "{ line 37 }"
@@ -414,6 +422,33 @@ module Notebook13 = struct
     ; ( "void PrintStream.println(String)"
       , "{ line 43 }"
       , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} ) ]
+
+
+  let trunk2 =
+    [ ( "Scanner.<init>(InputStream)"
+      , "{ line 24 }"
+      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} )
+    ; ( "String RelationalDataAccessApplication.create()"
+      , "{ line 24 }"
+      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} )
+    ; ( "String Scanner.nextLine()"
+      , "{ line 25 }"
+      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} )
+    ; ( "String RelationalDataAccessApplication.create()"
+      , "{ line 25 }"
+      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} )
+    ; ( "void RelationalDataAccessApplication.run()"
+      , "{ line 30 }"
+      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} )
+    ; ( "StringBuilder StringBuilder.append(String)"
+      , "{ line 31 }"
+      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} )
+    ; ( "void RelationalDataAccessApplication.run()"
+      , "{ line 31 }"
+      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} )
+    ; ( "int[] JdbcTemplate.batchUpdate(String,List)"
+      , "{ line 33 }"
+      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} ) ]
 end
 
 module Notebook14 = struct
@@ -452,4 +487,92 @@ module Notebook14 = struct
       graph
 
   (* done! *)
+end
+
+module Notebook15 = struct
+  (* the path to println is borken. *)
+
+  open EdgeMaker
+
+  let sample_json =
+    let in_channel = In_channel.create "sample.json" in
+    let out = Json.from_channel in_channel in
+    In_channel.close in_channel ;
+    out
+
+
+  let all_edges_sample = get_all_edges sample_json
+
+  let with_inner_dead =
+    ChainSliceManager.wrapped_chain_list_of_raw_json sample_json
+    >>| ChainSliceManager.chain_slice_list_of_wrapped_chain
+    (* >>| ChainRefiners.delete_inner_deads *) >>= edge_list_of_chain_slice_list
+
+
+  (* we need to tweak ChainRefiners.delete_inner_deads. *)
+
+  let chain_slices =
+    List.hd_exn
+      ( ChainSliceManager.wrapped_chain_list_of_raw_json sample_json
+      >>| ChainSliceManager.chain_slice_list_of_wrapped_chain )
+
+
+  let all_but_last = List.drop_last_exn chain_slices
+
+  let dead_filtered =
+    List.filter
+      ~f:(fun chain_slice ->
+        (not @@ ChainSlice.is_dead chain_slice) && (not @@ ChainSlice.is_deadbycycle chain_slice) )
+      all_but_last
+
+
+  let _ =
+    List.last_exn (ChainRefiners.delete_inner_deads chain_slices |> edge_list_of_chain_slice_list)
+
+
+  (* oops, edge_list_of_chain_slice_list was the real problem! *)
+
+  let edge_list_of_chain_slice_list (chain_slices : ChainSlice.t list) : G.E.t list =
+    let processed = ChainRefiners.process_chainslices chain_slices in
+    let vertices = processed >>| VertexMaker.vertex_of_chain_slice in
+    let bicycle_chain = make_bicycle_chain vertices in
+    bicycle_chain >>| fun (v1, v2) -> (v1, EdgeLabel.DataFlow, v2)
+end
+
+module Notebook16 = struct
+  open EdgeMaker
+
+  let sample_json =
+    let in_channel = In_channel.create "sample.json" in
+    let out = Json.from_channel in_channel in
+    In_channel.close in_channel ;
+    out
+
+
+  let chain_slices =
+    List.hd_exn
+      ( ChainSliceManager.wrapped_chain_list_of_raw_json sample_json
+      >>| ChainSliceManager.chain_slice_list_of_wrapped_chain )
+
+
+  let bicycle_chain =
+    let processed =
+      let processors = [ChainRefiners.delete_inner_deads; ChainRefiners.process_head_define] in
+      List.fold ~f:(fun acc processor -> processor acc) ~init:chain_slices processors
+    in
+    (* unlike in the actual program, we first make a bicycle chain and then convert them to a list of vertex pairs. *)
+    make_bicycle_chain processed
+
+
+  (* bicycle_chain의 맨 끝을 봐봐. 엣지를 맞은 놈이 Define이고, 그게 만약에 frontend_tmp_var이라면, 그 튜플을 삭제해. *)
+
+  let refine_bicycle_chain (bicycle_chain : (ChainSlice.t * ChainSlice.t) list) =
+    let slice1, slice2 = List.last_exn bicycle_chain in
+    match slice2 with
+    | DefineSlice (_, ap, _, _) ->
+        let is_frontend_tmp_var_ap = String.is_prefix ~prefix:"($" in
+        if is_frontend_tmp_var_ap ap then List.slice bicycle_chain 0 (List.length bicycle_chain - 1)
+        else bicycle_chain
+    | _ ->
+        bicycle_chain
 end
