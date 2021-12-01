@@ -373,83 +373,7 @@ module Notebook12 = struct
   (* done! *)
 end
 
-module Notebook13 = struct
-  (* TODO *)
-
-  let trunk1 =
-    [ ( "Map JdbcTemplate.queryForMap(String,Object[])"
-      , "{ line 37 }"
-      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} )
-    ; ( "Map RelationalDataAccessApplication.query()"
-      , "{ line 37 }"
-      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} )
-    ; ( "void RelationalDataAccessApplication.bridge()"
-      , "{ line 47 }"
-      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} )
-    ; ( "void RelationalDataAccessApplication.printer(Map)"
-      , "{ line 41 }"
-      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} )
-    ; ( "Collection Map.values()"
-      , "{ line 42 }"
-      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} )
-    ; ( "void RelationalDataAccessApplication.printer(Map)"
-      , "{ line 42 }"
-      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} )
-    ; ( "Iterator Collection.iterator()"
-      , "{ line 42 }"
-      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} )
-    ; ( "void RelationalDataAccessApplication.printer(Map)"
-      , "{ line 42 }"
-      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} )
-    ; ( "Object Iterator.next()"
-      , "{ line 42 }"
-      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} )
-    ; ( "void RelationalDataAccessApplication.printer(Map)"
-      , "{ line 42 }"
-      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} )
-    ; ( "StringBuilder StringBuilder.append(Object)"
-      , "{ line 43 }"
-      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} )
-    ; ( "void RelationalDataAccessApplication.printer(Map)"
-      , "{ line 43 }"
-      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} )
-    ; ( "String StringBuilder.toString()"
-      , "{ line 43 }"
-      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} )
-    ; ( "void RelationalDataAccessApplication.printer(Map)"
-      , "{ line 43 }"
-      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} )
-    ; ( "void PrintStream.println(String)"
-      , "{ line 43 }"
-      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} ) ]
-
-
-  let trunk2 =
-    [ ( "Scanner.<init>(InputStream)"
-      , "{ line 24 }"
-      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} )
-    ; ( "String RelationalDataAccessApplication.create()"
-      , "{ line 24 }"
-      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} )
-    ; ( "String Scanner.nextLine()"
-      , "{ line 25 }"
-      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} )
-    ; ( "String RelationalDataAccessApplication.create()"
-      , "{ line 25 }"
-      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} )
-    ; ( "void RelationalDataAccessApplication.run()"
-      , "{ line 30 }"
-      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} )
-    ; ( "StringBuilder StringBuilder.append(String)"
-      , "{ line 31 }"
-      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} )
-    ; ( "void RelationalDataAccessApplication.run()"
-      , "{ line 31 }"
-      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} )
-    ; ( "int[] JdbcTemplate.batchUpdate(String,List)"
-      , "{ line 33 }"
-      , {InferenceEngineLib.GraphRepr.ProbQuadruple.src= 0.25; sin= 0.25; san= 0.25; non= 0.25} ) ]
-end
+(* Notebook13 appears after Notebook16. *)
 
 module Notebook14 = struct
   open EdgeMaker
@@ -575,4 +499,59 @@ module Notebook16 = struct
         else bicycle_chain
     | _ ->
         bicycle_chain
+end
+
+module Notebook13 = struct
+  (* TODO *)
+
+  let trunk1, trunk2 =
+    let res =
+      trunk_finder
+        ~start:("Map JdbcTemplate.queryForMap(String,Object[])", "{ line 37 }")
+        ~end_:("void PrintStream.println(String)", "{ line 43 }")
+        graph
+    in
+    (List.nth_exn res 0, List.nth_exn res 1)
+
+
+  let _ = trunks_share_same_suffixes_length (trunk1, trunk2)
+
+  (* trunks_share_same_suffixes_length is borken... *)
+
+  let fst3 (a, _, _) = a
+
+  (* if the two trunks are not equal in size, prepends some fillers *)
+  let trunk1_only_methods = trunk1 >>| fst3
+
+  and trunk2_only_methods = trunk2 >>| fst3
+
+  let trunk1_length = List.length trunk1
+
+  and trunk2_length = List.length trunk2
+
+  let trunk1_revised, trunk2_revised =
+    match Int.compare trunk1_length trunk2_length with
+    | -1 ->
+        (* trunk1 is shorter: prepend some fillers *)
+        let fillers = List.init ~f:(fun _ -> "filler") (trunk2_length - trunk1_length) in
+        (fillers @ trunk1_only_methods, trunk2_only_methods)
+    | 0 ->
+        (trunk1_only_methods, trunk2_only_methods)
+    | 1 ->
+        (* trunk2 is shorter: prepend some fillers *)
+        let fillers = List.init ~f:(fun _ -> "filler") (trunk1_length - trunk2_length) in
+        (trunk1_only_methods, fillers @ trunk2_only_methods)
+    | _ ->
+        failwith "this is impossible"
+
+
+  (* oh $hit!! *)
+
+  let zipped = List.zip_exn (List.rev trunk1_revised) (List.rev trunk2_revised)
+
+  let suffix = List.take_while ~f:(fun (v1, v2) -> String.equal v1 v2) zipped
+
+  let _ = List.length suffix
+
+  let _ = ContextualFeatures.trunks_share_same_prefixes_length (trunk1, trunk2)
 end
