@@ -62,5 +62,3 @@ let trunks_share_same_prefixes_length ((trunk1, trunk2) : trunk * trunk) : int =
   let zipped = List.zip_exn trunk1_revised trunk2_revised in
   let prefix = List.take_while ~f:(fun (v1, v2) -> String.equal v1 v2) zipped in
   List.length prefix
-
-(* test *)
