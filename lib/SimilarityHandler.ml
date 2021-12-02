@@ -331,7 +331,8 @@ module EstablishSimEdges = struct
           in
           List.fold
             ~f:(fun smol_acc (v1, v2) ->
-              G.add_edge_e smol_acc (v1, EdgeLabel.ContextualSimilarity, v2) )
+              G.add_edge_e smol_acc (v1, EdgeLabel.ContextualSimilarity, v2)
+              |> fun graph -> G.add_edge_e graph (v2, EdgeLabel.ContextualSimilarity, v1) )
             ~init:acc smart_pairedup
         else acc )
       trunk_similarity_map graph
