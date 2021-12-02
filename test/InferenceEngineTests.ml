@@ -554,4 +554,126 @@ module Notebook13 = struct
   let _ = List.length suffix
 
   let _ = ContextualFeatures.trunks_share_same_prefixes_length (trunk1, trunk2)
+
+  let _ = ContextualFeatures.trunks_share_same_suffixes_length (trunk1, trunk2)
+end
+
+module Notebook17 = struct
+  let trunk1, trunk2 =
+    let res =
+      trunk_finder
+        ~start:("Map JdbcTemplate.queryForMap(String,Object[])", "{ line 37 }")
+        ~end_:("void PrintStream.println(String)", "{ line 43 }")
+        graph
+    in
+    (List.nth_exn res 0, List.nth_exn res 1)
+
+
+  (* TODO *)
+
+  open SimilarVertexPairExtractor.ContextualPairExtractor
+
+  let _ = identify_similar_method_from_similar_trunk (trunk1, trunk2) graph
+
+  let _ = find_bidirectionals_in_trunk trunk1 graph
+
+  let _ = find_bidirectionals_in_trunk trunk2 graph
+
+  (* ok, understandable. *)
+end
+
+module Notebook18 = struct
+  let trunk1 =
+    let res =
+      trunk_finder
+        ~start:("Map JdbcTemplate.queryForMap(String,Object[])", "{ line 37 }")
+        ~end_:("void PrintStream.println(String)", "{ line 43 }")
+        graph
+    in
+    List.hd_exn res
+
+
+  let trunk2 =
+    let res =
+      trunk_finder
+        ~start:("Scanner.<init>(InputStream)", "{ line 24 }")
+        ~end_:("int[] JdbcTemplate.batchUpdate(String,List)", "{ line 33 }")
+        graph
+    in
+    List.hd_exn res
+
+
+  open SimilarVertexPairExtractor.ContextualPairExtractor
+
+  (* trunk1 and trunk2 are completely different trunks! *)
+
+  let similar_methods = identify_similar_method_from_similar_trunk (trunk1, trunk2) graph
+
+  (* 😮 it's working fine! *)
+
+  (* then... the problem must be at smart_pairup_vertices! *)
+
+  let _ = smart_pairup_vertices trunk1 trunk2 (List.hd_exn similar_methods)
+
+  let _ = smart_pairup_vertices trunk1 trunk2 (List.nth_exn similar_methods 1)
+
+  let _ = smart_pairup_vertices trunk1 trunk2 (List.nth_exn similar_methods 2)
+
+  let _ = smart_pairup_vertices trunk1 trunk2 (List.nth_exn similar_methods 3)
+
+  (* hmmmmm..... *)
+
+  (* then whats the problem?? *)
+
+  (* ===== let make_contextual_sim_edge (graph : G.t) : G.t ===== *)
+
+  (* we use smart_pairup here, to translate method simliarity to vertex similarity. *)
+  let _ =
+    let open SimilarVertexPairExtractor in
+    let all_trunks = identify_trunks graph in
+    let trunk_similarity_map = TrunkPairExtractor.update_trunk_similarity_map all_trunks in
+    TrunkSimilarityMap.fold
+      (fun ((trunk1, trunk2) as trunk_pair) similarity acc ->
+        if similarity >= TrunkPairExtractor.threshold then
+          let contextually_similar_methods =
+            ContextualPairExtractor.identify_similar_method_from_similar_trunk trunk_pair graph
+          in
+          let smart_pairedup =
+            contextually_similar_methods
+            >>= fun (method1, method2) ->
+            ContextualPairExtractor.smart_pairup_vertices trunk1 trunk2 (method1, method2)
+          in
+          List.fold
+            ~f:(fun smol_acc (v1, v2) ->
+              print_endline @@ F.asprintf "(%s, %s)" (Vertex.to_string v1) (Vertex.to_string v2) ;
+              G.add_edge_e smol_acc (v1, EdgeLabel.ContextualSimilarity, v2) )
+            ~init:acc smart_pairedup
+        else acc )
+      trunk_similarity_map graph
+
+
+  let get_trunk_similarity (trunk_pair : trunk * trunk) : int =
+    (* execute all extractors. *)
+    let extractors_list =
+      [ same_callee_in_trunk_count
+      ; trunks_share_same_suffixes_length
+      ; trunks_share_same_prefixes_length ]
+    in
+    List.fold ~f:(fun acc extractor -> acc + extractor trunk_pair) ~init:0 extractors_list
+
+
+  let _ = same_callee_in_trunk_count (trunk1, trunk2)
+
+  let _ = trunks_share_same_suffixes_length (trunk1, trunk2)
+
+  let _ = trunks_share_same_prefixes_length (trunk1, trunk2)
+
+  (* 아 이런....ㅠㅠㅠ... 뭐가 문제인지 알겠다. *)
+
+  (* TODO 1: bidirectional 세기 *)
+  (* --> meh. 이건 별로인듯 *)
+
+  (* TODO 2: same_callee_in_trunk_count 고치기 *)
+
+  (* 흠냐... 나중에 dynamic하게 엣지를 만드는 것도 좀 생각해 봐야겠다. *)
 end

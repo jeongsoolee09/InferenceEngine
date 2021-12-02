@@ -9,7 +9,9 @@ let same_callee_in_trunk_count ((trunk1, trunk2) : trunk * trunk) : int =
   let trunk1_only_methods = trunk1 >>| fst3 and trunk2_only_methods = trunk2 >>| fst3 in
   List.fold
     ~f:(fun acc vertex ->
-      let matching = List.mem ~equal:G.V.equal trunk2 vertex in
+      let matching =
+        List.mem ~equal:(fun (meth1, _, _) (meth2, _, _) -> String.equal meth1 meth2) trunk2 vertex
+      in
       if matching then acc + 1 else acc )
     ~init:0 trunk1
 
@@ -47,13 +49,13 @@ let trunks_share_same_prefixes_length ((trunk1, trunk2) : trunk * trunk) : int =
   let trunk1_revised, trunk2_revised =
     match Int.compare trunk1_length trunk2_length with
     | -1 ->
-        (* trunk1 is shorter: prepend some fillers *)
+        (* trunk1 is shorter: append some fillers *)
         let fillers = List.init ~f:(fun _ -> "filler") (trunk2_length - trunk1_length) in
         (trunk1_only_methods @ fillers, trunk2_only_methods)
     | 0 ->
         (trunk1_only_methods, trunk2_only_methods)
     | 1 ->
-        (* trunk2 is shorter: prepend some fillers *)
+        (* trunk2 is shorter: append some fillers *)
         let fillers = List.init ~f:(fun _ -> "filler") (trunk1_length - trunk2_length) in
         (trunk1_only_methods, trunk2_only_methods @ fillers)
     | _ ->

@@ -110,7 +110,11 @@ module SimilarVertexPairExtractor = struct
     (** Run all extractors for every trunk pair. *)
     let get_trunk_similarity (trunk_pair : trunk * trunk) : int =
       (* execute all extractors. *)
-      let extractors_list = [same_callee_in_trunk_count; trunks_share_same_suffixes_length] in
+      let extractors_list =
+        [ same_callee_in_trunk_count
+        ; trunks_share_same_suffixes_length
+        ; trunks_share_same_prefixes_length ]
+      in
       List.fold ~f:(fun acc extractor -> acc + extractor trunk_pair) ~init:0 extractors_list
 
 
@@ -164,11 +168,11 @@ module SimilarVertexPairExtractor = struct
       (* 2. trunk's leaves are similar *)
       let trunk1_leaf = List.last_exn trunk1 and trunk2_leaf = List.last_exn trunk2 in
       let root_pair_list =
-        if Vertex.equal trunk1_root trunk2_root then
+        if not @@ Vertex.equal trunk1_root trunk2_root then
           [(fst3 trunk1_root, fst3 trunk2_root); (fst3 trunk2_root, fst3 trunk1_root)]
         else []
       and leaf_pair_list =
-        if Vertex.equal trunk1_leaf trunk2_leaf then
+        if not @@ Vertex.equal trunk1_leaf trunk2_leaf then
           [(fst3 trunk1_leaf, fst3 trunk2_leaf); (fst3 trunk2_leaf, fst3 trunk1_leaf)]
         else []
       in
