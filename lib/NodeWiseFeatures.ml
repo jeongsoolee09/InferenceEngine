@@ -65,31 +65,9 @@ module SingleFeature = struct
     with Assert_failure _ -> failwith unique_identifier
 
 
-  let is_framework_code methname =
-    let skip_methods = Deserializer.deserialize_skip_func ()
-    and udf_methods = Deserializer.deserialize_method_txt () in
-    let this_project_package_name =
-      string_of_feature @@ extract_package_name_from_id @@ List.hd_exn udf_methods
-    in
-    let not_this_project_methods_and_java_methods =
-      List.filter
-        ~f:(fun str ->
-          not
-            ( String.is_prefix ~prefix:"java." str (* should not be a Java builtin *)
-            || String.is_substring ~substring:this_project_package_name str
-               (* should not belong to this package *) ) )
-        skip_methods
-    in
-    FeatureMaps.NodeWiseFeatureMap.Bool
-      (List.mem ~equal:String.equal
-         ( not_this_project_methods_and_java_methods >>| extract_method_name_from_id
-         >>| string_of_feature )
-         (string_of_feature @@ extract_method_name_from_id methname) )
-
-
   (** Pattern that captures (1) rtntype, (2) class name, and (3) method name from a unique
       identifier. *)
-  let methstring_regex = Str.regexp "\\([a-zA-Z]*\\) ?\\([a-zA-Z$]+\\)\\.\\([a-zA-Z<>$]+\\)(.*)"
+  let methstring_regex = Str.regexp "\\(.*\\) ?\\([a-zA-Z$]+\\)\\.\\([a-zA-Z<>$]+\\)(.*)"
 
   let extract_rtntype_from_methstring (methstring : string) : feature =
     try
@@ -114,24 +92,17 @@ module SingleFeature = struct
 
   let initstring_regex = Str.regexp "\\([a-zA-Z$]+\\)\\.\\([a-zA-Z<>$]+\\)(.*)"
 
-  let extract_rtntype_from_initstring (initstring : string) : feature =
+  let extract_class_name_from_initstring (initstring : string) : feature =
     try
       assert (Str.string_match initstring_regex initstring 0) ;
       String (Str.matched_group 1 initstring)
     with Assert_failure _ -> failwith initstring
 
 
-  let extract_class_name_from_initstring (initstring : string) : feature =
-    try
-      assert (Str.string_match initstring_regex initstring 0) ;
-      String (Str.matched_group 2 initstring)
-    with Assert_failure _ -> failwith initstring
-
-
   let extract_method_name_from_initstring (initstring : string) : feature =
     try
       assert (Str.string_match initstring_regex initstring 0) ;
-      String (Str.matched_group 3 initstring)
+      String (Str.matched_group 2 initstring)
     with Assert_failure _ -> failwith initstring
 
 
@@ -147,6 +118,28 @@ module SingleFeature = struct
                (string_of_feature methstring_method_name) )
           unique_id )
       (Deserializer.deserialize_method_txt () @ Deserializer.deserialize_skip_func ())
+
+
+  let is_framework_code (methstring : string) : feature =
+    let skip_methods = Deserializer.deserialize_skip_func ()
+    and udf_methods = Deserializer.deserialize_method_txt () in
+    let this_project_package_name =
+      string_of_feature @@ extract_package_name_from_id @@ List.hd_exn udf_methods
+    in
+    let methstring_package =
+      find_unique_identifier_of_methstring methstring |> extract_package_name_from_id
+    in
+    Bool
+      (not
+         ( String.is_prefix ~prefix:"java." (string_of_feature methstring_package)
+         || String.equal (string_of_feature methstring_package) this_project_package_name ) )
+
+
+  let all_features =
+    [ extract_rtntype_from_methstring
+    ; extract_class_name_from_methstring
+    ; extract_method_name_from_methstring
+    ; is_framework_code ]
 end
 
 module PairwiseFeature = struct
@@ -166,23 +159,22 @@ module PairwiseFeature = struct
     String.equal
       (SingleFeature.string_of_feature (SingleFeature.extract_package_name_from_id method1))
       (SingleFeature.string_of_feature (SingleFeature.extract_package_name_from_id method2))
+
+
+  let return_type_is_another's_class ((method1, method2) : string * string) : bool =
+    String.equal
+      (SingleFeature.string_of_feature (SingleFeature.extract_rtntype_from_methstring method1))
+      (SingleFeature.string_of_feature (SingleFeature.extract_class_name_from_methstring method2))
 end
 
-let all_single_features =
-  [ SingleFeature.extract_package_name_from_id
-  ; SingleFeature.extract_class_name_from_id
-  ; SingleFeature.extract_method_name_from_id
-  ; SingleFeature.is_framework_code ]
-
-
 let run_all_single_features (methname : string) : SingleFeature.feature list =
-  (* Possible TODO: change this to a dataframe *)
+  (* TODO: change this to a dataframe *)
   List.rev
   @@ List.fold
        ~f:(fun acc feature ->
          let feature_value = feature methname in
          feature_value :: acc )
-       all_single_features ~init:[]
+       SingleFeature.all_features ~init:[]
 
 
 let init_feature_map (graph : G.t) : FeatureMaps.NodeWiseFeatureMap.t =

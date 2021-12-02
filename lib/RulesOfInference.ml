@@ -115,8 +115,8 @@ module PropagationRules = struct
       List.exists
         ~f:(fun str ->
           let open NodeWiseFeatures.SingleFeature in
-          let classname = string_of_feature @@ extract_class_name_from_id meth in
-          let methname = string_of_feature @@ extract_method_name_from_id meth in
+          let classname = string_of_feature @@ extract_class_name_from_methstring meth in
+          let methname = string_of_feature @@ extract_method_name_from_methstring meth in
           String.is_substring ~substring:(classname ^ "." ^ methname) str )
         all_udfs
     in

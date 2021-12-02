@@ -7,6 +7,7 @@ open ContextualFeatures
 open SimilarityHandler
 open Loop
 open RulesOfInference
+open NodeWiseFeatures
 open Yojson.Basic
 module Json = Yojson.Basic
 
@@ -676,4 +677,49 @@ module Notebook18 = struct
   (* TODO 2: same_callee_in_trunk_count 고치기 *)
 
   (* 흠냐... 나중에 dynamic하게 엣지를 만드는 것도 좀 생각해 봐야겠다. *)
+end
+
+module Notebook19 = struct
+  let methstring_regex = Str.regexp "\\([a-zA-Z]*\\) ?\\([a-zA-Z$]+\\)\\.\\([a-zA-Z<>$]+\\)(.*)"
+
+  let initstring_regex = Str.regexp "\\([a-zA-Z$]+\\)\\.\\([a-zA-Z<>$]+\\)(.*)"
+
+  let toString = "String StringBuilder.toString()"
+
+  let append = "StringBuilder StringBuilder.append(Object)"
+
+  let arraylist_init = "ArrayList.<init>()"
+
+  let _ =
+    assert (Str.string_match methstring_regex toString 0) ;
+    print_endline @@ Str.matched_group 1 toString ;
+    print_endline @@ Str.matched_group 2 toString ;
+    print_endline @@ Str.matched_group 3 toString
+
+
+  let _ =
+    assert (Str.string_match methstring_regex append 0) ;
+    print_endline @@ Str.matched_group 1 append ;
+    print_endline @@ Str.matched_group 2 append ;
+    print_endline @@ Str.matched_group 3 append
+
+
+  let _ =
+    assert (Str.string_match initstring_regex arraylist_init 0) ;
+    print_endline @@ Str.matched_group 1 arraylist_init ;
+    print_endline @@ Str.matched_group 2 arraylist_init
+end
+
+module Notebook20 = struct
+  let toString = "String StringBuilder.toString()"
+
+  let append = "StringBuilder StringBuilder.append(Object)"
+
+  let map_values = "Collection Map.values()"
+
+  let iterator = "Iterator Collection.iterator()"
+
+  let _ = PairwiseFeature.belong_to_same_class (toString, append)
+
+  let _ = PairwiseFeature.return_type_is_another's_class (map_values, iterator)
 end
