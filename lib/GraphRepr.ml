@@ -340,10 +340,12 @@ module G = struct
 
   let is_df_root (vertex : LiteralVertex.t) (graph : t) : bool =
     Int.equal (List.length (get_preds vertex graph ~label:EdgeLabel.DataFlow)) 0
+    && Int.( > ) (List.length (get_succs vertex graph ~label:EdgeLabel.DataFlow)) 0
 
 
   let is_df_leaf (vertex : LiteralVertex.t) (graph : t) : bool =
     Int.equal (List.length (get_succs vertex graph ~label:EdgeLabel.DataFlow)) 0
+    && Int.( > ) (List.length (get_preds vertex graph ~label:EdgeLabel.DataFlow)) 0
 
 
   let collect_df_roots (graph : t) : V.t list =
