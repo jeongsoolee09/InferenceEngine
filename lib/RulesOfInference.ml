@@ -374,7 +374,7 @@ module AskingRules = struct
       G.fold_vertex
         (fun vertex acc ->
           let open NodeWiseFeatures in
-          if SingleFeature.bool_of_feature @@ SingleFeature.is_framework_code (fst3 vertex) then
+          if SingleFeature.bool_of_feature @@ SingleFeature.is_framework_method (fst3 vertex) then
             vertex :: acc
           else acc )
         graph []

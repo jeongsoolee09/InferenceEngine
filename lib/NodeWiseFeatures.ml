@@ -48,46 +48,47 @@ module SingleFeature = struct
     try
       assert (Str.string_match id_regex unique_identifier 0) ;
       String (Str.matched_group 1 unique_identifier)
-    with Assert_failure _ -> failwith unique_identifier
+    with Assert_failure _ ->
+      failwithf "extract_package_name_from_id failed: %s" unique_identifier ()
 
 
   let extract_class_name_from_id (unique_identifier : string) : feature =
     try
       assert (Str.string_match id_regex unique_identifier 0) ;
       String (Str.matched_group 2 unique_identifier)
-    with Assert_failure _ -> failwith unique_identifier
+    with Assert_failure _ -> failwithf "extract_class_name_from_id: %s" unique_identifier ()
 
 
   let extract_method_name_from_id (unique_identifier : string) : feature =
     try
       assert (Str.string_match id_regex unique_identifier 0) ;
       String (Str.matched_group 3 unique_identifier)
-    with Assert_failure _ -> failwith unique_identifier
+    with Assert_failure _ -> failwithf "extract_method_name_from_id: %s" unique_identifier ()
 
 
   (** Pattern that captures (1) rtntype, (2) class name, and (3) method name from a unique
       identifier. *)
-  let normalstring_regex = Str.regexp "\\(.*\\) ?\\([a-zA-Z$]+\\)\\.\\([a-zA-Z<>$]+\\)(.*)"
+  let normalstring_regex = Str.regexp "\\(.*\\) \\([a-zA-Z$]+\\)\\.\\([a-zA-Z<>$]+\\)(.*)"
 
   let extract_rtntype_from_normalstring (methstring : string) : feature =
     try
       assert (Str.string_match normalstring_regex methstring 0) ;
       String (Str.matched_group 1 methstring)
-    with Assert_failure _ -> failwith methstring
+    with Assert_failure _ -> failwithf "extract_rtntype_from_normalstring: %s" methstring ()
 
 
   let extract_class_name_from_normalstring (methstring : string) : feature =
     try
       assert (Str.string_match normalstring_regex methstring 0) ;
       String (Str.matched_group 2 methstring)
-    with Assert_failure _ -> failwith methstring
+    with Assert_failure _ -> failwithf "extract_class_name_from_normalstring: %s" methstring ()
 
 
   let extract_method_name_from_normalstring (methstring : string) : feature =
     try
       assert (Str.string_match normalstring_regex methstring 0) ;
       String (Str.matched_group 3 methstring)
-    with Assert_failure _ -> failwith methstring
+    with Assert_failure _ -> failwithf "extract_method_name_from_normalstring: %s" methstring ()
 
 
   let initstring_regex = Str.regexp "\\([a-zA-Z$]+\\)\\.\\([a-zA-Z<>$]+\\)(.*)"
@@ -96,14 +97,14 @@ module SingleFeature = struct
     try
       assert (Str.string_match initstring_regex initstring 0) ;
       String (Str.matched_group 1 initstring)
-    with Assert_failure _ -> failwith initstring
+    with Assert_failure _ -> failwithf "extract_class_name_from_initstring: %s" initstring ()
 
 
   let extract_method_name_from_initstring (initstring : string) : feature =
     try
       assert (Str.string_match initstring_regex initstring 0) ;
       String (Str.matched_group 2 initstring)
-    with Assert_failure _ -> failwith initstring
+    with Assert_failure _ -> failwithf "extract_method_name_from_initstring: %s" initstring ()
 
 
   let extract_rtntype_from_methstring (methstring : string) : feature =
@@ -143,49 +144,90 @@ module SingleFeature = struct
     string_of_feature @@ extract_package_name_from_id @@ List.hd_exn udf_methods
 
 
+  let is_this_project_class_initializer (methstring : string) : feature =
+    let method_lines = Deserializer.deserialize_method_txt () in
+    Bool
+      (List.exists
+         ~f:(fun line ->
+           String.is_substring ~substring:methstring line
+           && String.is_prefix ~prefix:this_project_package_name line )
+         method_lines )
+
+
   let is_this_project_method (methstring : string) : feature =
-    let this_method_id = find_unique_identifier_of_methstring methstring in
-    let methstring_package = extract_package_name_from_id this_method_id in
-    Bool (String.equal (string_of_feature methstring_package) this_project_package_name)
+    if String.is_substring ~substring:"<init>" methstring then
+      is_this_project_class_initializer methstring
+    else
+      let this_method_id = find_unique_identifier_of_methstring methstring in
+      let methstring_package = extract_package_name_from_id this_method_id in
+      Bool (String.equal (string_of_feature methstring_package) this_project_package_name)
+
+
+  let is_java_builtin_class_initializer (methstring : string) : feature =
+    (* first, we read all the skip_func file, *)
+    (* find the initializers in it, *)
+    (* and see if the methstring is a substring in at least one of them. *)
+    let skip_func_lines = Deserializer.deserialize_skip_func () in
+    Bool
+      (List.exists
+         ~f:(fun line ->
+           String.is_substring ~substring:methstring line && String.is_prefix ~prefix:"java." line
+           )
+         skip_func_lines )
 
 
   let is_java_builtin_method (methstring : string) : feature =
-    let this_method_id = find_unique_identifier_of_methstring methstring in
-    let methstring_package = extract_package_name_from_id this_method_id in
-    Bool (String.is_prefix ~prefix:"java." (string_of_feature methstring_package))
+    if String.is_substring ~substring:"<init>" methstring then
+      is_java_builtin_class_initializer methstring
+    else
+      let this_method_id = find_unique_identifier_of_methstring methstring in
+      let methstring_package = extract_package_name_from_id this_method_id in
+      Bool (String.is_prefix ~prefix:"java." (string_of_feature methstring_package))
 
 
-  let is_framework_code (methstring : string) : feature =
-    Bool
-      (not
-         ( (bool_of_feature @@ is_java_builtin_method methstring)
-         || (bool_of_feature @@ is_this_project_method methstring) ) )
+  let is_framework_method (methstring : string) : feature =
+    if String.is_substring ~substring:"<init>" methstring then
+      Bool
+        (not
+           ( (bool_of_feature @@ is_this_project_class_initializer methstring)
+           || (bool_of_feature @@ is_java_builtin_class_initializer methstring) ) )
+    else
+      Bool
+        (not
+           ( (bool_of_feature @@ is_java_builtin_method methstring)
+           || (bool_of_feature @@ is_this_project_method methstring) ) )
 
 
   let all_features =
     [ extract_rtntype_from_methstring
     ; extract_class_name_from_methstring
     ; extract_method_name_from_methstring
-    ; is_framework_code ]
+    ; is_framework_method ]
 end
 
 module PairwiseFeature = struct
   (* methname is the result of Procname.to_string *)
   let is_both_framework_code ((method1, method2) : string * string) : bool =
-    (SingleFeature.bool_of_feature @@ SingleFeature.is_framework_code method1)
-    && (SingleFeature.bool_of_feature @@ SingleFeature.is_framework_code method2)
+    (SingleFeature.bool_of_feature @@ SingleFeature.is_framework_method method1)
+    && (SingleFeature.bool_of_feature @@ SingleFeature.is_framework_method method2)
 
 
   let belong_to_same_class ((method1, method2) : string * string) : bool =
-    String.equal
-      (SingleFeature.string_of_feature (SingleFeature.extract_class_name_from_id method1))
-      (SingleFeature.string_of_feature (SingleFeature.extract_class_name_from_id method2))
+    not
+    @@ ( (SingleFeature.bool_of_feature @@ SingleFeature.is_this_project_method method1)
+       || (SingleFeature.bool_of_feature @@ SingleFeature.is_this_project_method method2) )
+    && String.equal
+         (SingleFeature.string_of_feature (SingleFeature.extract_class_name_from_id method1))
+         (SingleFeature.string_of_feature (SingleFeature.extract_class_name_from_id method2))
 
 
   let belong_to_same_package ((method1, method2) : string * string) : bool =
-    String.equal
-      (SingleFeature.string_of_feature (SingleFeature.extract_package_name_from_id method1))
-      (SingleFeature.string_of_feature (SingleFeature.extract_package_name_from_id method2))
+    not
+    @@ ( (SingleFeature.bool_of_feature @@ SingleFeature.is_this_project_method method1)
+       || (SingleFeature.bool_of_feature @@ SingleFeature.is_this_project_method method2) )
+    && String.equal
+         (SingleFeature.string_of_feature (SingleFeature.extract_package_name_from_id method1))
+         (SingleFeature.string_of_feature (SingleFeature.extract_package_name_from_id method2))
 
 
   let return_type_is_another's_class ((method1, method2) : string * string) : bool =
