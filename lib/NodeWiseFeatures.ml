@@ -67,25 +67,25 @@ module SingleFeature = struct
 
   (** Pattern that captures (1) rtntype, (2) class name, and (3) method name from a unique
       identifier. *)
-  let methstring_regex = Str.regexp "\\(.*\\) ?\\([a-zA-Z$]+\\)\\.\\([a-zA-Z<>$]+\\)(.*)"
+  let normalstring_regex = Str.regexp "\\(.*\\) ?\\([a-zA-Z$]+\\)\\.\\([a-zA-Z<>$]+\\)(.*)"
 
-  let extract_rtntype_from_methstring (methstring : string) : feature =
+  let extract_rtntype_from_normalstring (methstring : string) : feature =
     try
-      assert (Str.string_match methstring_regex methstring 0) ;
+      assert (Str.string_match normalstring_regex methstring 0) ;
       String (Str.matched_group 1 methstring)
     with Assert_failure _ -> failwith methstring
 
 
-  let extract_class_name_from_methstring (methstring : string) : feature =
+  let extract_class_name_from_normalstring (methstring : string) : feature =
     try
-      assert (Str.string_match methstring_regex methstring 0) ;
+      assert (Str.string_match normalstring_regex methstring 0) ;
       String (Str.matched_group 2 methstring)
     with Assert_failure _ -> failwith methstring
 
 
-  let extract_method_name_from_methstring (methstring : string) : feature =
+  let extract_method_name_from_normalstring (methstring : string) : feature =
     try
-      assert (Str.string_match methstring_regex methstring 0) ;
+      assert (Str.string_match normalstring_regex methstring 0) ;
       String (Str.matched_group 3 methstring)
     with Assert_failure _ -> failwith methstring
 
@@ -106,8 +106,25 @@ module SingleFeature = struct
     with Assert_failure _ -> failwith initstring
 
 
+  let extract_rtntype_from_methstring (methstring : string) : feature =
+    if String.is_substring ~substring:"<init>" methstring then String "" (* nothing, bro! *)
+    else extract_rtntype_from_normalstring methstring
+
+
+  let extract_class_name_from_methstring (methstring : string) : feature =
+    if String.is_substring ~substring:"<init>" methstring then
+      extract_class_name_from_initstring methstring
+    else extract_class_name_from_normalstring methstring
+
+
+  let extract_method_name_from_methstring (methstring : string) : feature =
+    if String.is_substring ~substring:"<init>" methstring then
+      extract_method_name_from_initstring methstring
+    else extract_method_name_from_normalstring methstring
+
+
   let find_unique_identifier_of_methstring (methstring : string) : string =
-    let methstring_classname = extract_class_name_from_methstring methstring
+    let methstring_classname = extract_class_name_from_normalstring methstring
     and methstring_method_name = extract_method_name_from_methstring methstring in
     List.find_exn
       ~f:(fun unique_id ->
@@ -178,9 +195,8 @@ let run_all_single_features (methname : string) : SingleFeature.feature list =
 
 
 let init_feature_map (graph : G.t) : FeatureMaps.NodeWiseFeatureMap.t =
-  let all_methods = G.all_methods_of_graph graph in
   List.fold
     ~f:(fun acc meth ->
       FeatureMaps.NodeWiseFeatureMap.strong_update acc meth (run_all_single_features meth) )
-    all_methods
+    (G.all_methods_of_graph graph)
     ~init:(FeatureMaps.NodeWiseFeatureMap.init graph)
