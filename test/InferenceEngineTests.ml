@@ -635,7 +635,7 @@ module Notebook18 = struct
     let trunk_similarity_map = TrunkPairExtractor.update_trunk_similarity_map all_trunks in
     TrunkSimilarityMap.fold
       (fun ((trunk1, trunk2) as trunk_pair) similarity acc ->
-        if similarity >= TrunkPairExtractor.threshold then
+        if similarity >= TrunkSimilarityMap.threshold then
           let contextually_similar_methods =
             ContextualPairExtractor.identify_similar_method_from_similar_trunk trunk_pair graph
           in

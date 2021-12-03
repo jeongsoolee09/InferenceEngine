@@ -1,4 +1,4 @@
-open MakeGraph
+open GraphMaker
 
 exception TODO
 

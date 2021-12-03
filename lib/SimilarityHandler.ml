@@ -17,6 +17,8 @@ module NodeWiseSimilarityMap = struct
 
   type t = Int.t WithMethodPairDomain.t
 
+  let threshold = 2 (* TEMP *)
+
   let init (all_methods : string list) : t =
     let method_pairs =
       let* method1 = all_methods in
@@ -26,6 +28,10 @@ module NodeWiseSimilarityMap = struct
     List.fold
       ~f:(fun acc pair -> WithMethodPairDomain.add pair 0 acc)
       method_pairs ~init:WithMethodPairDomain.empty
+
+
+  let is_similar_nodewise (meth1 : string) (meth2 : string) (map : t) : bool =
+    Int.( >= ) (find (meth1, meth2) map) threshold
 end
 
 module TrunkSimilarityMap = struct
@@ -37,6 +43,8 @@ module TrunkSimilarityMap = struct
   include WithTrunkPairDomain
 
   type t = Int.t WithTrunkPairDomain.t
+
+  let threshold = 1 (* TEMP *)
 
   let init (all_trunks : trunk list) : t =
     let trunk_pairs =
@@ -79,8 +87,6 @@ end
 module SimilarVertexPairExtractor = struct
   (** module that ultimately calculates the nodewise similarity of each method. *)
   module NodewisePairExtractor = struct
-    let threshold = 2 (* TEMP *)
-
     (** Run all extractors for every method pair. *)
     let get_nodewise_similarity (method_pair : string * string) : int =
       (* execute all extractors. *)
@@ -105,8 +111,6 @@ module SimilarVertexPairExtractor = struct
   end
 
   module TrunkPairExtractor = struct
-    let threshold = 1 (* TEMP *)
-
     (** Run all extractors for every trunk pair. *)
     let get_trunk_similarity (trunk_pair : trunk * trunk) : int =
       (* execute all extractors. *)
@@ -132,7 +136,7 @@ module SimilarVertexPairExtractor = struct
   (** module that ultimately calculates the contextual similarity of each method. *)
   module ContextualPairExtractor = struct
     (* We first work on trunks rather than methods themselves. *)
-    let threshold = TrunkPairExtractor.threshold
+    let threshold = TrunkSimilarityMap.threshold
 
     (** find vertices dangling from the trunk with bidirectional edges, e.g. if a -> b -> c <-> d,
         find d *)
@@ -168,12 +172,22 @@ module SimilarVertexPairExtractor = struct
       (* 2. trunk's leaves are similar *)
       let trunk1_leaf = List.last_exn trunk1 and trunk2_leaf = List.last_exn trunk2 in
       let root_pair_list =
-        if not @@ Vertex.equal trunk1_root trunk2_root then
-          [(fst3 trunk1_root, fst3 trunk2_root); (fst3 trunk2_root, fst3 trunk1_root)]
+        if
+          (not @@ Vertex.equal trunk1_root trunk2_root)
+          && G.is_pointing_to_each_other
+               (G.LiteralVertex.of_vertex trunk1_root)
+               (G.LiteralVertex.of_vertex trunk1_leaf)
+               graph ~label:EdgeLabel.NodeWiseSimilarity
+        then [(fst3 trunk1_root, fst3 trunk2_root); (fst3 trunk2_root, fst3 trunk1_root)]
         else []
       and leaf_pair_list =
-        if not @@ Vertex.equal trunk1_leaf trunk2_leaf then
-          [(fst3 trunk1_leaf, fst3 trunk2_leaf); (fst3 trunk2_leaf, fst3 trunk1_leaf)]
+        if
+          (not @@ Vertex.equal trunk1_leaf trunk2_leaf)
+          && G.is_pointing_to_each_other
+               (G.LiteralVertex.of_vertex trunk1_root)
+               (G.LiteralVertex.of_vertex trunk1_leaf)
+               graph ~label:EdgeLabel.NodeWiseSimilarity
+        then [(fst3 trunk1_leaf, fst3 trunk2_leaf); (fst3 trunk2_leaf, fst3 trunk1_leaf)]
         else []
       in
       (* 3. trunks's redefines are similar *)
@@ -201,7 +215,13 @@ module SimilarVertexPairExtractor = struct
       let bidirectional_carpro =
         let* bidirectional1 = trunk1_bidirectional graph in
         let* bidirectional2 = trunk2_bidirectional graph in
-        if Vertex.equal bidirectional1 bidirectional2 then []
+        if
+          Vertex.equal bidirectional1 bidirectional2
+          && G.is_pointing_to_each_other
+               (G.LiteralVertex.of_vertex trunk1_root)
+               (G.LiteralVertex.of_vertex trunk1_leaf)
+               graph ~label:EdgeLabel.NodeWiseSimilarity
+        then []
         else return (fst3 bidirectional1, fst3 bidirectional2)
       in
       root_pair_list @ leaf_pair_list @ bidirectional_carpro @ redefines_carpro
@@ -290,7 +310,7 @@ module EstablishSimEdges = struct
     in
     let above_threshold_entries =
       NodeWiseSimilarityMap.filter
-        (fun _ similarity -> similarity >= NodewisePairExtractor.threshold)
+        (fun _ similarity -> similarity >= NodeWiseSimilarityMap.threshold)
         contextual_similarity_map
     in
     NodeWiseSimilarityMap.fold
@@ -320,7 +340,7 @@ module EstablishSimEdges = struct
     let trunk_similarity_map = TrunkPairExtractor.update_trunk_similarity_map all_trunks in
     TrunkSimilarityMap.fold
       (fun ((trunk1, trunk2) as trunk_pair) similarity acc ->
-        if similarity >= TrunkPairExtractor.threshold then
+        if similarity >= TrunkSimilarityMap.threshold then
           let contextually_similar_methods =
             ContextualPairExtractor.identify_similar_method_from_similar_trunk trunk_pair graph
           in

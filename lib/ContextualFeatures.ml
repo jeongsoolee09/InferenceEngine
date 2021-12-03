@@ -16,7 +16,7 @@ let same_callee_in_trunk_count ((trunk1, trunk2) : trunk * trunk) : int =
     ~init:0 trunk1
 
 
-(** Do the two trunks share the same suffixes? If it does, what is its length? **)
+(** Do the two trunks share the same suffixes? If it does, what is its length? *)
 let trunks_share_same_suffixes_length ((trunk1, trunk2) : trunk * trunk) : int =
   (* if the two trunks are not equal in size, prepends some fillers *)
   let trunk1_only_methods = trunk1 >>| fst3 and trunk2_only_methods = trunk2 >>| fst3 in
@@ -41,7 +41,7 @@ let trunks_share_same_suffixes_length ((trunk1, trunk2) : trunk * trunk) : int =
   List.length suffix
 
 
-(** Do the two trunks share the same prefixes? If it does, what is its length? **)
+(** Do the two trunks share the same prefixes? If it does, what is its length? *)
 let trunks_share_same_prefixes_length ((trunk1, trunk2) : trunk * trunk) : int =
   (* if the two trunks are not equal in size, prepends some fillers *)
   let trunk1_only_methods = trunk1 >>| fst3 and trunk2_only_methods = trunk2 >>| fst3 in

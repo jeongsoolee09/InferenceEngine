@@ -306,15 +306,6 @@ module G = struct
       graph []
 
 
-  let is_pointing_to_each_other (v1 : LiteralVertex.t) (v2 : LiteralVertex.t) (graph : t) : bool =
-    let v2_is_v1's_succ =
-      List.mem ~equal:Vertex.equal (any_label_succs v1 graph) (LiteralVertex.to_vertex v2 graph)
-    and v1_is_v2's_succ =
-      List.mem ~equal:Vertex.equal (any_label_succs v2 graph) (LiteralVertex.to_vertex v1 graph)
-    in
-    v2_is_v1's_succ && v1_is_v2's_succ
-
-
   let find_in_edges (vertex : LiteralVertex.t) (graph : t) : E.t list =
     fold_edges_e
       (fun ((_, label, v2) as edge) acc ->
@@ -393,6 +384,16 @@ module G = struct
         graph []
     in
     in_df_edges >>| fst3
+
+
+  let is_pointing_to_each_other (v1 : LiteralVertex.t) (v2 : LiteralVertex.t) (graph : t)
+      ~(label : EdgeLabel.t) : bool =
+    let v2_is_v1's_succ =
+      List.mem ~equal:Vertex.equal (get_succs graph v1 ~label) (LiteralVertex.to_vertex v2 graph)
+    and v1_is_v2's_succ =
+      List.mem ~equal:Vertex.equal (get_succs graph v2 ~label) (LiteralVertex.to_vertex v1 graph)
+    in
+    v2_is_v1's_succ && v1_is_v2's_succ
 
 
   let this_method_vertices (graph : t) (method_ : string) : V.t list =
