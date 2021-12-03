@@ -137,21 +137,19 @@ module SingleFeature = struct
       (Deserializer.deserialize_method_txt () @ Deserializer.deserialize_skip_func ())
 
 
-  let find_this_project_package_name () =
+  let this_project_package_name =
     let skip_methods = Deserializer.deserialize_skip_func ()
     and udf_methods = Deserializer.deserialize_method_txt () in
     string_of_feature @@ extract_package_name_from_id @@ List.hd_exn udf_methods
 
 
   let is_this_project_method (methstring : string) : feature =
-    let this_project_package_name = find_this_project_package_name () in
     let this_method_id = find_unique_identifier_of_methstring methstring in
     let methstring_package = extract_package_name_from_id this_method_id in
     Bool (String.equal (string_of_feature methstring_package) this_project_package_name)
 
 
   let is_java_builtin_method (methstring : string) : feature =
-    let this_project_package_name = find_this_project_package_name () in
     let this_method_id = find_unique_identifier_of_methstring methstring in
     let methstring_package = extract_package_name_from_id this_method_id in
     Bool (String.is_prefix ~prefix:"java." (string_of_feature methstring_package))
