@@ -719,7 +719,31 @@ module Notebook20 = struct
 
   let iterator = "Iterator Collection.iterator()"
 
+  let arraylist_init = "ArrayList.<init>()"
+
+  open NodeWiseFeatures
+
   let _ = PairwiseFeature.belong_to_same_class (toString, append)
 
   let _ = PairwiseFeature.return_type_is_another's_class (map_values, iterator)
+
+  let _ =
+    String.equal
+      (SingleFeature.string_of_feature (SingleFeature.extract_rtntype_from_methstring map_values))
+      (SingleFeature.string_of_feature (SingleFeature.extract_class_name_from_methstring iterator))
+
+
+  let normalstring_regex = Str.regexp "\\(.*\\) \\([a-zA-Z$]+\\)\\.\\([a-zA-Z<>$]+\\)(.*)"
+
+  let _ =
+    assert (Str.string_match normalstring_regex map_values 0) ;
+    print_endline @@ Str.matched_group 1 map_values ;
+    print_endline @@ Str.matched_group 2 map_values ;
+    print_endline @@ Str.matched_group 3 map_values
+
+
+  let _ =
+    assert (Str.string_match SingleFeature.initstring_regex arraylist_init 0) ;
+    print_endline @@ Str.matched_group 1 arraylist_init ;
+    print_endline @@ Str.matched_group 2 arraylist_init
 end
