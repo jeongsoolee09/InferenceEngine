@@ -137,19 +137,31 @@ module SingleFeature = struct
       (Deserializer.deserialize_method_txt () @ Deserializer.deserialize_skip_func ())
 
 
-  let is_framework_code (methstring : string) : feature =
+  let find_this_project_package_name () =
     let skip_methods = Deserializer.deserialize_skip_func ()
     and udf_methods = Deserializer.deserialize_method_txt () in
-    let this_project_package_name =
-      string_of_feature @@ extract_package_name_from_id @@ List.hd_exn udf_methods
-    in
-    let methstring_package =
-      find_unique_identifier_of_methstring methstring |> extract_package_name_from_id
-    in
+    string_of_feature @@ extract_package_name_from_id @@ List.hd_exn udf_methods
+
+
+  let is_this_project_method (methstring : string) : feature =
+    let this_project_package_name = find_this_project_package_name () in
+    let this_method_id = find_unique_identifier_of_methstring methstring in
+    let methstring_package = extract_package_name_from_id this_method_id in
+    Bool (String.equal (string_of_feature methstring_package) this_project_package_name)
+
+
+  let is_java_builtin_method (methstring : string) : feature =
+    let this_project_package_name = find_this_project_package_name () in
+    let this_method_id = find_unique_identifier_of_methstring methstring in
+    let methstring_package = extract_package_name_from_id this_method_id in
+    Bool (String.is_prefix ~prefix:"java." (string_of_feature methstring_package))
+
+
+  let is_framework_code (methstring : string) : feature =
     Bool
       (not
-         ( String.is_prefix ~prefix:"java." (string_of_feature methstring_package)
-         || String.equal (string_of_feature methstring_package) this_project_package_name ) )
+         ( (bool_of_feature @@ is_java_builtin_method methstring)
+         || (bool_of_feature @@ is_this_project_method methstring) ) )
 
 
   let all_features =
@@ -182,6 +194,13 @@ module PairwiseFeature = struct
     String.equal
       (SingleFeature.string_of_feature (SingleFeature.extract_rtntype_from_methstring method1))
       (SingleFeature.string_of_feature (SingleFeature.extract_class_name_from_methstring method2))
+
+
+  let all_features =
+    [ is_both_framework_code
+    ; belong_to_same_class
+    ; belong_to_same_package
+    ; return_type_is_another's_class ]
 end
 
 let run_all_single_features (methname : string) : SingleFeature.feature list =
