@@ -171,8 +171,10 @@ module SingleFeature = struct
     Bool
       (List.exists
          ~f:(fun line ->
-           String.is_substring ~substring:methstring line && String.is_prefix ~prefix:"java." line
-           )
+           let classname = string_of_feature @@ extract_class_name_from_initstring methstring
+           and methodname = string_of_feature @@ extract_method_name_from_initstring methstring in
+           String.is_substring ~substring:(F.asprintf "%s.%s" classname methodname) line
+           && String.is_prefix ~prefix:"java." line )
          skip_func_lines )
 
 

@@ -747,3 +747,75 @@ module Notebook20 = struct
     print_endline @@ Str.matched_group 1 arraylist_init ;
     print_endline @@ Str.matched_group 2 arraylist_init
 end
+
+module Notebook21 = struct
+  (* testing why Iterator family's not gotten a NS edge. *)
+
+  (* ns edge?? *)
+
+  let next = ("Object Iterator.next()", "{ line 42 }")
+
+  let iterator = ("Iterator Collection.iterator()", "{ line 42 }")
+
+  open SimilarVertexPairExtractor.NodewisePairExtractor
+
+  let _ = get_nodewise_similarity (fst next, fst iterator)
+
+  let _ = get_nodewise_similarity (fst iterator, fst next)
+
+  (* okay, get_nodewise_similarity ain't borken. *)
+
+  (* --> it was because of the threshold value for constructing a Nodewise Similarity Edge. *)
+end
+
+(* now we need to make a scoring system. *)
+
+module Notebook22 = struct
+  let scanner_init = ("Scanner.<init>(InputStream)", "{ line 24 }")
+
+  let queryForMap = ("Map JdbcTemplate.queryForMap(String,Object[])", "{ line 37 }")
+
+  open SimilarVertexPairExtractor.NodewisePairExtractor
+
+  let _ = get_nodewise_similarity (fst scanner_init, fst queryForMap)
+
+  open NodeWiseFeatures.PairwiseFeature
+
+  (* [ (is_both_framework_code, 5) *)
+  (* ; (belong_to_same_class, 2) *)
+  (* ; (belong_to_same_package, 2) *)
+  (* ; (return_type_is_another's_class, 3) ] *)
+
+  let _ = is_both_framework_code (fst scanner_init, fst queryForMap)
+
+  let _ = belong_to_same_class (fst scanner_init, fst queryForMap)
+
+  let _ = belong_to_same_package (fst scanner_init, fst queryForMap)
+
+  let _ = return_type_is_another's_class (fst scanner_init, fst queryForMap)
+
+  (* oops, is_both_framework_code is borken *)
+  open NodeWiseFeatures.SingleFeature
+
+  let _ = is_framework_method (fst scanner_init)
+
+  (* scanner_init is not a framework method!! *)
+
+  let _ =
+    not
+      ( (bool_of_feature @@ is_this_project_class_initializer (fst scanner_init))
+      || (bool_of_feature @@ is_java_builtin_class_initializer (fst scanner_init)) )
+
+
+  let _ = bool_of_feature @@ is_this_project_class_initializer (fst scanner_init)
+
+  let _ = bool_of_feature @@ is_java_builtin_class_initializer (fst scanner_init)
+
+  let line = "java.util.Scanner.<init>(java.io.InputStream)"
+
+  let _ =
+    let classname = string_of_feature @@ extract_class_name_from_initstring (fst scanner_init)
+    and methodname = string_of_feature @@ extract_method_name_from_initstring (fst scanner_init) in
+    String.is_substring ~substring:(F.asprintf "%s.%s" classname methodname) line
+    && String.is_prefix ~prefix:"java." line
+end
