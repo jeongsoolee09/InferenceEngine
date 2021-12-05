@@ -38,7 +38,7 @@ type json = Json.t
 
 let json = Deserializer.deserialize_json ();;
 
-let graph = GraphMaker.init_graph json;;
+let graph = GraphMaker.init_graph json ~debug:false;;
 
 let received_responses = [];;
 

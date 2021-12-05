@@ -44,7 +44,7 @@ let graph_to_dot (graph : G.t) ?(filename = "initial_graph.dot") : unit =
   Out_channel.close out_channel
 
 
-let init_graph (json : json) : G.t =
+let init_graph (json : json) ~(debug : bool) : G.t =
   let out =
     let df_vertices_added = batch_add_vertex json G.empty in
     let df_edges_added, all_void_calls = batch_add_edge json df_vertices_added in
@@ -53,5 +53,5 @@ let init_graph (json : json) : G.t =
     let hs_edges_added = EstablishSimEdges.make_hybrid_sim_edge all_void_calls cs_edges_added in
     remove_bogus hs_edges_added
   in
-  graph_to_dot out ~filename:(make_now_string 9 ^ ".dot") ;
+  if debug then graph_to_dot out ~filename:(make_now_string 9 ^ ".dot") ;
   out
