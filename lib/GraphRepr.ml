@@ -109,7 +109,7 @@ module G = struct
   include BiDiGraph
 
   module LiteralVertex = struct
-    type t = string * string [@@deriving compare, equal]
+    type t = string * string [@@deriving compare, equal, sexp]
 
     let to_vertex ((meth, loc) : t) (graph : BiDiGraph.t) : Vertex.t =
       let res_opt =

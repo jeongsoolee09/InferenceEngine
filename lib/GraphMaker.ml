@@ -12,7 +12,10 @@ let batch_add_vertex (raw_json : json) (graph : G.t) =
 let batch_add_edge (raw_json : json) (graph : G.t) =
   let all_edges, all_void_calls = EdgeMaker.get_all_edges_and_void_calls raw_json in
   let edge_added = List.fold ~f:(fun acc edge -> G.add_edge_e acc edge) ~init:graph all_edges in
-  (edge_added, all_void_calls)
+  let out_channel = Out_channel.create "void_calls.lisp" in
+  Sexp.output out_channel (Sexp.List (List.map ~f:G.LiteralVertex.sexp_of_t all_void_calls)) ;
+  Out_channel.close out_channel ;
+  edge_added
 
 
 let remove_bogus (graph : G.t) =
@@ -46,12 +49,9 @@ let graph_to_dot (graph : G.t) ?(filename = "initial_graph.dot") : unit =
 
 let init_graph (json : json) ~(debug : bool) : G.t =
   let out =
-    let df_vertices_added = batch_add_vertex json G.empty in
-    let df_edges_added, all_void_calls = batch_add_edge json df_vertices_added in
-    let ns_edges_added = EstablishSimEdges.make_nodewise_sim_edge df_edges_added in
-    let cs_edges_added = EstablishSimEdges.make_contextual_sim_edge ns_edges_added in
-    let hs_edges_added = EstablishSimEdges.make_hybrid_sim_edge all_void_calls cs_edges_added in
-    remove_bogus hs_edges_added
+    G.empty |> batch_add_vertex json |> batch_add_edge json
+    |> EstablishSimEdges.make_nodewise_sim_edge |> EstablishSimEdges.make_contextual_sim_edge
+    |> remove_bogus
   in
   if debug then graph_to_dot out ~filename:(make_now_string 9 ^ ".dot") ;
   out

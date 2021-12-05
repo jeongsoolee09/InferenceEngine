@@ -200,22 +200,26 @@ module SingleFeature = struct
            || (bool_of_feature @@ is_this_project_method methstring) ) )
 
 
-  let returnval_not_used_in_caller (void_call_vertices : G.LiteralVertex.t list) (graph : G.t)
-      (methstring : string) : feature =
+  let returnval_not_used_in_caller (methstring : string) : feature =
     (* NOTE use partial application on the first two params to type-check *)
-    Bool
-      (let methstring_vertices = G.this_method_vertices graph methstring in
-       assert (Int.( = ) (List.length methstring_vertices) 1) ;
-       let methstring_vertex = List.hd_exn methstring_vertices in
-       List.mem ~equal:G.LiteralVertex.equal void_call_vertices
-         (G.LiteralVertex.of_vertex methstring_vertex) )
+    let sexp_loaded = Sexp.parse @@ In_channel.read_all "void_calls.lisp" in
+    match sexp_loaded with
+    | Done (res, _) ->
+        let module LVList = struct
+          type t = G.LiteralVertex.t list [@@deriving sexp]
+        end in
+        let void_call_methods = List.map ~f:fst (LVList.t_of_sexp res) in
+        Bool (List.mem ~equal:String.equal void_call_methods methstring)
+    | Cont _ ->
+        failwith "sexp parsing error"
 
 
   let all_features =
     [ extract_rtntype_from_methstring
     ; extract_class_name_from_methstring
     ; extract_method_name_from_methstring
-    ; is_framework_method ]
+    ; is_framework_method
+    ; returnval_not_used_in_caller ]
 end
 
 module PairwiseFeature = struct
