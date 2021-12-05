@@ -400,7 +400,7 @@ module MetaRules = struct
            ~f:(fun acc prop_rule ->
              try
                (* try applying a prop_rule *)
-               let _ = prop_rule graph new_fact prev_facts ~dry_run:true in
+               let (_ : G.t * Vertex.t list) = prop_rule graph new_fact prev_facts ~dry_run:true in
                prop_rule :: acc
              with Assert_failure _ -> acc )
            ~init:[] prop_rules
@@ -433,7 +433,7 @@ module MetaRules = struct
       @@ List.fold
            ~f:(fun acc asking_rule ->
              try
-               let _ = asking_rule graph responses nfeaturemap in
+               let (_ : Question.t) = asking_rule graph responses nfeaturemap in
                asking_rule :: acc
              with Assert_failure _ -> acc )
            ~init:[] asking_rules
