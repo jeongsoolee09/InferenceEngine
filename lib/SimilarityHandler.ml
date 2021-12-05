@@ -121,9 +121,9 @@ module SimilarVertexPairExtractor = struct
     let get_trunk_similarity (trunk_pair : trunk * trunk) : int =
       (* execute all extractors. *)
       let extractors_list =
-        [ same_callee_in_trunk_count
-        ; trunks_share_same_suffixes_length
-        ; trunks_share_same_prefixes_length ]
+        [ ContextualFeatures.TrunkFeatures.same_callee_in_trunk_count
+        ; ContextualFeatures.TrunkFeatures.trunks_share_same_suffixes_length
+        ; ContextualFeatures.TrunkFeatures.trunks_share_same_prefixes_length ]
       in
       List.fold ~f:(fun acc extractor -> acc + extractor trunk_pair) ~init:0 extractors_list
 
@@ -281,6 +281,8 @@ module SimilarVertexPairExtractor = struct
             (a_elem, snd b_elem_with_smallest_diff) :: acc )
           ~init:[] trunk_a_processed
   end
+
+  module HybridPairExtractor = struct end
 end
 
 module EstablishSimEdges = struct
@@ -338,4 +340,9 @@ module EstablishSimEdges = struct
             ~init:acc smart_pairedup
         else acc )
       trunk_similarity_map graph
+
+
+  let make_hybrid_sim_edge (void_call_vertices : G.LiteralVertex.t list) (graph : G.t) : G.t =
+    (*.TODO *)
+    graph
 end
