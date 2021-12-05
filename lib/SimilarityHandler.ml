@@ -58,6 +58,7 @@ module TrunkSimilarityMap = struct
 
 
   let pair_with_max_value (map : t) : TrunkPair.t =
+    (* for debugging purposes *)
     fst
     @@ fold
          (fun key value (current_max_key, current_max_value) ->
@@ -87,7 +88,7 @@ end
 module SimilarVertexPairExtractor = struct
   (** module that ultimately calculates the nodewise similarity of each method. *)
   module NodewisePairExtractor = struct
-    let extractors_and_their_features =
+    let pairwise_features_and_their_scores =
       let open NodeWiseFeatures.PairwiseFeature in
       [ (is_both_framework_code, 4)
       ; (belong_to_same_class, 2)
@@ -99,9 +100,9 @@ module SimilarVertexPairExtractor = struct
     let get_nodewise_similarity (method_pair : string * string) : int =
       (* execute all extractors. *)
       List.fold
-        ~f:(fun current_score (extractor, score) ->
-          if extractor method_pair then current_score + score else current_score )
-        ~init:0 extractors_and_their_features
+        ~f:(fun current_score (feature, score) ->
+          if feature method_pair then current_score + score else current_score )
+        ~init:0 pairwise_features_and_their_scores
 
 
     (** main functionality: calculate the nodewise simliarity of each method and organize those in a
@@ -281,8 +282,6 @@ module SimilarVertexPairExtractor = struct
             (a_elem, snd b_elem_with_smallest_diff) :: acc )
           ~init:[] trunk_a_processed
   end
-
-  module HybridPairExtractor = struct end
 end
 
 module EstablishSimEdges = struct
@@ -340,9 +339,4 @@ module EstablishSimEdges = struct
             ~init:acc smart_pairedup
         else acc )
       trunk_similarity_map graph
-
-
-  let make_hybrid_sim_edge (void_call_vertices : G.LiteralVertex.t list) (graph : G.t) : G.t =
-    (*.TODO *)
-    graph
 end
