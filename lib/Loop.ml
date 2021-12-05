@@ -12,7 +12,7 @@ module Visualizer = struct
       svg file. *)
   let visualize_at_the_face (snapshot : G.t) : unit =
     let open GraphMaker in
-    let now_timestring = make_now_string () in
+    let now_timestring = make_now_string 9 in
     graph_to_dot snapshot ~filename:(F.asprintf "%s.dot" now_timestring) ;
     let dot_in_chan, dot_out_chan =
       Unix.open_process (F.asprintf "dot -Tsvg -o %s.svg %s.dot" now_timestring now_timestring)
