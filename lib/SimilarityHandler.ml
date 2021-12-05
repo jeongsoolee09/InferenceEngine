@@ -17,7 +17,7 @@ module NodeWiseSimilarityMap = struct
 
   type t = Int.t WithMethodPairDomain.t
 
-  let threshold = 2 (* TEMP *)
+  let threshold = 5 (* TEMP *)
 
   let init (all_methods : string list) : t =
     let method_pairs =
@@ -87,12 +87,21 @@ end
 module SimilarVertexPairExtractor = struct
   (** module that ultimately calculates the nodewise similarity of each method. *)
   module NodewisePairExtractor = struct
+    let extractors_and_their_features =
+      let open NodeWiseFeatures.PairwiseFeature in
+      [ (is_both_framework_code, 5)
+      ; (belong_to_same_class, 2)
+      ; (belong_to_same_package, 2)
+      ; (return_type_is_another's_class, 3) ]
+
+
     (** Run all extractors for every method pair. *)
     let get_nodewise_similarity (method_pair : string * string) : int =
       (* execute all extractors. *)
       List.fold
-        ~f:(fun acc extractor -> if extractor method_pair then acc + 1 else acc)
-        ~init:0 PairwiseFeature.all_features
+        ~f:(fun current_score (extractor, score) ->
+          if extractor method_pair then current_score + score else current_score )
+        ~init:0 extractors_and_their_features
 
 
     (** main functionality: calculate the nodewise simliarity of each method and organize those in a
