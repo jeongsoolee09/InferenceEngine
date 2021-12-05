@@ -125,55 +125,6 @@ end
 
 (* the repl makes tedious debugging very viable! *)
 
-module Notebook5 = struct
-  let json = Deserializer.deserialize_json ()
-
-  let graph = GraphMaker.init_graph json
-
-  let all_trunks = identify_trunks graph
-
-  let all_methods = G.all_methods_of_graph graph
-
-  (* noooo there are too many of them!!! *)
-  (* utop # List.length all_trunks;; *)
-  (* - : int = 36 *)
-
-  (* meh.... whatever... *)
-
-  (* contextualsimilarity가 잘 매겨지고 있나...?? *)
-
-  (* --> we need to examine TrunkSimilarityMap!!! *)
-  (* --> ..which leads us to each of the extractors. *)
-
-  let sample_tsmap =
-    SimilarityHandler.SimilarVertexPairExtractor.ContextualPairExtractor
-    .update_contextual_similarity_map all_trunks all_methods graph
-
-
-  open Core_kernel.Out_channel
-
-  let test () =
-    ContextualSimilarityMap.iter
-      (fun k v ->
-        output_string stdout (string_of_int v) ;
-        newline stdout )
-      sample_tsmap
-
-
-  let test1 () =
-    ContextualSimilarityMap.iter
-      (fun k v ->
-        if v >= 1 then (
-          output_string stdout (string_of_int v) ;
-          newline stdout ) )
-      sample_tsmap
-
-  (* ok, there are some contextual similarities captured: they are all six. *)
-
-  (* maybe I need some granular investigation! *)
-  (* --> all contextual extractors working. *)
-end
-
 module Notebook6 = struct
   (* 이제, sim edge가 왜 안 생기는지를 보자. *)
   let json = Deserializer.deserialize_json ()
@@ -758,6 +709,12 @@ module Notebook21 = struct
   let iterator = ("Iterator Collection.iterator()", "{ line 42 }")
 
   open SimilarVertexPairExtractor.NodewisePairExtractor
+  open NodeWiseFeatures.SingleFeature
+  open NodeWiseFeatures.PairwiseFeature
+
+  let _ = return_type_is_another's_class (fst next, fst iterator)
+
+  let _ = return_type_is_another's_class (fst iterator, fst next)
 
   let _ = get_nodewise_similarity (fst next, fst iterator)
 
@@ -794,6 +751,8 @@ module Notebook22 = struct
 
   let _ = return_type_is_another's_class (fst scanner_init, fst queryForMap)
 
+  let _ = return_type_is_another's_class (fst queryForMap, fst scanner_init)
+
   (* oops, is_both_framework_code is borken *)
   open NodeWiseFeatures.SingleFeature
 
@@ -818,4 +777,33 @@ module Notebook22 = struct
     and methodname = string_of_feature @@ extract_method_name_from_initstring (fst scanner_init) in
     String.is_substring ~substring:(F.asprintf "%s.%s" classname methodname) line
     && String.is_prefix ~prefix:"java." line
+end
+
+(* good.. but why no cs edges *)
+(* --> 없을 수밖에 없었네! **)
+
+module Notebook23 = struct
+  (* TODO *)
+  (* we need another feature: return_value is not used in caller *)
+
+  (* nodewise featuremap *)
+end
+
+(* root/leaf이라는 것은 강력한 힌트가 될 수는 있지만 그 자체로 충분하지는 않다. *)
+module Notebook24 = struct
+  let trunk1_root = ("Map JdbcTemplate.queryForMap(String,Object[])", "{ line 37 }")
+
+  let trunk2_leaf = ("int[] JdbcTemplate.batchUpdate(String,List)", "{ line 33 }")
+
+  let _ =
+    G.is_pointing_to_each_other trunk1_root trunk2_leaf graph ~label:EdgeLabel.NodeWiseSimilarity
+end
+
+(* NOTE Scanner.nextLine까지 해낼 수 있다!!! 왜냐? batchUpdate가 sink인건 확실하니까. *)
+
+module Notebook25 = struct
+  (* TODO *)
+
+  (* Scanner.nextLine까지 해낼 수 있다!!! 왜냐? batchUpdate가 sink인건 확실하니까. *)
+  (* 위의 아이디어를 코드로 표현해 봅시다. *)
 end

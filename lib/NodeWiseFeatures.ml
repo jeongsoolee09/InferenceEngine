@@ -2,9 +2,9 @@ open ListMonad
 open GraphRepr
 open FeatureMaps
 
-exception TODO
-
 type vertex = G.V.t
+
+exception TODO
 
 module SingleFeature = struct
   type feature = FeatureMaps.NodeWiseFeatureMap.feature
@@ -198,6 +198,17 @@ module SingleFeature = struct
         (not
            ( (bool_of_feature @@ is_java_builtin_method methstring)
            || (bool_of_feature @@ is_this_project_method methstring) ) )
+
+
+  let returnval_not_used_in_caller (void_call_vertices : G.LiteralVertex.t list) (graph : G.t)
+      (methstring : string) : feature =
+    (* NOTE use partial application on the first two params to type-check *)
+    Bool
+      (let methstring_vertices = G.this_method_vertices graph methstring in
+       assert (Int.( = ) (List.length methstring_vertices) 1) ;
+       let methstring_vertex = List.hd_exn methstring_vertices in
+       List.mem ~equal:G.LiteralVertex.equal void_call_vertices
+         (G.LiteralVertex.of_vertex methstring_vertex) )
 
 
   let all_features =
