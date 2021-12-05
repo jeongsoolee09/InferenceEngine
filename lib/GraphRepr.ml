@@ -742,7 +742,7 @@ module EdgeMaker = struct
       , EdgeLabel.DataFlow
       , VertexMaker.vertex_of_chain_slice cs2 )
     in
-    [(edge_list, void_call_vertex_opt)]
+    return (edge_list, void_call_vertex_opt)
 
 
   let catMaybes (lst : 'a option list) : 'a list =
