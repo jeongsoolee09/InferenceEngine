@@ -10,7 +10,7 @@ let batch_add_vertex (raw_json : json) (graph : G.t) =
 
 
 let batch_add_edge (raw_json : json) (graph : G.t) =
-  let all_edges, all_void_calls = EdgeMaker.get_all_edges_and_void_calls raw_json in
+  let all_edges, all_void_calls = EdgeMaker.get_all_edges_and_frontend_defines raw_json in
   let edge_added = List.fold ~f:(fun acc edge -> G.add_edge_e acc edge) ~init:graph all_edges in
   let out_channel = Out_channel.create "void_calls.lisp" in
   Sexp.output out_channel (Sexp.List (List.map ~f:G.LiteralVertex.sexp_of_t all_void_calls)) ;

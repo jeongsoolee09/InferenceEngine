@@ -717,22 +717,33 @@ module EdgeMaker = struct
       (ChainSlice.t * ChainSlice.t) list * G.LiteralVertex.t option =
     let slice1, slice2 = List.last_exn bicycle_chain in
     match slice2 with
-    | DefineSlice (meth, ap, loc, _) as void_call_slice ->
+    | DefineSlice (_, ap, loc, using) as void_call_slice ->
         let is_frontend_tmp_var_ap = String.is_prefix ~prefix:"($" in
         if is_frontend_tmp_var_ap ap then
-          (List.slice bicycle_chain 0 (List.length bicycle_chain - 1), Some (meth, loc))
+          (List.slice bicycle_chain 0 (List.length bicycle_chain - 1), Some (using, loc))
         else (bicycle_chain, None)
     | _ ->
         (bicycle_chain, None)
 
 
+  let collect_voidcall_vertices (chain_slices : ChainSlice.t list) : G.LiteralVertex.t list =
+    List.rev
+    @@ List.fold
+         ~f:(fun acc chain_slice ->
+           if ChainSlice.is_voidcall chain_slice then
+             (G.LiteralVertex.of_vertex @@ VertexMaker.vertex_of_chain_slice chain_slice) :: acc
+           else acc )
+         ~init:[] chain_slices
+
+
   (** Converts a raw chain-slice list into a G.E.t list, together with an optional info of a
       void-call vertex. *)
   let edge_list_of_chain_slice_list (chain_slices : ChainSlice.t list) :
-      (G.E.t list * G.LiteralVertex.t option) list =
+      (G.E.t list * G.LiteralVertex.t list) list =
     let processed = ChainRefiners.process_chainslices chain_slices in
+    let all_void_calls = collect_voidcall_vertices chain_slices in
     let bicycle_chain_of_chain_slices = make_bicycle_chain processed in
-    let refined_bicycle_chain, void_call_vertex_opt =
+    let refined_bicycle_chain, frontend_define_vertex_opt =
       refine_bicycle_chain bicycle_chain_of_chain_slices
     in
     let edge_list =
@@ -742,29 +753,30 @@ module EdgeMaker = struct
       , EdgeLabel.DataFlow
       , VertexMaker.vertex_of_chain_slice cs2 )
     in
-    return (edge_list, void_call_vertex_opt)
+    return
+      ( edge_list
+      , match frontend_define_vertex_opt with
+        | Some frontend_define_vertex ->
+            frontend_define_vertex :: all_void_calls
+        | None ->
+            all_void_calls )
 
 
-  let catMaybes (lst : 'a option list) : 'a list =
-    List.rev
-    @@ List.fold
-         ~f:(fun acc opt -> if Option.is_some opt then Option.value_exn opt :: acc else acc)
-         ~init:[] lst
-
-
-  let get_all_edges_and_void_calls (raw_json : json) =
-    let edge_list_and_void_call_vertex_opt_list =
+  let get_all_edges_and_frontend_defines (raw_json : json) =
+    let edge_list_and_frontend_define_vertex_opt_list =
       ChainSliceManager.wrapped_chain_list_of_raw_json raw_json
       >>| ChainSliceManager.chain_slice_list_of_wrapped_chain >>= edge_list_of_chain_slice_list
     in
-    ( edge_list_and_void_call_vertex_opt_list >>= fst
-    , edge_list_and_void_call_vertex_opt_list >>| snd |> catMaybes )
+    ( edge_list_and_frontend_define_vertex_opt_list >>= fst
+    , edge_list_and_frontend_define_vertex_opt_list >>= snd )
 
 
-  let get_all_edges (raw_json : json) : G.E.t list = raw_json |> get_all_edges_and_void_calls |> fst
+  let get_all_edges (raw_json : json) : G.E.t list =
+    raw_json |> get_all_edges_and_frontend_defines |> fst
 
-  let get_all_void_call_vertices (raw_json : json) : G.LiteralVertex.t list =
-    raw_json |> get_all_edges_and_void_calls |> snd
+
+  let get_all_frontend_define_vertices (raw_json : json) : G.LiteralVertex.t list =
+    raw_json |> get_all_edges_and_frontend_defines |> snd
 end
 
 let identify_trunks (graph : G.t) : G.Trunk.t list =

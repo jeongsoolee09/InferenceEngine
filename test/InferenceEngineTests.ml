@@ -15,7 +15,7 @@ type json = Json.t
 
 let json = Deserializer.deserialize_json ()
 
-let graph = GraphMaker.init_graph json
+let graph = GraphMaker.init_graph json ~debug:false
 
 let received_responses = []
 
@@ -38,7 +38,7 @@ module Notebook1 = struct
 
   let json = Deserializer.deserialize_json ()
 
-  let graph = GraphMaker.init_graph json
+  let graph = GraphMaker.init_graph json ~debug:false
 
   let out_channel = Out_channel.create "graphmakertest.dot"
 
@@ -61,7 +61,7 @@ end
 module Notebook3 = struct
   let json = Deserializer.deserialize_json ()
 
-  let graph = GraphMaker.init_graph json
+  let graph = GraphMaker.init_graph json ~debug:false
 
   let with_sim_edges =
     SimilarityHandler.EstablishSimEdges.make_contextual_sim_edge
@@ -129,7 +129,7 @@ module Notebook6 = struct
   (* 이제, sim edge가 왜 안 생기는지를 보자. *)
   let json = Deserializer.deserialize_json ()
 
-  let graph = GraphMaker.init_graph json
+  let graph = GraphMaker.init_graph json ~debug:false
 
   let with_sim_edges =
     SimilarityHandler.EstablishSimEdges.make_contextual_sim_edge
@@ -168,7 +168,7 @@ end
 module Notebook7 = struct
   let json = Deserializer.deserialize_json ()
 
-  let graph = GraphMaker.init_graph json
+  let graph = GraphMaker.init_graph json ~debug:false
 
   let testgraph = SimilarityHandler.EstablishSimEdges.make_contextual_sim_edge graph
 
@@ -182,7 +182,7 @@ end
 module Notebook8 = struct
   let json = Deserializer.deserialize_json ()
 
-  let graph = GraphMaker.init_graph json
+  let graph = GraphMaker.init_graph json ~debug:false
 
   let testgraph =
     SimilarityHandler.EstablishSimEdges.make_contextual_sim_edge graph
@@ -203,7 +203,7 @@ end
 module Notebook9 = struct
   let json = Deserializer.deserialize_json ()
 
-  let graph = GraphMaker.init_graph json
+  let graph = GraphMaker.init_graph json ~debug:false
 end
 
 module Notebook10 = struct
@@ -211,7 +211,7 @@ module Notebook10 = struct
 
   let json = Deserializer.deserialize_json ()
 
-  let graph = GraphMaker.init_graph json
+  let graph = GraphMaker.init_graph json ~debug:false
 
   let received_responses = []
 
@@ -780,13 +780,21 @@ module Notebook22 = struct
 end
 
 (* good.. but why no cs edges *)
-(* --> 없을 수밖에 없었네! **)
+(* --> 없을 수밖에 없었네! *)
 
 module Notebook23 = struct
   (* TODO *)
   (* we need another feature: return_value is not used in caller *)
 
   (* nodewise featuremap *)
+
+  (* however, we need something to debug... *)
+
+  (* 1. DONE we first change what method gets serialized (to .lisp) *)
+  (* 2. DONE we then add void calls at the end of each chain.
+     --> this is conveniently checked by the status value of each slice. (is it VoidCall??)
+     --> this means... we need to collect all VoidCalls. How do we *efficiently* to this??
+     --> I have an idea *)
 end
 
 (* root/leaf이라는 것은 강력한 힌트가 될 수는 있지만 그 자체로 충분하지는 않다. *)
