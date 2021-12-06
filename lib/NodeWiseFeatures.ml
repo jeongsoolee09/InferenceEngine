@@ -223,7 +223,6 @@ module SingleFeature = struct
          ~f:(fun line -> String.is_substring ~substring:classname_methname line)
          (Deserializer.deserialize_skip_func ()) )
 
-
   let all_features =
     [ extract_rtntype_from_methstring
     ; extract_class_name_from_methstring
@@ -264,11 +263,22 @@ module PairwiseFeature = struct
       (SingleFeature.string_of_feature (SingleFeature.extract_class_name_from_methstring method2))
 
 
+  let is_both_java_builtin ((method1, method2) : string * string) : bool =
+    let method1_is_init = String.is_substring ~substring:"<init>" method1
+    and method2_is_init = String.is_substring ~substring:"<init>" method2 in
+    match method1_is_init, method2_is_init with
+    | true, true | false, false ->
+      (SingleFeature.bool_of_feature (SingleFeature.is_java_builtin_method method1)) &&
+      (SingleFeature.bool_of_feature (SingleFeature.is_java_builtin_method method2))
+    | _ -> false
+
+
   let all_features =
     [ is_both_framework_code
     ; belong_to_same_class
     ; belong_to_same_package
-    ; return_type_is_another's_class ]
+    ; return_type_is_another's_class
+    ; is_both_java_builtin ]
 end
 
 let run_all_single_features (methname : string) : SingleFeature.feature list =
