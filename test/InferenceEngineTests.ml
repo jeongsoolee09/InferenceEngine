@@ -327,44 +327,6 @@ end
 
 (* Notebook13 appears after Notebook16. *)
 
-module Notebook14 = struct
-  open EdgeMaker
-
-  let get_all_edges (raw_json : json) : G.E.t list =
-    ChainSliceManager.wrapped_chain_list_of_raw_json raw_json
-    >>| ChainSliceManager.chain_slice_list_of_wrapped_chain
-    >>| (*ChainRefiners.remove_define_frontend_tmp_var_at_the_end >> *)
-    ChainRefiners.delete_inner_deads >>= edge_list_of_chain_slice_list
-
-
-  open ChainSliceManager
-
-  let all_edges_real = get_all_edges @@ Deserializer.deserialize_json ()
-
-  let _ =
-    List.filter
-      ~f:(fun ((meth, _, _), _, _) ->
-        String.equal meth "int[] JdbcTemplate.batchUpdate(String,List)" )
-      all_edges_real
-
-
-  (* just for confirmation... *)
-  let _ =
-    List.filter
-      ~f:(fun ((meth, _, _), _, _) -> String.equal meth "String Scanner.nextLine()")
-      all_edges_real
-
-
-  let _ =
-    G.iter_edges_e
-      (fun (((meth, _, _), _, (meth2, _, _)) as edge) ->
-        if String.equal meth "int[] JdbcTemplate.batchUpdate(String,List)" then print_endline meth2
-        )
-      graph
-
-  (* done! *)
-end
-
 module Notebook15 = struct
   (* the path to println is borken. *)
 
@@ -466,7 +428,7 @@ module Notebook13 = struct
     (List.nth_exn res 0, List.nth_exn res 1)
 
 
-  let _ = trunks_share_same_suffixes_length (trunk1, trunk2)
+  let _ = ContextualFeatures.TrunkFeatures.trunks_share_same_suffixes_length (trunk1, trunk2)
 
   (* trunks_share_same_suffixes_length is borken... *)
 
@@ -505,9 +467,9 @@ module Notebook13 = struct
 
   let _ = List.length suffix
 
-  let _ = ContextualFeatures.trunks_share_same_prefixes_length (trunk1, trunk2)
+  let _ = ContextualFeatures.TrunkFeatures.trunks_share_same_prefixes_length (trunk1, trunk2)
 
-  let _ = ContextualFeatures.trunks_share_same_suffixes_length (trunk1, trunk2)
+  let _ = ContextualFeatures.TrunkFeatures.trunks_share_same_suffixes_length (trunk1, trunk2)
 end
 
 module Notebook17 = struct
@@ -607,18 +569,18 @@ module Notebook18 = struct
   let get_trunk_similarity (trunk_pair : trunk * trunk) : int =
     (* execute all extractors. *)
     let extractors_list =
-      [ same_callee_in_trunk_count
-      ; trunks_share_same_suffixes_length
-      ; trunks_share_same_prefixes_length ]
+      [ ContextualFeatures.TrunkFeatures.same_callee_in_trunk_count
+      ; ContextualFeatures.TrunkFeatures.trunks_share_same_suffixes_length
+      ; ContextualFeatures.TrunkFeatures.trunks_share_same_prefixes_length ]
     in
     List.fold ~f:(fun acc extractor -> acc + extractor trunk_pair) ~init:0 extractors_list
 
 
-  let _ = same_callee_in_trunk_count (trunk1, trunk2)
+  let _ = ContextualFeatures.TrunkFeatures.same_callee_in_trunk_count (trunk1, trunk2)
 
-  let _ = trunks_share_same_suffixes_length (trunk1, trunk2)
+  let _ = ContextualFeatures.TrunkFeatures.trunks_share_same_suffixes_length (trunk1, trunk2)
 
-  let _ = trunks_share_same_prefixes_length (trunk1, trunk2)
+  let _ = ContextualFeatures.TrunkFeatures.trunks_share_same_prefixes_length (trunk1, trunk2)
 
   (* 아 이런....ㅠㅠㅠ... 뭐가 문제인지 알겠다. *)
 
@@ -783,7 +745,6 @@ end
 (* --> 없을 수밖에 없었네! *)
 
 module Notebook23 = struct
-  (* TODO *)
   (* we need another feature: return_value is not used in caller *)
 
   (* nodewise featuremap *)
@@ -814,4 +775,12 @@ module Notebook25 = struct
 
   (* Scanner.nextLine까지 해낼 수 있다!!! 왜냐? batchUpdate가 sink인건 확실하니까. *)
   (* 위의 아이디어를 코드로 표현해 봅시다. *)
+
+  (* 그 trunk의 맨 끝에 sink라면, 그 위로 올라가면서 java/framework가 있으면 고놈은 source이다. *)
+
+  (* our code should go into... PropagationRules. *)
+
+  (* PropagationRules... 🤔 *)
 end
+
+(* TODO: replace expensive calls to Nodewise single features into a dataframe lookup. *)

@@ -124,7 +124,8 @@ module PropagationRules = struct
 
 
   let internal_udf_vertex_is_none : t =
-   fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ~(dry_run : bool) ->
+   fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ~(dry_run : bool) :
+       (G.t * Vertex.t list) ->
     let new_fact_method = Response.get_method new_fact in
     let new_fact_method_vertices =
       G.all_vertices_of_graph graph
@@ -164,7 +165,8 @@ module PropagationRules = struct
   (** propagating to contextually similar vertices: requires that the new_fact's method have
       successors with contextual similarity edge *)
   let contextual_similarity_rule : t =
-   fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ~(dry_run : bool) ->
+   fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ~(dry_run : bool) :
+       (G.t * Vertex.t list) ->
     let new_fact_method = Response.get_method new_fact
     and new_fact_label = Response.get_label new_fact in
     let new_fact_method_vertices =
@@ -222,7 +224,8 @@ module PropagationRules = struct
   (** Propagate the same info to nodes that are similar nodewise: requires that the new_fact's
       method have successors with nodewise simlarity edge *)
   let nodewise_similarity_propagation_rule : t =
-   fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ~(dry_run : bool) ->
+   fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ~(dry_run : bool) :
+       (G.t * Vertex.t list) ->
     let new_fact_method = Response.get_method new_fact
     and new_fact_label = Response.get_label new_fact in
     let new_fact_method_vertices =
@@ -326,16 +329,61 @@ module PropagationRules = struct
     (propagated, similarity_succs)
 
 
+  let internal_nonbidirectional_library_node_is_a_src_if_leaf_is_sink : t =
+   fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ~(dry_run : bool) :
+       (G.t * Vertex.t list) ->
+    (* assert that the new fact is about a leaf. *)
+    let new_fact_method = Response.get_method new_fact in
+    let new_fact_vertices = G.this_method_vertices graph new_fact_method in
+    if
+      (* UNSURE: is the condition correct? *)
+      not
+      @@ List.for_all
+           ~f:(fun vertex -> G.is_df_leaf (G.LiteralVertex.of_vertex vertex) graph)
+           new_fact_vertices
+    then (graph, []) (* Do nothing *)
+    else
+      let trunks_containing_vertices =
+        new_fact_vertices >>= GraphRepr.find_trunks_containing_vertex graph
+      in
+      List.fold
+        ~f:(fun big_acc trunk ->
+          List.fold
+            ~f:(fun ((graph_acc, affected) as smol_acc) vertex ->
+              let vertex_meth, vertex_loc, vertex_dist = vertex in
+              if
+                NodeWiseFeatures.SingleFeature.bool_of_feature
+                  (NodeWiseFeatures.SingleFeature.is_library_code vertex_meth)
+              then
+                (* bump the likelihood of being a source *)
+                let new_dist =
+                  { ProbQuadruple.src= vertex_dist.src +. 0.3
+                  ; sin= vertex_dist.sin -. 0.1
+                  ; san= vertex_dist.san -. 0.1
+                  ; non= vertex_dist.non -. 0.1 }
+                in
+                (G.strong_update_dist vertex new_dist graph_acc, vertex :: affected)
+              else smol_acc )
+            ~init:big_acc trunk )
+        ~init:(graph, []) trunks_containing_vertices
+
+
   (** Propagate the same info to nodes with the same @annotations: requires that the new_fact's
       method have successors with nodewise simlarity edge bearing the same @annotation *)
 
-  (* let annotation_rule : t = *)
-  (*  fun (distmap : ProbMap.t) (new_fact : Response.t) (prev_facts : Response.t list) (graph : G.t) -> *)
-  (*   (\* assert that there is at least one successor with the same annotation. *\) *)
-  (*   raise TODO *)
+  let annotation_rule : t =
+   fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ~(dry_run : bool) :
+       (G.t * Vertex.t list) ->
+    (* assert that there is at least one successor with the same annotation. *)
+    (* TODO *)
+    (graph, [])
+
 
   let all_rules =
-    [contextual_similarity_rule; nodewise_similarity_propagation_rule; internal_udf_vertex_is_none]
+    [ contextual_similarity_rule
+    ; nodewise_similarity_propagation_rule
+    ; internal_udf_vertex_is_none
+    ; internal_nonbidirectional_library_node_is_a_src_if_leaf_is_sink ]
 end
 
 (* Use Random.int_incl for making a random integer. *)

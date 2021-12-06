@@ -214,11 +214,22 @@ module SingleFeature = struct
         failwith "sexp parsing error"
 
 
+  let is_library_code (methstring : string) : feature =
+    let classname = string_of_feature @@ extract_class_name_from_methstring methstring
+    and methname = string_of_feature @@ extract_method_name_from_methstring methstring in
+    let classname_methname = F.asprintf "%s.%s" classname methname in
+    Bool
+      (List.exists
+         ~f:(fun line -> String.is_substring ~substring:classname_methname line)
+         (Deserializer.deserialize_skip_func ()) )
+
+
   let all_features =
     [ extract_rtntype_from_methstring
     ; extract_class_name_from_methstring
     ; extract_method_name_from_methstring
     ; is_framework_method
+    ; is_library_code
     ; returnval_not_used_in_caller ]
 end
 
