@@ -431,6 +431,19 @@ module G = struct
     let all_vertices = all_vertices_of_graph graph in
     let module StringSet = Caml.Set.Make (String) in
     all_vertices >>| fst3 |> StringSet.of_list |> StringSet.elements
+
+
+  let is_bidirectional_vertex (vertex : LiteralVertex.t) (graph : t) ~(label : EdgeLabel.t) : bool =
+    let vertex_succs = get_succs graph vertex ~label in
+    List.fold
+      ~f:(fun acc succ_vertex ->
+        let succ_vertex_preds = get_preds graph (LiteralVertex.of_vertex succ_vertex) ~label in
+        let found =
+          List.exists ~f:(fun succ_vertex_pred ->
+              LiteralVertex.equal vertex (LiteralVertex.of_vertex succ_vertex_pred) ) succ_vertex_preds
+        in
+        found || acc )
+      ~init:false vertex_succs
 end
 
 module PathUtils = struct

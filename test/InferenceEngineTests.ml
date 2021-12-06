@@ -784,3 +784,29 @@ module Notebook25 = struct
 end
 
 (* TODO: replace expensive calls to Nodewise single features into a dataframe lookup. *)
+
+module Notebook26 = struct
+  let next = ("Object Iterator.next()", "{ line 42 }")
+
+  let append = ("StringBuilder StringBuilder.append(Object)", "{ line 43 }")
+
+  let _ = G.is_bidirectional_vertex append graph ~label:EdgeLabel.DataFlow
+
+  let vertex = append
+
+  let vertex_succs = G.get_succs graph vertex ~label:EdgeLabel.DataFlow
+
+  let _ =
+    List.fold
+      ~f:(fun acc succ_vertex ->
+          (print_endline @@ F.asprintf "%s" (Vertex.to_string succ_vertex));
+        let succ_vertex_preds = G.get_preds graph (G.LiteralVertex.of_vertex succ_vertex) ~label:EdgeLabel.DataFlow in
+        let found =
+          List.exists
+            ~f:(fun ((meth, _ ,_) as succ_vertex_pred) ->
+              G.LiteralVertex.equal vertex (G.LiteralVertex.of_vertex succ_vertex_pred) )
+            succ_vertex_preds
+        in
+        found || acc )
+      ~init:false vertex_succs
+end
