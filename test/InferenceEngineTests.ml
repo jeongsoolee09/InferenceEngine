@@ -771,7 +771,7 @@ end
 (* NOTE Scanner.nextLine까지 해낼 수 있다!!! 왜냐? batchUpdate가 sink인건 확실하니까. *)
 
 module Notebook25 = struct
-  (* TODO *)
+  (* DONE *)
 
   (* Scanner.nextLine까지 해낼 수 있다!!! 왜냐? batchUpdate가 sink인건 확실하니까. *)
   (* 위의 아이디어를 코드로 표현해 봅시다. *)
@@ -786,6 +786,7 @@ end
 (* TODO: replace expensive calls to Nodewise single features into a dataframe lookup. *)
 
 module Notebook26 = struct
+  (* DONE *)
   let next = ("Object Iterator.next()", "{ line 42 }")
 
   let append = ("StringBuilder StringBuilder.append(Object)", "{ line 43 }")
@@ -799,14 +800,58 @@ module Notebook26 = struct
   let _ =
     List.fold
       ~f:(fun acc succ_vertex ->
-          (print_endline @@ F.asprintf "%s" (Vertex.to_string succ_vertex));
-        let succ_vertex_preds = G.get_preds graph (G.LiteralVertex.of_vertex succ_vertex) ~label:EdgeLabel.DataFlow in
+        print_endline @@ F.asprintf "%s" (Vertex.to_string succ_vertex) ;
+        let succ_vertex_preds =
+          G.get_preds graph (G.LiteralVertex.of_vertex succ_vertex) ~label:EdgeLabel.DataFlow
+        in
         let found =
           List.exists
-            ~f:(fun ((meth, _ ,_) as succ_vertex_pred) ->
+            ~f:(fun ((meth, _, _) as succ_vertex_pred) ->
               G.LiteralVertex.equal vertex (G.LiteralVertex.of_vertex succ_vertex_pred) )
             succ_vertex_preds
         in
         found || acc )
       ~init:false vertex_succs
+end
+
+module Notebook27 = struct
+  (* making a nodewise cluster *)
+
+  let find_ns_cluster (graph : G.t) : G.V.t list list =
+    let rec inner (vertex : G.V.t) (acc : G.V.t list) : G.V.t list =
+      let all_ns_bidirectionals =
+        List.filter
+          ~f:(fun other_vertex ->
+            G.is_pointing_to_each_other
+              (G.LiteralVertex.of_vertex vertex)
+              (G.LiteralVertex.of_vertex other_vertex)
+              graph ~label:EdgeLabel.NodeWiseSimilarity )
+          (G.all_vertices_of_graph graph)
+      in
+      let vertices_to_explore =
+        List.filter
+          ~f:(fun vertex -> not @@ List.mem ~equal:Vertex.equal acc vertex)
+          all_ns_bidirectionals
+      in
+      if
+        not
+        @@ G.is_bidirectional_vertex
+             (G.LiteralVertex.of_vertex vertex)
+             graph ~label:EdgeLabel.NodeWiseSimilarity
+        || List.is_empty vertices_to_explore
+      then acc (* we can't recurse anymore *)
+      else
+        List.fold
+          ~f:(fun smol_acc new_vertex -> smol_acc @ inner new_vertex (vertex :: new_vertex :: acc))
+          ~init:[] vertices_to_explore
+    in
+    List.fold
+      ~f:(fun acc vertex ->
+        if not @@ List.mem ~equal:G.V.equal (List.join acc) vertex then
+          let res = inner vertex [] in
+          if List.is_empty res then acc else res :: acc
+        else acc )
+      ~init:[] (G.all_vertices_of_graph graph)
+
+  (* DONE working nicely!! *)
 end

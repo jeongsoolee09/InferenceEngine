@@ -439,8 +439,10 @@ module G = struct
       ~f:(fun acc succ_vertex ->
         let succ_vertex_preds = get_preds graph (LiteralVertex.of_vertex succ_vertex) ~label in
         let found =
-          List.exists ~f:(fun succ_vertex_pred ->
-              LiteralVertex.equal vertex (LiteralVertex.of_vertex succ_vertex_pred) ) succ_vertex_preds
+          List.exists
+            ~f:(fun succ_vertex_pred ->
+              LiteralVertex.equal vertex (LiteralVertex.of_vertex succ_vertex_pred) )
+            succ_vertex_preds
         in
         found || acc )
       ~init:false vertex_succs
@@ -810,3 +812,40 @@ let identify_trunks (graph : G.t) : G.Trunk.t list =
 let find_trunks_containing_vertex graph vertex =
   let all_trunks = identify_trunks graph in
   List.filter ~f:(fun trunk -> List.mem ~equal:Vertex.equal trunk vertex) all_trunks
+
+
+let find_ns_cluster (graph : G.t) : G.V.t list list =
+  let rec inner (vertex : G.V.t) (acc : G.V.t list) : G.V.t list =
+    let all_ns_bidirectionals =
+      List.filter
+        ~f:(fun other_vertex ->
+          G.is_pointing_to_each_other
+            (G.LiteralVertex.of_vertex vertex)
+            (G.LiteralVertex.of_vertex other_vertex)
+            graph ~label:EdgeLabel.NodeWiseSimilarity )
+        (G.all_vertices_of_graph graph)
+    in
+    let vertices_to_explore =
+      List.filter
+        ~f:(fun vertex -> not @@ List.mem ~equal:Vertex.equal acc vertex)
+        all_ns_bidirectionals
+    in
+    if
+      not
+      @@ G.is_bidirectional_vertex
+           (G.LiteralVertex.of_vertex vertex)
+           graph ~label:EdgeLabel.NodeWiseSimilarity
+      || List.is_empty vertices_to_explore
+    then acc (* we can't recurse anymore *)
+    else
+      List.fold
+        ~f:(fun smol_acc new_vertex -> smol_acc @ inner new_vertex (vertex :: new_vertex :: acc))
+        ~init:[] vertices_to_explore
+  in
+  List.fold
+    ~f:(fun acc vertex ->
+      if not @@ List.mem ~equal:G.V.equal (List.join acc) vertex then
+        let res = inner vertex [] in
+        if List.is_empty res then acc else res :: acc
+      else acc )
+    ~init:[] (G.all_vertices_of_graph graph)
