@@ -842,8 +842,8 @@ module Notebook27 = struct
       then acc (* we can't recurse anymore *)
       else
         List.fold
-          ~f:(fun smol_acc new_vertex -> smol_acc @ inner new_vertex (vertex :: new_vertex :: acc))
-          ~init:[] vertices_to_explore
+          ~f:(fun smol_acc new_vertex -> inner new_vertex (vertex :: new_vertex :: acc))
+          ~init:acc vertices_to_explore
     in
     List.fold
       ~f:(fun acc vertex ->
@@ -854,4 +854,30 @@ module Notebook27 = struct
       ~init:[] (G.all_vertices_of_graph graph)
 
   (* DONE working nicely!! *)
+end
+
+(* TODO: propagator에 마이크로스냅샷을 dot으로 제공하는 기능 탑재 *)
+
+(* ContextualSimilarity...? Dunno *)
+
+module Notebook28 = struct
+  let recursively_find_df_preds (graph : G.t) (vertex : G.LiteralVertex.t) : G.V.t list =
+    let rec inner (current_vertex : G.V.t) (big_acc : G.V.t list) =
+      let current_vertex_df_preds =
+        G.get_preds graph (G.LiteralVertex.of_vertex current_vertex) ~label:EdgeLabel.DataFlow
+      in
+      let to_explore =
+        List.filter current_vertex_df_preds ~f:(fun pred ->
+            not @@ List.mem big_acc pred ~equal:Vertex.equal )
+      in
+      if List.is_empty current_vertex_df_preds || List.is_empty to_explore then big_acc
+      else
+        List.fold
+          ~f:(fun smol_acc vertex -> inner vertex (vertex :: smol_acc))
+          ~init:big_acc to_explore
+    in
+    inner (G.LiteralVertex.to_vertex vertex graph) []
+
+
+  let _ = recursively_find_preds graph ("int[] JdbcTemplate.batchUpdate(String,List)", "{ line 33 }")
 end

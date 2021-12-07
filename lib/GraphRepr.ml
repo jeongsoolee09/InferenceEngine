@@ -849,3 +849,21 @@ let find_ns_cluster (graph : G.t) : G.V.t list list =
         if List.is_empty res then acc else res :: acc
       else acc )
     ~init:[] (G.all_vertices_of_graph graph)
+
+
+let recursively_find_df_preds (graph : G.t) (vertex : G.LiteralVertex.t) : G.V.t list =
+  let rec inner (current_vertex : G.V.t) (big_acc : G.V.t list) =
+    let current_vertex_df_preds =
+      G.get_preds graph (G.LiteralVertex.of_vertex current_vertex) ~label:EdgeLabel.DataFlow
+    in
+    let to_explore =
+      List.filter current_vertex_df_preds ~f:(fun pred ->
+          not @@ List.mem big_acc pred ~equal:Vertex.equal )
+    in
+    if List.is_empty current_vertex_df_preds || List.is_empty to_explore then big_acc
+    else
+      List.fold
+        ~f:(fun smol_acc vertex -> inner vertex (vertex :: smol_acc))
+        ~init:big_acc to_explore
+  in
+  inner (G.LiteralVertex.to_vertex vertex graph) [] f
