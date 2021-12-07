@@ -851,10 +851,11 @@ let find_ns_cluster (graph : G.t) : G.V.t list list =
     ~init:[] (G.all_vertices_of_graph graph)
 
 
-let recursively_find_df_preds (graph : G.t) (vertex : G.LiteralVertex.t) : G.V.t list =
+let recursively_find_preds (graph : G.t) (vertex : G.LiteralVertex.t) ~(label : EdgeLabel.t) :
+    G.V.t list =
   let rec inner (current_vertex : G.V.t) (big_acc : G.V.t list) =
     let current_vertex_df_preds =
-      G.get_preds graph (G.LiteralVertex.of_vertex current_vertex) ~label:EdgeLabel.DataFlow
+      G.get_preds graph (G.LiteralVertex.of_vertex current_vertex) ~label
     in
     let to_explore =
       List.filter current_vertex_df_preds ~f:(fun pred ->
@@ -866,4 +867,4 @@ let recursively_find_df_preds (graph : G.t) (vertex : G.LiteralVertex.t) : G.V.t
         ~f:(fun smol_acc vertex -> inner vertex (vertex :: smol_acc))
         ~init:big_acc to_explore
   in
-  inner (G.LiteralVertex.to_vertex vertex graph) [] f
+  inner (G.LiteralVertex.to_vertex vertex graph) []

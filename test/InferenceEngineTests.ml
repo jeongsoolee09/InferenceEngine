@@ -861,10 +861,11 @@ end
 (* ContextualSimilarity...? Dunno *)
 
 module Notebook28 = struct
-  let recursively_find_df_preds (graph : G.t) (vertex : G.LiteralVertex.t) : G.V.t list =
+  let recursively_find_preds (graph : G.t) (vertex : G.LiteralVertex.t) ~(label : EdgeLabel.t) :
+      G.V.t list =
     let rec inner (current_vertex : G.V.t) (big_acc : G.V.t list) =
       let current_vertex_df_preds =
-        G.get_preds graph (G.LiteralVertex.of_vertex current_vertex) ~label:EdgeLabel.DataFlow
+        G.get_preds graph (G.LiteralVertex.of_vertex current_vertex) ~label
       in
       let to_explore =
         List.filter current_vertex_df_preds ~f:(fun pred ->
@@ -879,5 +880,14 @@ module Notebook28 = struct
     inner (G.LiteralVertex.to_vertex vertex graph) []
 
 
-  let _ = recursively_find_preds graph ("int[] JdbcTemplate.batchUpdate(String,List)", "{ line 33 }")
+  let _ =
+    recursively_find_preds graph
+      ("int[] JdbcTemplate.batchUpdate(String,List)", "{ line 33 }")
+      ~label:EdgeLabel.DataFlow
+
+
+  let _ =
+    recursively_find_preds graph
+      ("Collection Map.values()", "{ line 42 }")
+      ~label:EdgeLabel.NodeWiseSimilarity
 end
