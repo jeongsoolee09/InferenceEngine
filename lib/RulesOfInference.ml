@@ -332,24 +332,33 @@ module PropagationRules = struct
   let internal_nonbidirectional_library_node_is_a_src_if_leaf_is_sink : t =
    fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ~(dry_run : bool) :
        (G.t * Vertex.t list) ->
-    (* assert that the new fact is about a leaf. *)
     let new_fact_label = Response.get_label new_fact in
-    if not @@ TaintLabel.equal TaintLabel.Sink new_fact_label then (graph, [])
-    else
-      let new_fact_method = Response.get_method new_fact in
-      let new_fact_vertices = G.this_method_vertices graph new_fact_method in
+    let new_fact_method = Response.get_method new_fact in
+    let new_fact_vertices = G.this_method_vertices graph new_fact_method in
+    if not @@ TaintLabel.equal TaintLabel.Sink new_fact_label then
+      let trunks_containing_vertices =
+        new_fact_vertices >>= GraphRepr.find_trunks_containing_vertex graph
+      in
+      let trunk_leaves = trunks_containing_vertices >>| List.last_exn in
+      (* if all of trunk_leaves are sinks, then this may be a source! *)
       if
-        (* UNSURE: is the condition correct? *)
-        (* the new knowledge should be about a leaf vertex.
-           ==> if the new methods only appear at leaves in the graph, then the above holds. *)
-        not
-        @@ List.for_all
-             ~f:(fun vertex -> G.is_df_leaf (G.LiteralVertex.of_vertex vertex) graph)
-             new_fact_vertices
-      then (graph, []) (* Do nothing *)
-      else
-        let trunks_containing_vertices =
-          new_fact_vertices >>= GraphRepr.find_trunks_containing_vertex graph
+        List.exists
+          ~f:(fun leaf ->
+            TaintLabel.equal (ProbQuadruple.determine_label (trd3 leaf)) TaintLabel.Sink )
+          trunk_leaves
+      then
+        let new_fact_propagated =
+          List.fold
+            ~f:(fun acc new_fact_vertex ->
+              let vertex_dist = trd3 new_fact_vertex in
+              let updated_dist =
+                { ProbQuadruple.src= vertex_dist.src -. 0.1
+                ; sin= vertex_dist.sin +. 0.3
+                ; san= vertex_dist.san -. 0.1
+                ; non= vertex_dist.non -. 0.1 }
+              in
+              G.strong_update_dist new_fact_vertex updated_dist acc )
+            ~init:graph new_fact_vertices
         in
         List.fold
           ~f:(fun big_acc trunk ->
@@ -360,22 +369,66 @@ module PropagationRules = struct
                   NodeWiseFeatures.SingleFeature.bool_of_feature
                     (NodeWiseFeatures.SingleFeature.is_library_code vertex_meth)
                   && (not @@ G.is_df_leaf (G.LiteralVertex.of_vertex vertex) graph)
-                  && not
-                     @@ G.is_bidirectional_vertex
-                          (G.LiteralVertex.of_vertex vertex)
-                          graph ~label:EdgeLabel.DataFlow
                 then (
-                    print_endline @@ F.asprintf "===== methodname: %s\n" new_fact_method ;
+                  F.printf "===== internal vertex: %s\n" (fst3 vertex) ;
                   let new_dist =
                     { ProbQuadruple.src= vertex_dist.src +. 0.3
                     ; sin= vertex_dist.sin -. 0.1
                     ; san= vertex_dist.san -. 0.1
                     ; non= vertex_dist.non -. 0.1 }
                   in
-                  (G.strong_update_dist vertex new_dist graph_acc, vertex :: affected))
+                  (G.strong_update_dist vertex new_dist graph_acc, vertex :: affected) )
                 else smol_acc )
               ~init:big_acc trunk )
-          ~init:(graph, []) trunks_containing_vertices
+          ~init:(new_fact_propagated, []) trunks_containing_vertices
+      else (graph, [])
+    else if
+      (* UNSURE: is the condition correct? *)
+      (* the new knowledge should be about a leaf vertex.
+         ==> if the new methods only appear at leaves in the graph, then the above holds. *)
+      not
+      @@ List.for_all
+           ~f:(fun vertex -> G.is_df_leaf (G.LiteralVertex.of_vertex vertex) graph)
+           new_fact_vertices
+    then (graph, []) (* Do nothing *)
+    else
+      let trunks_containing_vertices =
+        new_fact_vertices >>= GraphRepr.find_trunks_containing_vertex graph
+      in
+      let new_fact_propagated =
+        List.fold
+          ~f:(fun acc new_fact_vertex ->
+            let vertex_dist = trd3 new_fact_vertex in
+            let updated_dist =
+              { ProbQuadruple.src= vertex_dist.src -. 0.1
+              ; sin= vertex_dist.sin +. 0.3
+              ; san= vertex_dist.san -. 0.1
+              ; non= vertex_dist.non -. 0.1 }
+            in
+            G.strong_update_dist new_fact_vertex updated_dist acc )
+          ~init:graph new_fact_vertices
+      in
+      List.fold
+        ~f:(fun big_acc trunk ->
+          List.fold
+            ~f:(fun ((graph_acc, affected) as smol_acc) vertex ->
+              let vertex_meth, vertex_loc, vertex_dist = vertex in
+              if
+                NodeWiseFeatures.SingleFeature.bool_of_feature
+                  (NodeWiseFeatures.SingleFeature.is_library_code vertex_meth)
+                && (not @@ G.is_df_leaf (G.LiteralVertex.of_vertex vertex) graph)
+              then (
+                F.printf "===== internal vertex: %s\n" (fst3 vertex) ;
+                let new_dist =
+                  { ProbQuadruple.src= vertex_dist.src +. 0.3
+                  ; sin= vertex_dist.sin -. 0.1
+                  ; san= vertex_dist.san -. 0.1
+                  ; non= vertex_dist.non -. 0.1 }
+                in
+                (G.strong_update_dist vertex new_dist graph_acc, vertex :: affected) )
+              else smol_acc )
+            ~init:big_acc trunk )
+        ~init:(new_fact_propagated, []) trunks_containing_vertices
 
 
   (** Propagate the same info to nodes with the same @annotations: requires that the new_fact's
@@ -390,10 +443,10 @@ module PropagationRules = struct
 
 
   let all_rules =
-    [ (*contextual_similarity_rule
-        ; nodewise_similarity_propagation_rule
-        ; internal_udf_vertex_is_none ; *)
-      internal_nonbidirectional_library_node_is_a_src_if_leaf_is_sink ]
+    [ contextual_similarity_rule
+    ; nodewise_similarity_propagation_rule
+    ; internal_udf_vertex_is_none
+    ; internal_nonbidirectional_library_node_is_a_src_if_leaf_is_sink ]
 end
 
 (* Use Random.int_incl for making a random integer. *)
