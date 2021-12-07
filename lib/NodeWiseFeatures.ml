@@ -42,8 +42,6 @@ module SingleFeature = struct
   (* unique_identifiers are strings of the format {package}.{classname}.{method_name}:{return_type_with_package}
      they are obtained from Procname.pp_unique_id. *)
 
-  (* for the record, unique ids and methnames are the same thing here. *)
-
   let extract_package_name_from_id (unique_identifier : string) : feature =
     try
       assert (Str.string_match id_regex unique_identifier 0) ;
@@ -223,6 +221,7 @@ module SingleFeature = struct
          ~f:(fun line -> String.is_substring ~substring:classname_methname line)
          (Deserializer.deserialize_skip_func ()) )
 
+
   let all_features =
     [ extract_rtntype_from_methstring
     ; extract_class_name_from_methstring
@@ -266,11 +265,12 @@ module PairwiseFeature = struct
   let is_both_java_builtin ((method1, method2) : string * string) : bool =
     let method1_is_init = String.is_substring ~substring:"<init>" method1
     and method2_is_init = String.is_substring ~substring:"<init>" method2 in
-    match method1_is_init, method2_is_init with
+    match (method1_is_init, method2_is_init) with
     | true, true | false, false ->
-      (SingleFeature.bool_of_feature (SingleFeature.is_java_builtin_method method1)) &&
-      (SingleFeature.bool_of_feature (SingleFeature.is_java_builtin_method method2))
-    | _ -> false
+        SingleFeature.bool_of_feature (SingleFeature.is_java_builtin_method method1)
+        && SingleFeature.bool_of_feature (SingleFeature.is_java_builtin_method method2)
+    | _ ->
+        false
 
 
   let all_features =
