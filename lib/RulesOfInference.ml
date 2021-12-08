@@ -154,7 +154,8 @@ module PropagationRules = struct
             if not dry_run then
               Out_channel.fprintf Out_channel.stdout
                 "%s propagated its info to %s (internal_vertex_none), its dist is now %s\n"
-                new_fact_method (fst3 succ)
+                new_fact_method
+                (G.LiteralVertex.to_string (G.LiteralVertex.of_vertex succ))
                 (ProbQuadruple.to_string new_dist) ;
             G.strong_update_dist succ new_dist acc )
         ~init:graph df_succs
@@ -213,7 +214,7 @@ module PropagationRules = struct
           if not dry_run then
             Out_channel.fprintf Out_channel.stdout
               "%s propagated its info to %s (contextual), its dist is now %s\n" new_fact_method
-              succ_meth
+              (G.LiteralVertex.to_string (G.LiteralVertex.of_vertex succ))
               (ProbQuadruple.to_string new_dist) ;
           G.strong_update_dist succ new_dist acc )
         contextual_succs ~init:graph
@@ -321,7 +322,7 @@ module PropagationRules = struct
           if not dry_run then
             Out_channel.fprintf Out_channel.stdout
               "%s propagated its info to %s (nodewise), its dist is now %s\n" new_fact_method
-              succ_meth
+              (G.LiteralVertex.to_string (G.LiteralVertex.of_vertex succ))
               (ProbQuadruple.to_string new_dist) ;
           G.strong_update_dist succ new_dist acc )
         similarity_succs ~init:graph
@@ -347,19 +348,6 @@ module PropagationRules = struct
             TaintLabel.equal (ProbQuadruple.determine_label (trd3 leaf)) TaintLabel.Sink )
           trunk_leaves
       then
-        let new_fact_propagated =
-          List.fold
-            ~f:(fun acc new_fact_vertex ->
-              let vertex_dist = trd3 new_fact_vertex in
-              let updated_dist =
-                { ProbQuadruple.src= vertex_dist.src -. 0.1
-                ; sin= vertex_dist.sin +. 0.3
-                ; san= vertex_dist.san -. 0.1
-                ; non= vertex_dist.non -. 0.1 }
-              in
-              G.strong_update_dist new_fact_vertex updated_dist acc )
-            ~init:graph new_fact_vertices
-        in
         List.fold
           ~f:(fun big_acc trunk ->
             List.fold
@@ -369,18 +357,24 @@ module PropagationRules = struct
                   NodeWiseFeatures.SingleFeature.bool_of_feature
                     (NodeWiseFeatures.SingleFeature.is_library_code vertex_meth)
                   && (not @@ G.is_df_leaf (G.LiteralVertex.of_vertex vertex) graph)
+                  && (not @@ String.is_substring ~substring:"<init>" vertex_meth)
                 then (
-                  F.printf "===== internal vertex: %s\n" (fst3 vertex) ;
                   let new_dist =
                     { ProbQuadruple.src= vertex_dist.src +. 0.3
                     ; sin= vertex_dist.sin -. 0.1
                     ; san= vertex_dist.san -. 0.1
                     ; non= vertex_dist.non -. 0.1 }
                   in
+                  if not dry_run then
+                    Out_channel.fprintf Out_channel.stdout
+                      "%s propagated its info to %s (internal_src), its dist is now %s\n"
+                      new_fact_method
+                      (G.LiteralVertex.to_string (G.LiteralVertex.of_vertex vertex))
+                      (ProbQuadruple.to_string new_dist) ;
                   (G.strong_update_dist vertex new_dist graph_acc, vertex :: affected) )
                 else smol_acc )
               ~init:big_acc trunk )
-          ~init:(new_fact_propagated, []) trunks_containing_vertices
+          ~init:(graph, []) trunks_containing_vertices
       else (graph, [])
     else if
       (* UNSURE: is the condition correct? *)
@@ -418,13 +412,19 @@ module PropagationRules = struct
                   (NodeWiseFeatures.SingleFeature.is_library_code vertex_meth)
                 && (not @@ G.is_df_leaf (G.LiteralVertex.of_vertex vertex) graph)
               then (
-                F.printf "===== internal vertex: %s\n" (fst3 vertex) ;
                 let new_dist =
                   { ProbQuadruple.src= vertex_dist.src +. 0.3
                   ; sin= vertex_dist.sin -. 0.1
                   ; san= vertex_dist.san -. 0.1
                   ; non= vertex_dist.non -. 0.1 }
                 in
+                if not dry_run then
+                  if not dry_run then
+                    Out_channel.fprintf Out_channel.stdout
+                      "%s propagated its info to %s (internal_src), its dist is now %s\n"
+                      new_fact_method
+                      (G.LiteralVertex.to_string (G.LiteralVertex.of_vertex vertex))
+                      (ProbQuadruple.to_string new_dist) ;
                 (G.strong_update_dist vertex new_dist graph_acc, vertex :: affected) )
               else smol_acc )
             ~init:big_acc trunk )

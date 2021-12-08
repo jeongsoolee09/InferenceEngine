@@ -126,6 +126,8 @@ module G = struct
           failwithf "could not find dist for (\"%s\", \"%s\")" meth loc ()
 
 
+    let to_string ((meth, loc) : t) : string = F.asprintf "(\"%s\", \"%s\")" meth loc
+
     let of_vertex ((str1, str2, _) : Vertex.t) : t = (str1, str2)
   end
 

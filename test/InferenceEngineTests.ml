@@ -864,17 +864,18 @@ module Notebook28 = struct
   let recursively_find_preds (graph : G.t) (vertex : G.LiteralVertex.t) ~(label : EdgeLabel.t) :
       G.V.t list =
     let rec inner (current_vertex : G.V.t) (big_acc : G.V.t list) =
-      let current_vertex_df_preds =
+      let current_vertex_preds =
         G.get_preds graph (G.LiteralVertex.of_vertex current_vertex) ~label
       in
       let to_explore =
-        List.filter current_vertex_df_preds ~f:(fun pred ->
-            not @@ List.mem big_acc pred ~equal:Vertex.equal )
+        List.filter current_vertex_preds ~f:(fun pred ->
+            not @@ List.mem big_acc pred ~equal:Vertex.equal &&
+        not @@ Vertex.equal pred (G.LiteralVertex.to_vertex vertex graph))
       in
-      if List.is_empty current_vertex_df_preds || List.is_empty to_explore then big_acc
+      if List.is_empty current_vertex_preds || List.is_empty to_explore then big_acc
       else
         List.fold
-          ~f:(fun smol_acc vertex -> inner vertex (vertex :: smol_acc))
+          ~f:(fun smol_acc vertex -> inner vertex (vertex::smol_acc))
           ~init:big_acc to_explore
     in
     inner (G.LiteralVertex.to_vertex vertex graph) []

@@ -155,5 +155,6 @@ let rec loop (current_snapshot : G.t) (received_responses : Response.t list)
             PropagationRules.all_rules )
         ~init:current_snapshot propagation_rules_to_apply
     in
-    Visualizer.visualize_at_the_face propagated ;
-    loop propagated (response :: received_responses) nodewise_featuremap (count + 1)
+    let propagated' = SelfHeal.HealMisPropagation.heal_all propagated in
+    Visualizer.visualize_at_the_face propagated' ;
+    loop propagated' (response :: received_responses) nodewise_featuremap (count + 1)
