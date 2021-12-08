@@ -22,6 +22,17 @@ module TaintLabel = struct
         "none"
     | Indeterminate ->
         "indeterminate"
+
+
+  let is_source (label : t) : bool = equal label Source
+
+  let is_sink (label : t) : bool = equal label Sink
+
+  let is_sanitizer (label : t) : bool = equal label Sanitizer
+
+  let is_none (label : t) : bool = equal label None
+
+  let is_indeterminate (label : t) : bool = equal label Indeterminate
 end
 
 module ProbQuadruple = struct
@@ -73,6 +84,18 @@ module ProbQuadruple = struct
     let _, v2 = List.nth_exn sorted_decreasing 1 in
     if Float.( >= ) (Float.( - ) v1 v2) winning_threshold then label_of_string label
     else Indeterminate
+
+
+  let is_source (dist : t) : bool = TaintLabel.equal (determine_label dist) TaintLabel.Source
+
+  let is_sin (dist : t) : bool = TaintLabel.equal (determine_label dist) TaintLabel.Sink
+
+  let is_sanitizer (dist : t) : bool = TaintLabel.equal (determine_label dist) TaintLabel.Sanitizer
+
+  let is_none (dist : t) : bool = TaintLabel.equal (determine_label dist) TaintLabel.None
+
+  let is_indeterrminate (dist : t) : bool =
+    TaintLabel.equal (determine_label dist) TaintLabel.Indeterminate
 end
 
 module Vertex = struct
@@ -328,7 +351,15 @@ module G = struct
     |> List.filter ~f:(fun (v, target_label, _) ->
            Vertex.equal (LiteralVertex.to_vertex vertex graph) v
            && EdgeLabel.equal label target_label )
-    >>| trd3
+    >>| fst3
+
+
+  let get_preds_any (vertex : LiteralVertex.t) (graph : t) : Vertex.t list =
+    fold_pred List.cons graph (LiteralVertex.to_vertex vertex graph) []
+
+
+  let get_succs_any (vertex : LiteralVertex.t) (graph : t) : Vertex.t list =
+    fold_succ List.cons graph (LiteralVertex.to_vertex vertex graph) []
 
 
   let is_df_root (vertex : LiteralVertex.t) (graph : t) : bool =
