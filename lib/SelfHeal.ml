@@ -30,7 +30,13 @@ module HealMisPropagation = struct
             else smol_acc )
           ~init:big_acc recursive_df_preds )
       ~init:graph all_sinks
+
+
+  let heal_all (graph : G.t) : G.t =
+    List.fold [sink_can't_be_a_pred_of_sink] ~f:(fun acc healer -> healer acc) ~init:graph
 end
+
+(* 가장 직관적인 건, sink_can't_be_a_pred_of_sink를 매 loop iteration마다 쓰는 것. *)
 
 module HealTopology = struct
   (* TODO Coming Soon... *)

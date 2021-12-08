@@ -419,16 +419,42 @@ module PropagationRules = struct
                   ; non= vertex_dist.non -. 0.1 }
                 in
                 if not dry_run then
-                  if not dry_run then
-                    Out_channel.fprintf Out_channel.stdout
-                      "%s propagated its info to %s (internal_src), its dist is now %s\n"
-                      new_fact_method
-                      (G.LiteralVertex.to_string (G.LiteralVertex.of_vertex vertex))
-                      (ProbQuadruple.to_string new_dist) ;
+                  Out_channel.fprintf Out_channel.stdout
+                    "%s propagated its info to %s (internal_src), its dist is now %s\n"
+                    new_fact_method
+                    (G.LiteralVertex.to_string (G.LiteralVertex.of_vertex vertex))
+                    (ProbQuadruple.to_string new_dist) ;
                 (G.strong_update_dist vertex new_dist graph_acc, vertex :: affected) )
               else smol_acc )
             ~init:big_acc trunk )
         ~init:(new_fact_propagated, []) trunks_containing_vertices
+
+
+  let if_method_is_none_once_then_it's_none_everywhere : t =
+   fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ~(dry_run : bool) :
+       (G.t * Vertex.t list) ->
+    let new_fact_method = Response.get_method new_fact in
+    let new_fact_label = Response.get_label new_fact in
+    if TaintLabel.is_none new_fact_label then
+      let this_method_vertices = G.this_method_vertices graph new_fact_method in
+      List.fold this_method_vertices
+        ~f:(fun (graph_acc, affected) this_method_vertex ->
+          let vertex_dist = trd3 this_method_vertex in
+          let new_dist =
+            { ProbQuadruple.src= vertex_dist.src -. 0.1
+            ; sin= vertex_dist.sin -. 0.1
+            ; san= vertex_dist.san -. 0.1
+            ; non= vertex_dist.non +. 0.3 }
+          in
+          if not dry_run then
+            Out_channel.fprintf Out_channel.stdout
+              "%s propagated its info to %s (internal_src), its dist is now %s\n" new_fact_method
+              (G.LiteralVertex.to_string (G.LiteralVertex.of_vertex this_method_vertex))
+              (ProbQuadruple.to_string new_dist) ;
+          ( G.strong_update_dist this_method_vertex new_dist graph_acc
+          , this_method_vertex :: affected ) )
+        ~init:(graph, [])
+    else (graph, [])
 
 
   (** Propagate the same info to nodes with the same @annotations: requires that the new_fact's
@@ -446,7 +472,8 @@ module PropagationRules = struct
     [ contextual_similarity_rule
     ; nodewise_similarity_propagation_rule
     ; internal_udf_vertex_is_none
-    ; internal_nonbidirectional_library_node_is_a_src_if_leaf_is_sink ]
+    ; internal_nonbidirectional_library_node_is_a_src_if_leaf_is_sink
+    ; if_method_is_none_once_then_it's_none_everywhere ]
 end
 
 (* Use Random.int_incl for making a random integer. *)
