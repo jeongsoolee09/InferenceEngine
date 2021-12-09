@@ -52,10 +52,10 @@ module HealMisPropagation = struct
       ~f:(fun acc init_vertex ->
         let init_vertex_dist = trd3 init_vertex in
         let new_dist =
-          { ProbQuadruple.src= init_vertex_dist.src -. 0.1
-          ; ProbQuadruple.sin= init_vertex_dist.sin -. 0.1
-          ; ProbQuadruple.san= init_vertex_dist.san -. 0.1
-          ; ProbQuadruple.non= init_vertex_dist.non +. 0.3 }
+          { ProbQuadruple.src= (*main_vertex_dist.src -.*) 0.1
+          ; ProbQuadruple.sin= (*main_vertex_dist.sin -.*) 0.1
+          ; ProbQuadruple.san= (*main_vertex_dist.san -.*) 0.1
+          ; ProbQuadruple.non= (*main_vertex_dist.non +.*) 1. }
         in
         G.strong_update_dist init_vertex new_dist acc )
       ~init:graph
@@ -85,10 +85,10 @@ module HealMisPropagation = struct
       ~f:(fun acc main_vertex ->
         let main_vertex_dist = trd3 main_vertex in
         let new_dist =
-          { ProbQuadruple.src= main_vertex_dist.src -. 0.1
-          ; ProbQuadruple.sin= main_vertex_dist.sin -. 0.1
-          ; ProbQuadruple.san= main_vertex_dist.san -. 0.1
-          ; ProbQuadruple.non= main_vertex_dist.non +. 0.3 }
+          { ProbQuadruple.src= (*main_vertex_dist.src -.*) 0.1
+          ; ProbQuadruple.sin= (*main_vertex_dist.sin -.*) 0.1
+          ; ProbQuadruple.san= (*main_vertex_dist.san -.*) 0.1
+          ; ProbQuadruple.non= (*main_vertex_dist.non +.*) 1. }
         in
         G.strong_update_dist main_vertex new_dist acc )
       ~init:graph
