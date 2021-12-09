@@ -65,18 +65,20 @@ module HealMisPropagation = struct
     let this_project_main_vertices =
       G.fold_vertex
         (fun vertex acc ->
-          let vertex_method_id =
-            NodeWiseFeatures.SingleFeature.find_unique_identifier_of_methstring (fst3 vertex)
-          in
-          let vertex_method_package =
-            NodeWiseFeatures.SingleFeature.string_of_feature
-            @@ NodeWiseFeatures.SingleFeature.extract_package_name_from_id vertex_method_id
-          in
-          if
-            String.equal vertex_method_package
-              NodeWiseFeatures.SingleFeature.this_project_package_name
-          then vertex :: acc
-          else acc )
+          if not @@ String.is_substring ~substring:"main(" (fst3 vertex) then acc
+          else
+            let vertex_method_id =
+              NodeWiseFeatures.SingleFeature.find_unique_identifier_of_methstring (fst3 vertex)
+            in
+            let vertex_method_package =
+              NodeWiseFeatures.SingleFeature.string_of_feature
+              @@ NodeWiseFeatures.SingleFeature.extract_package_name_from_id vertex_method_id
+            in
+            if
+              String.equal vertex_method_package
+                NodeWiseFeatures.SingleFeature.this_project_package_name
+            then vertex :: acc
+            else acc )
         graph []
     in
     List.fold this_project_main_vertices
@@ -94,7 +96,9 @@ module HealMisPropagation = struct
 
   let heal_all (graph : G.t) : G.t =
     List.fold
-      [sink_can't_be_a_pred_of_sink; init_that_doesn't_call_lib_code_is_none]
+      [ sink_can't_be_a_pred_of_sink
+      ; init_that_doesn't_call_lib_code_is_none
+      ; this_project_main_is_none ]
       ~f:(fun acc healer -> healer acc)
       ~init:graph
 end
