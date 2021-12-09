@@ -94,7 +94,8 @@ module SimilarVertexPairExtractor = struct
       ; (belong_to_same_class, 2)
       ; (belong_to_same_package, 2)
       ; (return_type_is_another's_class, 3)
-      ; (is_both_java_builtin, 3) ]
+      ; (is_both_java_builtin, 3)
+      ; (is_both_initializer, 4) ]
 
 
     (** Run all extractors for every method pair. *)
@@ -182,19 +183,17 @@ module SimilarVertexPairExtractor = struct
       let root_pair_list =
         if
           (not @@ Vertex.equal trunk1_root trunk2_root)
-          && G.is_pointing_to_each_other
-               (G.LiteralVertex.of_vertex trunk1_root)
-               (G.LiteralVertex.of_vertex trunk2_root)
-               graph ~label:EdgeLabel.NodeWiseSimilarity
+          && not
+               ( String.is_substring (fst3 trunk1_root) ~substring:"<init>"
+               || String.is_substring (fst3 trunk2_root) ~substring:"<init>" )
         then [(fst3 trunk1_root, fst3 trunk2_root); (fst3 trunk2_root, fst3 trunk1_root)]
         else []
       and leaf_pair_list =
         if
           (not @@ Vertex.equal trunk1_leaf trunk2_leaf)
-          && G.is_pointing_to_each_other
-               (G.LiteralVertex.of_vertex trunk1_leaf)
-               (G.LiteralVertex.of_vertex trunk2_leaf)
-               graph ~label:EdgeLabel.NodeWiseSimilarity
+          && not
+               ( String.is_substring (fst3 trunk1_leaf) ~substring:"<init>"
+               || String.is_substring (fst3 trunk2_leaf) ~substring:"<init>" )
         then [(fst3 trunk1_leaf, fst3 trunk2_leaf); (fst3 trunk2_leaf, fst3 trunk1_leaf)]
         else []
       in
@@ -220,19 +219,19 @@ module SimilarVertexPairExtractor = struct
       let trunk1_bidirectional = find_bidirectionals_in_trunk trunk1
       and trunk2_bidirectional = find_bidirectionals_in_trunk trunk2 in
       (* TODO: making a carpro is naive. The logic should be refined *)
-      let bidirectional_carpro =
-        let* bidirectional1 = trunk1_bidirectional graph in
-        let* bidirectional2 = trunk2_bidirectional graph in
-        if
-          Vertex.equal bidirectional1 bidirectional2
-          && G.is_pointing_to_each_other
-               (G.LiteralVertex.of_vertex trunk1_root)
-               (G.LiteralVertex.of_vertex trunk1_leaf)
-               graph ~label:EdgeLabel.NodeWiseSimilarity
-        then return (fst3 bidirectional1, fst3 bidirectional2)
-        else []
-      in
-      root_pair_list @ leaf_pair_list @ bidirectional_carpro @ redefines_carpro
+      (* let bidirectional_carpro = *)
+      (*   let* bidirectional1 = trunk1_bidirectional graph in *)
+      (*   let* bidirectional2 = trunk2_bidirectional graph in *)
+      (*   if *)
+      (*     Vertex.equal bidirectional1 bidirectional2 *)
+      (*     && G.is_pointing_to_each_other *)
+      (*          (G.LiteralVertex.of_vertex trunk1_root) *)
+      (*          (G.LiteralVertex.of_vertex trunk1_leaf) *)
+      (*          graph ~label:EdgeLabel.NodeWiseSimilarity *)
+      (*   then return (fst3 bidirectional1, fst3 bidirectional2) *)
+      (*   else [] *)
+      (* in *)
+      root_pair_list @ leaf_pair_list (* @ bidirectional_carpro *) @ redefines_carpro
 
 
     (** pairup similar vertices, also putting list indices into consideration. e.g. if a and b are
@@ -306,8 +305,11 @@ module EstablishSimEdges = struct
         in
         (* we'll use smart_pairup_vertices to ensure we don't connect two distant vertices. *)
         let smart_pairedup : (Vertex.t * Vertex.t) list =
-          ContextualPairExtractor.smart_pairup_vertices method1_vertices method2_vertices
-            (method1, method2)
+          (* ContextualPairExtractor.smart_pairup_vertices method1_vertices method2_vertices *)
+          (*   (method1, method2) *)
+          let* meth1 = method1_vertices in
+          let* meth2 = method2_vertices in
+          if not @@ Vertex.equal meth1 meth2 then return (meth1, meth2) else []
         in
         List.fold
           ~f:(fun smol_acc (v1, v2) ->
