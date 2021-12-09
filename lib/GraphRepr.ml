@@ -166,8 +166,11 @@ module G = struct
     let all_dists_in_graph_are_saturated (graph : t) : bool =
       fold_vertex
         (fun vertex acc ->
-          let dist = trd3 vertex in
-          dist_is_saturated dist && acc )
+          (* TEMP: the vertex should not be isolated *)
+          if Int.( = ) (out_degree graph vertex) 0 && Int.( = ) (in_degree graph vertex) 0 then acc
+          else
+            let dist = trd3 vertex in
+            dist_is_saturated dist && acc )
         graph true
   end
 
@@ -317,6 +320,7 @@ module G = struct
     Int.equal (out_degree graph (LiteralVertex.to_vertex vertex graph)) 0
 
 
+
   let any_label_preds (vertex : LiteralVertex.t) (graph : t) =
     fold_edges
       (fun v1 v2 acc ->
@@ -370,6 +374,11 @@ module G = struct
   let is_df_leaf (vertex : LiteralVertex.t) (graph : t) : bool =
     Int.equal (List.length (get_succs vertex graph ~label:EdgeLabel.DataFlow)) 0
     && Int.( > ) (List.length (get_preds vertex graph ~label:EdgeLabel.DataFlow)) 0
+
+
+  let is_df_internal (vertex: LiteralVertex.t) (graph:t ) : bool =
+    Int.(>=) (List.length (get_preds vertex graph ~label:EdgeLabel.DataFlow)) 0
+    && Int.(>=) (List.length (get_succs vertex graph ~label:EdgeLabel.DataFlow)) 0
 
 
   let collect_df_roots (graph : t) : V.t list =
@@ -847,7 +856,7 @@ let find_trunks_containing_vertex graph vertex =
   List.filter ~f:(fun trunk -> List.mem ~equal:Vertex.equal trunk vertex) all_trunks
 
 
-let find_ns_cluster (graph : G.t) : G.V.t list list =
+let all_ns_clusters (graph : G.t) : G.V.t list list =
   let rec inner (vertex : G.V.t) (acc : G.V.t list) : G.V.t list =
     let all_ns_bidirectionals =
       List.filter
