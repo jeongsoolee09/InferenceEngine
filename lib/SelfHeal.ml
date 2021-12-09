@@ -32,8 +32,40 @@ module HealMisPropagation = struct
       ~init:graph all_sinks
 
 
+  let init_that_doesn't_call_lib_code_is_none (graph : G.t) : G.t =
+    let all_init_vertices =
+      G.all_vertices_of_graph graph
+      |> List.filter ~f:(fun vertex ->
+             let vertex_method = fst3 vertex in
+             String.is_substring ~substring:"<init>" vertex_method )
+    in
+    let all_init_vertices_with_no_immediate_lib_code =
+      List.filter all_init_vertices ~f:(fun vertex ->
+          let df_succ_vertices =
+            G.get_succs graph (G.LiteralVertex.of_vertex vertex) ~label:EdgeLabel.DataFlow
+          in
+          List.for_all df_succ_vertices ~f:(fun vertex ->
+              not @@ NodeWiseFeatures.SingleFeature.bool_of_feature
+              @@ NodeWiseFeatures.SingleFeature.is_library_code (fst3 vertex) ) )
+    in
+    List.fold all_init_vertices_with_no_immediate_lib_code
+      ~f:(fun acc init_vertex ->
+        let init_vertex_dist = trd3 init_vertex in
+        let new_dist =
+          { ProbQuadruple.src= init_vertex_dist.src -. 0.1
+          ; ProbQuadruple.sin= init_vertex_dist.sin -. 0.1
+          ; ProbQuadruple.san= init_vertex_dist.san -. 0.1
+          ; ProbQuadruple.non= init_vertex_dist.non +. 0.3 }
+        in
+        G.strong_update_dist init_vertex new_dist acc )
+      ~init:graph
+
+
   let heal_all (graph : G.t) : G.t =
-    List.fold [sink_can't_be_a_pred_of_sink] ~f:(fun acc healer -> healer acc) ~init:graph
+    List.fold
+      [sink_can't_be_a_pred_of_sink; init_that_doesn't_call_lib_code_is_none]
+      ~f:(fun acc healer -> healer acc)
+      ~init:graph
 end
 
 (* 가장 직관적인 건, sink_can't_be_a_pred_of_sink를 매 loop iteration마다 쓰는 것. *)
