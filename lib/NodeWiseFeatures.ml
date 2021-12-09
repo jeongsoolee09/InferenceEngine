@@ -222,13 +222,18 @@ module SingleFeature = struct
          (Deserializer.deserialize_skip_func ()) )
 
 
+  let is_initializer (methstring : string) : feature =
+    Bool (String.is_substring ~substring:"<init>" methstring)
+
+
   let all_features =
     [ extract_rtntype_from_methstring
     ; extract_class_name_from_methstring
     ; extract_method_name_from_methstring
     ; is_framework_method
     ; is_library_code
-    ; returnval_not_used_in_caller ]
+    ; returnval_not_used_in_caller
+    ; is_initializer ]
 end
 
 module PairwiseFeature = struct
@@ -273,12 +278,19 @@ module PairwiseFeature = struct
         false
 
 
+  let is_both_initializer ((method1, method2) : string * string) : bool =
+    let method1_is_init = String.is_substring ~substring:"<init>" method1
+    and method2_is_init = String.is_substring ~substring:"<init>" method2 in
+    method1_is_init && method2_is_init
+
+
   let all_features =
     [ is_both_framework_code
     ; belong_to_same_class
     ; belong_to_same_package
     ; return_type_is_another's_class
-    ; is_both_java_builtin ]
+    ; is_both_java_builtin
+    ; is_both_initializer ]
 end
 
 let run_all_single_features (methname : string) : SingleFeature.feature list =
