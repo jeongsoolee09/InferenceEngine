@@ -61,6 +61,37 @@ module HealMisPropagation = struct
       ~init:graph
 
 
+  let this_project_main_is_none (graph : G.t) : G.t =
+    let this_project_main_vertices =
+      G.fold_vertex
+        (fun vertex acc ->
+          let vertex_method_id =
+            NodeWiseFeatures.SingleFeature.find_unique_identifier_of_methstring (fst3 vertex)
+          in
+          let vertex_method_package =
+            NodeWiseFeatures.SingleFeature.string_of_feature
+            @@ NodeWiseFeatures.SingleFeature.extract_package_name_from_id vertex_method_id
+          in
+          if
+            String.equal vertex_method_package
+              NodeWiseFeatures.SingleFeature.this_project_package_name
+          then vertex :: acc
+          else acc )
+        graph []
+    in
+    List.fold this_project_main_vertices
+      ~f:(fun acc main_vertex ->
+        let main_vertex_dist = trd3 main_vertex in
+        let new_dist =
+          { ProbQuadruple.src= main_vertex_dist.src -. 0.1
+          ; ProbQuadruple.sin= main_vertex_dist.sin -. 0.1
+          ; ProbQuadruple.san= main_vertex_dist.san -. 0.1
+          ; ProbQuadruple.non= main_vertex_dist.non +. 0.3 }
+        in
+        G.strong_update_dist main_vertex new_dist acc )
+      ~init:graph
+
+
   let heal_all (graph : G.t) : G.t =
     List.fold
       [sink_can't_be_a_pred_of_sink; init_that_doesn't_call_lib_code_is_none]

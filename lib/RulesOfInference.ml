@@ -457,7 +457,6 @@ module PropagationRules = struct
     else (graph, [])
 
 
-
   (** Propagate the same info to nodes with the same @annotations: requires that the new_fact's
       method have successors with nodewise simlarity edge bearing the same @annotation *)
 
