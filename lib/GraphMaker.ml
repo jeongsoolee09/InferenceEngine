@@ -27,18 +27,6 @@ let remove_bogus (graph : G.t) =
   List.fold ~f:(fun acc bogus -> G.remove_vertex acc bogus) ~init:graph boguses
 
 
-let make_now_string (gmt_diff : int) : string =
-  let open CalendarLib in
-  let now_raw = Calendar.now () in
-  let year = Calendar.year now_raw in
-  let month = Date.int_of_month @@ Calendar.month now_raw in
-  let day = Calendar.day_of_month now_raw in
-  let hour = Calendar.hour now_raw + gmt_diff in
-  let minute = Calendar.minute now_raw in
-  let second = Calendar.second now_raw in
-  F.asprintf "%d-%d-%d_%d:%d:%d" year month day hour minute second
-
-
 (** Function for debugging by exporting Ocamlgraph to Graphviz Dot *)
 let graph_to_dot (graph : G.t) ?(filename = "initial_graph.dot") : unit =
   let out_channel = Out_channel.create filename in

@@ -36,6 +36,7 @@ let deserialize_skip_func () : string list =
   |> List.filter ~f:(not << String.is_empty)
 
 
-let deserialize_dot () =
-  (* let module ParseDot = Graph.Dot.Parse () *)
-  raise TODO
+let deserialize_graph (filename : string) =
+  let in_chan = In_channel.create filename in
+  In_channel.set_binary_mode in_chan true ;
+  Marshal.from_channel in_chan

@@ -7,6 +7,18 @@ type json = Yojson.Basic.t
 module Set = Caml.Set
 module F = Format
 
+let make_now_string (gmt_diff : int) : string =
+  let open CalendarLib in
+  let now_raw = Calendar.now () in
+  let year = Calendar.year now_raw in
+  let month = Date.int_of_month @@ Calendar.month now_raw in
+  let day = Calendar.day_of_month now_raw in
+  let hour = Calendar.hour now_raw + gmt_diff in
+  let minute = Calendar.minute now_raw in
+  let second = Calendar.second now_raw in
+  F.asprintf "%d-%d-%d_%d:%d:%d" year month day hour minute second
+
+
 module TaintLabel = struct
   type t = Source | Sink | Sanitizer | None | Indeterminate [@@deriving equal]
 
@@ -293,6 +305,13 @@ module G = struct
 
   type trunk = Trunk.t
 
+  let serialize_to_bin (graph : t) : unit =
+    let out_chan = Out_channel.create (make_now_string 9) in
+    Out_channel.set_binary_mode out_chan true ;
+    Marshal.to_channel out_chan graph [] ;
+    Out_channel.close out_chan
+
+
   let strong_update_dist (target_vertex : V.t) (new_dist : ProbQuadruple.t) (graph : t) : t =
     map_vertex
       (fun ((meth, label, _) as vertex) ->
@@ -318,7 +337,6 @@ module G = struct
 
   let is_leaf (vertex : LiteralVertex.t) (graph : t) : bool =
     Int.equal (out_degree graph (LiteralVertex.to_vertex vertex graph)) 0
-
 
 
   let any_label_preds (vertex : LiteralVertex.t) (graph : t) =
@@ -376,9 +394,9 @@ module G = struct
     && Int.( > ) (List.length (get_preds vertex graph ~label:EdgeLabel.DataFlow)) 0
 
 
-  let is_df_internal (vertex: LiteralVertex.t) (graph:t ) : bool =
-    Int.(>=) (List.length (get_preds vertex graph ~label:EdgeLabel.DataFlow)) 0
-    && Int.(>=) (List.length (get_succs vertex graph ~label:EdgeLabel.DataFlow)) 0
+  let is_df_internal (vertex : LiteralVertex.t) (graph : t) : bool =
+    Int.( >= ) (List.length (get_preds vertex graph ~label:EdgeLabel.DataFlow)) 0
+    && Int.( >= ) (List.length (get_succs vertex graph ~label:EdgeLabel.DataFlow)) 0
 
 
   let collect_df_roots (graph : t) : V.t list =
@@ -910,3 +928,17 @@ let recursively_find_preds (graph : G.t) (vertex : G.LiteralVertex.t) ~(label : 
         ~init:big_acc to_explore
   in
   inner (G.LiteralVertex.to_vertex vertex graph) []
+
+
+(** 어떤 root로부터 시작하는 trunk 중 가장 먼 곳에 있는 leaf *)
+let find_longest_trunk_from_leaf_to_sink ~(root : G.V.t) ~(leaf : G.V.t) (graph : G.t) : G.Trunk.t =
+  let all_trunks = identify_trunks graph in
+  let trunks_in_question =
+    List.filter all_trunks ~f:(fun trunk ->
+        let root_match = Vertex.equal (List.hd_exn trunk) root in
+        let leaf_match = Vertex.equal (List.last_exn trunk) leaf in
+        root_match && leaf_match )
+  in
+  List.hd_exn
+  @@ List.sort trunks_in_question ~compare:(fun trunk1 trunk2 ->
+         Int.compare (List.length trunk1) (List.length trunk2) )
