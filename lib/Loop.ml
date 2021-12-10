@@ -124,37 +124,39 @@ let rec loop (current_snapshot : G.t) (received_responses : Response.t list)
   else
     (* find the most appropriate Asking Rule. *)
     let question_maker =
-      (* MetaRules.ForAsking.asking_rules_selector graph received_responses nodewise_featuremap *)
-      (* TEMP Hardcoded *)
-      AskingRules.ask_if_leaf_is_sink
+      MetaRules.ForAsking.asking_rules_selector current_snapshot received_responses
+        nodewise_featuremap
     in
     let question = question_maker current_snapshot received_responses nodewise_featuremap in
     let prompt = Question.make_prompt question in
     Out_channel.output_string Out_channel.stdout prompt ;
     Out_channel.flush Out_channel.stdout ;
-    let response =
-      match In_channel.input_line In_channel.stdin with
-      | Some response_str -> (
-        match question with
-        | AskingForLabel meth ->
-            Response.response_of_string_forlabel meth response_str
-        | AskingForConfirmation (meth, label) ->
-            Response.response_of_string_foryesorno meth label response_str )
-      | None ->
-          failwith "no response ahahahah"
-    in
-    (* sort applicable Propagation Rules by adequacy. *)
-    let propagation_rules_to_apply =
-      MetaRules.ForPropagation.sort_propagation_rules_by_priority current_snapshot response
-        received_responses
-    in
-    let propagated =
-      List.fold
-        ~f:(fun acc prop_rule ->
-          propagator response acc None propagation_rules_to_apply received_responses
-            PropagationRules.all_rules )
-        ~init:current_snapshot propagation_rules_to_apply
-    in
-    let propagated' = SelfHeal.HealMisPropagation.heal_all propagated in
-    Visualizer.visualize_at_the_face propagated' ;
-    loop propagated' (response :: received_responses) nodewise_featuremap (count + 1)
+    let input = In_channel.input_line In_channel.stdin in
+    if Option.is_none input || String.equal (Option.value_exn input) "stop" then current_snapshot
+    else
+      let response =
+        match input with
+        | Some response_str -> (
+          match question with
+          | AskingForLabel meth ->
+              Response.response_of_string_forlabel meth response_str
+          | AskingForConfirmation (meth, label) ->
+              Response.response_of_string_foryesorno meth label response_str )
+        | None ->
+            failwith "no response ahahahah"
+      in
+      (* sort applicable Propagation Rules by adequacy. *)
+      let propagation_rules_to_apply =
+        MetaRules.ForPropagation.sort_propagation_rules_by_priority current_snapshot response
+          received_responses
+      in
+      let propagated =
+        List.fold
+          ~f:(fun acc prop_rule ->
+            propagator response acc None propagation_rules_to_apply received_responses
+              PropagationRules.all_rules )
+          ~init:current_snapshot propagation_rules_to_apply
+      in
+      let propagated' = SelfHeal.HealMisPropagation.heal_all propagated in
+      Visualizer.visualize_at_the_face propagated' ;
+      loop propagated' (response :: received_responses) nodewise_featuremap (count + 1)
