@@ -906,6 +906,66 @@ module Notebook30 = struct
     [Response.ForLabel ("int[] JdbcTemplate.batchUpdate(String,List)", TaintLabel.Sink)]
 
 
-  let rule_label, rule =
-    MetaRules.ForAsking.asking_rules_selector graph responses nodewise_featuremap
+  let selected_rule = MetaRules.ForAsking.asking_rules_selector graph responses nodewise_featuremap
+
+  let snapshot = Deserializer.deserialize_graph "2021-12-10_16:47:39.bin"
+
+  let all_leaves_are_determined =
+    List.for_all (G.collect_df_leaves snapshot) ~f:(fun leaf ->
+        G.Saturation.dist_is_saturated (trd3 leaf) )
+
+
+  let all_roots_are_determined =
+    List.for_all (G.collect_df_roots snapshot) ~f:(fun root ->
+        G.Saturation.dist_is_saturated (trd3 root) )
+
+
+  let all_foreign_codes_are_determined =
+    let all_foreign_codes =
+      G.fold_vertex
+        (fun vertex acc ->
+          if
+            NodeWiseFeatures.SingleFeature.bool_of_feature
+            @@ NodeWiseFeatures.SingleFeature.is_framework_method (fst3 vertex)
+          then vertex :: acc
+          else acc )
+        snapshot []
+    in
+    List.for_all all_foreign_codes ~f:(fun foreign_code ->
+        G.Saturation.dist_is_saturated (trd3 foreign_code) )
+
+
+  let all_ns_clusters_have_been_asked =
+    List.for_all (all_ns_clusters snapshot) ~f:(fun ns_cluster ->
+        List.for_all ns_cluster ~f:(fun vertex -> G.Saturation.dist_is_saturated (trd3 vertex)) )
+
+
+  (* these were the culprit!! *)
+
+  let batchUpdate_dist =
+    G.lookup_dist_for_meth_and_loc "int[] JdbcTemplate.batchUpdate(String,List)" "{ line 33 }"
+      snapshot
+
+
+  let saturated_parameter = 0.2 (* TEMP: subject to change *)
+
+  let dist_is_saturated (quad : ProbQuadruple.t) : bool =
+    let sorted = List.sort ~compare:Float.compare [quad.src; quad.sin; quad.san; quad.non] in
+    let first = List.nth_exn sorted 0 and second = List.nth_exn sorted 1 in
+    Float.( >= ) (first -. second) saturated_parameter
+
+
+  let _ = dist_is_saturated batchUpdate_dist
+
+  let sorted =
+    List.sort
+      ~compare:(fun p1 p2 -> -Float.compare p1 p2)
+      [batchUpdate_dist.src; batchUpdate_dist.sin; batchUpdate_dist.san; batchUpdate_dist.non]
+
+
+  let first = List.nth_exn sorted 0
+
+  let second = List.nth_exn sorted 1
+
+  let _ = Float.( >= ) (first -. second) saturated_parameter
 end

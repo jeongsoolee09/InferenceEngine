@@ -479,7 +479,6 @@ end
 (* Use Random.int_incl for making a random integer. *)
 
 module AskingRules = struct
-  (* NOTE we might use a curried type to make this def simpler. *)
   type rule = G.t -> Response.t list -> FeatureMaps.NodeWiseFeatureMap.t -> Question.t
 
   type t = {rule: rule; label: string}
@@ -586,22 +585,22 @@ module MetaRules = struct
       in
       List.map ~f:fst
       @@ List.sort
-           ~compare:(fun (_, priority1) (_, priority2) -> Int.compare priority1 priority2)
+           ~compare:(fun (_, priority1) (_, priority2) -> -Int.compare priority1 priority2)
            priority_assigned
   end
 
   (** the priority of asking rules represent their current adequacy of application. *)
   module ForAsking = struct
-    let take_subset_of_applicable_asking_rules graph responses nfeaturemap
-        (asking_rules : AskingRules.t list) =
+    let take_subset_of_applicable_asking_rules (snapshot : G.t) (responses : Response.t list)
+        (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) (asking_rules : AskingRules.t list) =
       (* rule R is applicable to vertex V iff (def) V has successor with labeled edge required by rule R
                                           iff (def) the embedded assertion succeeds *)
       let all_leaves_are_determined =
-        List.for_all (G.collect_df_leaves graph) ~f:(fun leaf ->
+        List.for_all (G.collect_df_leaves snapshot) ~f:(fun leaf ->
             G.Saturation.dist_is_saturated (trd3 leaf) )
       in
       let all_roots_are_determined =
-        List.for_all (G.collect_df_roots graph) ~f:(fun root ->
+        List.for_all (G.collect_df_roots snapshot) ~f:(fun root ->
             G.Saturation.dist_is_saturated (trd3 root) )
       in
       let all_foreign_codes_are_determined =
@@ -613,13 +612,13 @@ module MetaRules = struct
                 @@ NodeWiseFeatures.SingleFeature.is_framework_method (fst3 vertex)
               then vertex :: acc
               else acc )
-            graph []
+            snapshot []
         in
         List.for_all all_foreign_codes ~f:(fun foreign_code ->
             G.Saturation.dist_is_saturated (trd3 foreign_code) )
       in
       let all_ns_clusters_have_been_asked =
-        List.for_all (all_ns_clusters graph) ~f:(fun ns_cluster ->
+        List.for_all (all_ns_clusters snapshot) ~f:(fun ns_cluster ->
             List.for_all ns_cluster ~f:(fun vertex -> G.Saturation.dist_is_saturated (trd3 vertex)) )
       in
       List.rev
@@ -636,20 +635,20 @@ module MetaRules = struct
              then acc
              else
                try
-                 let (_ : Question.t) = asking_rule.rule graph responses nfeaturemap in
+                 let (_ : Question.t) = asking_rule.rule snapshot responses nfeaturemap in
                  asking_rule :: acc
                with Assert_failure _ -> acc )
            ~init:[] asking_rules
 
 
-    (** main logic of this submodule. *)
     let assign_priority_on_asking_rules (asking_rules : AskingRules.t list) (graph : G.t) =
       (* TEMP *)
       List.map ~f:(fun rule -> (rule, 1)) asking_rules
 
 
     (** choose the most applicable asking rule. *)
-    let asking_rules_selector (graph : G.t) responses nfeaturemap : AskingRules.t =
+    let asking_rules_selector (graph : G.t) (responses : Response.t list)
+        (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) : AskingRules.t =
       let priority_assigned =
         assign_priority_on_asking_rules
           (take_subset_of_applicable_asking_rules graph responses nfeaturemap AskingRules.all_rules)
@@ -659,7 +658,7 @@ module MetaRules = struct
       let asking_rule =
         fst @@ List.hd_exn
         @@ List.sort
-             ~compare:(fun (_, priority1) (_, priority2) -> Int.compare priority1 priority2)
+             ~compare:(fun (_, priority1) (_, priority2) -> -Int.compare priority1 priority2)
              priority_assigned
       in
       print_endline @@ asking_rule.label ;

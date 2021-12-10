@@ -90,7 +90,7 @@ module ProbQuadruple = struct
   let determine_label (dist : t) : label =
     let alist = alist_of_dist dist in
     let sorted_decreasing =
-      List.rev @@ List.sort alist ~compare:(fun (_, v1) (_, v2) -> Float.compare v1 v2)
+      List.sort alist ~compare:(fun (_, v1) (_, v2) -> -Float.compare v1 v2)
     in
     let label, v1 = List.nth_exn sorted_decreasing 0 in
     let _, v2 = List.nth_exn sorted_decreasing 1 in
@@ -182,7 +182,11 @@ module G = struct
     let saturated_parameter = 0.2 (* TEMP: subject to change *)
 
     let dist_is_saturated (quad : ProbQuadruple.t) : bool =
-      let sorted = List.sort ~compare:Float.compare [quad.src; quad.sin; quad.san; quad.non] in
+      let sorted =
+        List.sort
+          ~compare:(fun p1 p2 -> -Float.compare p1 p2)
+          [quad.src; quad.sin; quad.san; quad.non]
+      in
       let first = List.nth_exn sorted 0 and second = List.nth_exn sorted 1 in
       Float.( >= ) (first -. second) saturated_parameter
 
@@ -271,21 +275,17 @@ module G = struct
   let vertex_name ((meth, locset, _) : V.t) : string = F.asprintf "\"(%s, %s)\"" meth locset
 
   let vertex_attributes ((meth, locset, dist) : V.t) =
-    let shape = if Saturation.dist_is_saturated dist then [`Shape `Circle] else [`Shape `Box] in
-    let label =
-      match ProbQuadruple.determine_label dist with
-      | Source ->
-          [`Fillcolor 0xf54260; `Style `Filled]
-      | Sink ->
-          [`Fillcolor 0xf5e040; `Style `Filled]
-      | Sanitizer ->
-          [`Fillcolor 0xf59140; `Style `Filled]
-      | None ->
-          [`Fillcolor 0x58f540; `Style `Filled]
-      | Indeterminate ->
-          [`Fillcolor 0xffffff; `Style `Filled]
-    in
-    shape @ label
+    match ProbQuadruple.determine_label dist with
+    | Source ->
+        [`Fillcolor 0xf54260; `Style `Filled]
+    | Sink ->
+        [`Fillcolor 0xf5e040; `Style `Filled]
+    | Sanitizer ->
+        [`Fillcolor 0xf59140; `Style `Filled]
+    | None ->
+        [`Fillcolor 0x58f540; `Style `Filled]
+    | Indeterminate ->
+        [`Fillcolor 0xffffff; `Style `Filled]
 
 
   let get_subgraph _ = None
@@ -953,4 +953,4 @@ let find_longest_trunk_from_leaf_to_sink ~(root : G.V.t) ~(leaf : G.V.t) (graph 
   in
   List.hd_exn
   @@ List.sort trunks_in_question ~compare:(fun trunk1 trunk2 ->
-         Int.compare (List.length trunk1) (List.length trunk2) )
+         -Int.compare (List.length trunk1) (List.length trunk2) )
