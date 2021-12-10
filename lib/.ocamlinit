@@ -54,3 +54,9 @@ let trunk_finder ~(start : G.LiteralVertex.t) ~(end_ : G.LiteralVertex.t) (graph
       Vertex.equal (G.LiteralVertex.to_vertex start graph) (List.hd_exn trunk)
       && Vertex.equal (G.LiteralVertex.to_vertex end_ graph) (List.last_exn trunk) )
     all_trunks;;
+
+let fst3 (a, b, c) = a;;
+
+let snd3 (a, b, c) = b;;
+
+let trd3 (a, b, c) = c;;
