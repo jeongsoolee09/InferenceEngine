@@ -127,7 +127,7 @@ let rec loop (current_snapshot : G.t) (received_responses : Response.t list)
       MetaRules.ForAsking.asking_rules_selector current_snapshot received_responses
         nodewise_featuremap
     in
-    let question = question_maker current_snapshot received_responses nodewise_featuremap in
+    let question = question_maker.rule current_snapshot received_responses nodewise_featuremap in
     let prompt = Question.make_prompt question in
     Out_channel.output_string Out_channel.stdout prompt ;
     Out_channel.flush Out_channel.stdout ;

@@ -480,9 +480,11 @@ end
 
 module AskingRules = struct
   (* NOTE we might use a curried type to make this def simpler. *)
-  type t = G.t -> Response.t list -> FeatureMaps.NodeWiseFeatureMap.t -> Question.t
+  type rule = G.t -> Response.t list -> FeatureMaps.NodeWiseFeatureMap.t -> Question.t
 
-  let ask_if_leaf_is_sink : t =
+  type t = {rule: rule; label: string}
+
+  let ask_if_leaf_is_sink : rule =
    fun (graph : G.t) (received_responses : Response.t list)
        (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) : Question.t ->
     (* TODO: consider featuremaps *)
@@ -496,7 +498,7 @@ module AskingRules = struct
     Question.AskingForLabel (fst3 random_leaf)
 
 
-  let ask_if_root_is_source : t =
+  let ask_if_root_is_source : rule =
    fun (graph : G.t) (received_responses : Response.t list)
        (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) : Question.t ->
     (* TODO consider featuremaps *)
@@ -509,7 +511,7 @@ module AskingRules = struct
 
 
   (** ask a method from a foreign package of its label. *)
-  let ask_foreign_package_label : t =
+  let ask_foreign_package_label : rule =
    fun (graph : G.t) (received_responses : Response.t list)
        (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) : Question.t ->
     let all_foreign_package_vertices =
@@ -525,7 +527,7 @@ module AskingRules = struct
     Question.AskingForLabel (fst3 random_foreign_vertex)
 
 
-  let ask_from_ns_cluster : t =
+  let ask_from_ns_cluster : rule =
    fun (graph : G.t) (received_responses : Response.t list)
        (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) : Question.t ->
     let all_ns_clusters = GraphRepr.all_ns_clusters graph in
@@ -543,11 +545,11 @@ module AskingRules = struct
     else Question.AskingForLabel (fst3 random_vertex_in_picked_cluster)
 
 
-  let all_rules =
-    [ ("ask_if_leaf_is_sink", ask_if_leaf_is_sink)
-    ; ("ask_if_root_is_source", ask_if_root_is_source)
-    ; ("ask_foreign_package_label", ask_foreign_package_label)
-    ; ("ask_from_ns_cluster", ask_from_ns_cluster) ]
+  let all_rules : t list =
+    [ {label= "ask_if_leaf_is_sink"; rule= ask_if_leaf_is_sink}
+    ; {label= "ask_if_root_is_source"; rule= ask_if_root_is_source}
+    ; {label= "ask_foreign_package_label"; rule= ask_foreign_package_label}
+    ; {label= "ask_from_ns_cluster"; rule= ask_from_ns_cluster} ]
 end
 
 module MetaRules = struct
@@ -590,7 +592,8 @@ module MetaRules = struct
 
   (** the priority of asking rules represent their current adequacy of application. *)
   module ForAsking = struct
-    let take_subset_of_applicable_asking_rules graph responses nfeaturemap asking_rules =
+    let take_subset_of_applicable_asking_rules graph responses nfeaturemap
+        (asking_rules : AskingRules.t list) =
       (* rule R is applicable to vertex V iff (def) V has successor with labeled edge required by rule R
                                           iff (def) the embedded assertion succeeds *)
       let all_leaves_are_determined =
@@ -621,26 +624,26 @@ module MetaRules = struct
       in
       List.rev
       @@ List.fold
-           ~f:(fun acc (asking_rule_label, asking_rule) ->
+           ~f:(fun acc asking_rule ->
              if
-               (String.equal asking_rule_label "ask_of_leaf_is_sink" && all_leaves_are_determined)
-               || String.equal asking_rule_label "ask_of_root_is_source"
+               (String.equal asking_rule.label "ask_of_leaf_is_sink" && all_leaves_are_determined)
+               || String.equal asking_rule.label "ask_of_root_is_source"
                   && all_roots_are_determined
-               || String.equal asking_rule_label "ask_foreign_package_label"
+               || String.equal asking_rule.label "ask_foreign_package_label"
                   && all_foreign_codes_are_determined
-               || String.equal asking_rule_label "ask_from_ns_cluster"
+               || String.equal asking_rule.label "ask_from_ns_cluster"
                   && all_ns_clusters_have_been_asked
              then acc
              else
                try
-                 let (_ : Question.t) = asking_rule graph responses nfeaturemap in
+                 let (_ : Question.t) = asking_rule.rule graph responses nfeaturemap in
                  asking_rule :: acc
                with Assert_failure _ -> acc )
            ~init:[] asking_rules
 
 
     (** main logic of this submodule. *)
-    let assign_priority_on_asking_rules asking_rules (graph : G.t) =
+    let assign_priority_on_asking_rules (asking_rules : AskingRules.t list) (graph : G.t) =
       (* TEMP *)
       List.map ~f:(fun rule -> (rule, 1)) asking_rules
 
@@ -653,9 +656,13 @@ module MetaRules = struct
           graph
       in
       (* sort the asking rules by the priority, and get the first one. *)
-      fst @@ List.hd_exn
-      @@ List.sort
-           ~compare:(fun (_, priority1) (_, priority2) -> Int.compare priority1 priority2)
-           priority_assigned
+      let asking_rule =
+        fst @@ List.hd_exn
+        @@ List.sort
+             ~compare:(fun (_, priority1) (_, priority2) -> Int.compare priority1 priority2)
+             priority_assigned
+      in
+      print_endline @@ asking_rule.label ;
+      asking_rule
   end
 end

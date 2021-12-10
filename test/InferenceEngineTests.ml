@@ -899,3 +899,13 @@ module Notebook29 = struct
   (* 1. TODO ask on the Nodewise clusters *)
   (* 2. TODO guide the question to println *)
 end
+
+module Notebook30 = struct
+  (* Debugging the problem where it keeps asking about batchUpdate *)
+  let responses =
+    [Response.ForLabel ("int[] JdbcTemplate.batchUpdate(String,List)", TaintLabel.Sink)]
+
+
+  let rule_label, rule =
+    MetaRules.ForAsking.asking_rules_selector graph responses nodewise_featuremap
+end
