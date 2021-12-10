@@ -869,13 +869,13 @@ module Notebook28 = struct
       in
       let to_explore =
         List.filter current_vertex_preds ~f:(fun pred ->
-            not @@ List.mem big_acc pred ~equal:Vertex.equal &&
-        not @@ Vertex.equal pred (G.LiteralVertex.to_vertex vertex graph))
+            (not @@ List.mem big_acc pred ~equal:Vertex.equal)
+            && (not @@ Vertex.equal pred (G.LiteralVertex.to_vertex vertex graph)) )
       in
       if List.is_empty current_vertex_preds || List.is_empty to_explore then big_acc
       else
         List.fold
-          ~f:(fun smol_acc vertex -> inner vertex (vertex::smol_acc))
+          ~f:(fun smol_acc vertex -> inner vertex (vertex :: smol_acc))
           ~init:big_acc to_explore
     in
     inner (G.LiteralVertex.to_vertex vertex graph) []
@@ -891,4 +891,11 @@ module Notebook28 = struct
     recursively_find_preds graph
       ("Collection Map.values()", "{ line 42 }")
       ~label:EdgeLabel.NodeWiseSimilarity
+end
+
+module Notebook29 = struct
+  (* let's automate the Asking Rule!! *)
+
+  (* 1. TODO ask on the Nodewise clusters *)
+  (* 2. TODO guide the question to println *)
 end
