@@ -143,6 +143,18 @@ module G = struct
   module BiDiGraph = Graph.Persistent.Digraph.ConcreteBidirectionalLabeled (Vertex) (EdgeLabel)
   include BiDiGraph
 
+  let equal (snapshot1 : t) (snapshot2 : t) : bool =
+    (* G1 = G2 <=> V1 = V2 && E1 = E2 *)
+    let module VertexSet = Caml.Set.Make (V) in
+    let module EdgeSet = Caml.Set.Make (E) in
+    let snapshot1_vertices = VertexSet.of_list @@ fold_vertex List.cons snapshot1 []
+    and snapshot2_vertices = VertexSet.of_list @@ fold_vertex List.cons snapshot2 []
+    and snapshot1_edges = EdgeSet.of_list @@ fold_edges_e List.cons snapshot1 []
+    and snapshot2_edges = EdgeSet.of_list @@ fold_edges_e List.cons snapshot2 [] in
+    VertexSet.equal snapshot1_vertices snapshot2_vertices
+    && EdgeSet.equal snapshot1_edges snapshot2_edges
+
+
   module LiteralVertex = struct
     type t = string * string [@@deriving compare, equal, sexp]
 
@@ -306,7 +318,7 @@ module G = struct
   type trunk = Trunk.t
 
   let serialize_to_bin (graph : t) : unit =
-    let out_chan = Out_channel.create (make_now_string 9) in
+    let out_chan = Out_channel.create (make_now_string 9 ^ ".bin") in
     Out_channel.set_binary_mode out_chan true ;
     Marshal.to_channel out_chan graph [] ;
     Out_channel.close out_chan
