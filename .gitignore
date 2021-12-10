@@ -3,4 +3,5 @@ _build/
 *.dot
 *.svg
 *.lisp
+*.bin
 Chain.json.*
