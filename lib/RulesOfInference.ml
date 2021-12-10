@@ -447,8 +447,8 @@ module PropagationRules = struct
             ; non= vertex_dist.non +. 0.3 }
           in
           if not dry_run then
-            Out_channel.fprintf Out_channel.stdout
-              "%s propagated its info to %s (internal_src), its dist is now %s\n" new_fact_method
+            Out_channel.printf "%s propagated its info to %s (internal_src), its dist is now %s\n"
+              new_fact_method
               (G.LiteralVertex.to_string (G.LiteralVertex.of_vertex this_method_vertex))
               (ProbQuadruple.to_string new_dist) ;
           ( G.strong_update_dist this_method_vertex new_dist graph_acc
@@ -482,20 +482,23 @@ module AskingRules = struct
   (* NOTE we might use a curried type to make this def simpler. *)
   type t = G.t -> Response.t list -> FeatureMaps.NodeWiseFeatureMap.t -> Question.t
 
-  let ask_if_leaf_is_sink (graph : G.t) (received_responses : Response.t list)
-      (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) : Question.t =
+  let ask_if_leaf_is_sink : t =
+   fun (graph : G.t) (received_responses : Response.t list)
+       (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) : Question.t ->
     (* TODO: consider featuremaps *)
     let all_leaves = G.collect_leaves graph in
     let random_leaf =
       (* Utils.random_select_elem all_leaves *)
       (* TEMP Hardcoded *)
-      ("void PrintStream.println(String)", "{ line 43 }", ProbQuadruple.initial)
+      (* ("void PrintStream.println(String)", "{ line 43 }", ProbQuadruple.initial) *)
+      ("int[] JdbcTemplate.batchUpdate(String,List)", "{ line 43 }", ProbQuadruple.initial)
     in
     Question.AskingForLabel (fst3 random_leaf)
 
 
-  let ask_if_root_is_source (graph : G.t) (received_responses : Response.t list)
-      (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) : Question.t =
+  let ask_if_root_is_source : t =
+   fun (graph : G.t) (received_responses : Response.t list)
+       (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) : Question.t ->
     (* TODO consider featuremaps *)
     let all_roots = G.collect_roots graph in
     let random_root =
@@ -506,8 +509,9 @@ module AskingRules = struct
 
 
   (** ask a method from a foreign package of its label. *)
-  let ask_foreign_package_label (graph : G.t) (received_responses : Response.t list)
-      (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) : Question.t =
+  let ask_foreign_package_label : t =
+   fun (graph : G.t) (received_responses : Response.t list)
+       (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) : Question.t ->
     let all_foreign_package_vertices =
       G.fold_vertex
         (fun vertex acc ->
@@ -521,7 +525,29 @@ module AskingRules = struct
     Question.AskingForLabel (fst3 random_foreign_vertex)
 
 
-  let all_rules = [ask_if_leaf_is_sink; ask_if_root_is_source; ask_foreign_package_label]
+  let ask_from_ns_cluster : t =
+   fun (graph : G.t) (received_responses : Response.t list)
+       (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) : Question.t ->
+    let all_ns_clusters = GraphRepr.all_ns_clusters graph in
+    let not_asked_clusters =
+      List.filter all_ns_clusters ~f:(fun cluster ->
+          not
+          @@ List.exists received_responses ~f:(fun received_response ->
+                 List.mem ~equal:String.equal (List.map ~f:fst3 cluster)
+                   (Response.get_method received_response) ) )
+    in
+    let random_cluster = Utils.random_select_elem not_asked_clusters in
+    let random_vertex_in_picked_cluster = Utils.random_select_elem random_cluster in
+    if G.is_df_internal (G.LiteralVertex.of_vertex random_vertex_in_picked_cluster) graph then
+      Question.AskingForConfirmation (fst3 random_vertex_in_picked_cluster, TaintLabel.None)
+    else Question.AskingForLabel (fst3 random_vertex_in_picked_cluster)
+
+
+  let all_rules =
+    [ ("ask_if_leaf_is_sink", ask_if_leaf_is_sink)
+    ; ("ask_if_root_is_source", ask_if_root_is_source)
+    ; ("ask_foreign_package_label", ask_foreign_package_label)
+    ; ("ask_from_ns_cluster", ask_from_ns_cluster) ]
 end
 
 module MetaRules = struct
@@ -567,13 +593,49 @@ module MetaRules = struct
     let take_subset_of_applicable_asking_rules graph responses nfeaturemap asking_rules =
       (* rule R is applicable to vertex V iff (def) V has successor with labeled edge required by rule R
                                           iff (def) the embedded assertion succeeds *)
+      let all_leaves_are_determined =
+        List.for_all (G.collect_df_leaves graph) ~f:(fun leaf ->
+            G.Saturation.dist_is_saturated (trd3 leaf) )
+      in
+      let all_roots_are_determined =
+        List.for_all (G.collect_df_roots graph) ~f:(fun root ->
+            G.Saturation.dist_is_saturated (trd3 root) )
+      in
+      let all_foreign_codes_are_determined =
+        let all_foreign_codes =
+          G.fold_vertex
+            (fun vertex acc ->
+              if
+                NodeWiseFeatures.SingleFeature.bool_of_feature
+                @@ NodeWiseFeatures.SingleFeature.is_framework_method (fst3 vertex)
+              then vertex :: acc
+              else acc )
+            graph []
+        in
+        List.for_all all_foreign_codes ~f:(fun foreign_code ->
+            G.Saturation.dist_is_saturated (trd3 foreign_code) )
+      in
+      let all_ns_clusters_have_been_asked =
+        List.for_all (all_ns_clusters graph) ~f:(fun ns_cluster ->
+            List.for_all ns_cluster ~f:(fun vertex -> G.Saturation.dist_is_saturated (trd3 vertex)) )
+      in
       List.rev
       @@ List.fold
-           ~f:(fun acc asking_rule ->
-             try
-               let (_ : Question.t) = asking_rule graph responses nfeaturemap in
-               asking_rule :: acc
-             with Assert_failure _ -> acc )
+           ~f:(fun acc (asking_rule_label, asking_rule) ->
+             if
+               (String.equal asking_rule_label "ask_of_leaf_is_sink" && all_leaves_are_determined)
+               || String.equal asking_rule_label "ask_of_root_is_source"
+                  && all_roots_are_determined
+               || String.equal asking_rule_label "ask_foreign_package_label"
+                  && all_foreign_codes_are_determined
+               || String.equal asking_rule_label "ask_from_ns_cluster"
+                  && all_ns_clusters_have_been_asked
+             then acc
+             else
+               try
+                 let (_ : Question.t) = asking_rule graph responses nfeaturemap in
+                 asking_rule :: acc
+               with Assert_failure _ -> acc )
            ~init:[] asking_rules
 
 
