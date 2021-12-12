@@ -926,7 +926,7 @@ let all_ns_clusters (graph : G.t) : G.V.t list list =
         let res = inner vertex [] in
         if List.is_empty res then acc else res :: acc
       else acc )
-    ~init:[] (G.all_vertices_of_graph graph)
+    ~init:[] (G.all_vertices_of_graph graph) >>| List.stable_dedup
 
 
 let recursively_find_preds (graph : G.t) (vertex : G.LiteralVertex.t) ~(label : EdgeLabel.t) :

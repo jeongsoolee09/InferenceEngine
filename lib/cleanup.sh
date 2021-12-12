@@ -1,0 +1,1 @@
+rm *.dot *.svg *.bin

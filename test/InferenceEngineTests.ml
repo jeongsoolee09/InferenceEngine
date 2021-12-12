@@ -998,7 +998,7 @@ module Notebook32 = struct
 
   let responses = [Response.ForLabel ("int[] JdbcTemplate.batchUpdate(String,List)", TaintLabel.Sink)]
 
-let nfeaturemap = nodewise_featuremap
+  let nfeaturemap = nodewise_featuremap
 
   open MetaRules.ForAsking
 
@@ -1016,4 +1016,6 @@ let nfeaturemap = nodewise_featuremap
     @@ List.sort
          ~compare:(fun (_, priority1) (_, priority2) -> -Int.compare priority1 priority2)
          priority_assigned
+
+  (* DONE *)
 end
