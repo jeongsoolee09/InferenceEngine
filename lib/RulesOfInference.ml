@@ -353,11 +353,13 @@ module PropagationRules = struct
             List.fold
               ~f:(fun ((graph_acc, affected) as smol_acc) vertex ->
                 let vertex_meth, vertex_loc, vertex_dist = vertex in
+                let ns_clusters_vertices = List.join @@ Memoize.NSClusters.get_ns_cluster () ~debug:false in
                 if
                   NodeWiseFeatures.SingleFeature.bool_of_feature
                     (NodeWiseFeatures.SingleFeature.is_library_code vertex_meth)
                   && (not @@ G.is_df_leaf (G.LiteralVertex.of_vertex vertex) graph)
                   && (not @@ String.is_substring ~substring:"<init>" vertex_meth)
+                  && (not @@ List.mem ~equal:Vertex.equal ns_clusters_vertices vertex)
                 then (
                   let new_dist =
                     { ProbQuadruple.src= vertex_dist.src +. 0.3
@@ -407,10 +409,13 @@ module PropagationRules = struct
           List.fold
             ~f:(fun ((graph_acc, affected) as smol_acc) vertex ->
               let vertex_meth, vertex_loc, vertex_dist = vertex in
+              let ns_clusters_vertices = List.join @@ Memoize.NSClusters.get_ns_cluster () ~debug:false in
               if
                 NodeWiseFeatures.SingleFeature.bool_of_feature
                   (NodeWiseFeatures.SingleFeature.is_library_code vertex_meth)
                 && (not @@ G.is_df_leaf (G.LiteralVertex.of_vertex vertex) graph)
+                && (not @@ String.is_substring ~substring:"<init>" vertex_meth)
+                && (not @@ List.mem ~equal:Vertex.equal ns_clusters_vertices vertex)
               then (
                 let new_dist =
                   { ProbQuadruple.src= vertex_dist.src +. 0.3

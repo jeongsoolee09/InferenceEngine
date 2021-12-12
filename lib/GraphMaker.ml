@@ -42,4 +42,5 @@ let init_graph (json : json) ~(debug : bool) : G.t =
     |> remove_bogus
   in
   if debug then graph_to_dot out ~filename:(make_now_string 9 ^ ".dot") ;
+  Memoize.NSClusters.set_ns_cluster (all_ns_clusters out);
   out
