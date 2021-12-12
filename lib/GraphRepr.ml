@@ -106,7 +106,7 @@ module ProbQuadruple = struct
 
   let is_none (dist : t) : bool = TaintLabel.equal (determine_label dist) TaintLabel.None
 
-  let is_indeterrminate (dist : t) : bool =
+  let is_indeterminate (dist : t) : bool =
     TaintLabel.equal (determine_label dist) TaintLabel.Indeterminate
 end
 
@@ -518,6 +518,12 @@ module G = struct
         in
         found || acc )
       ~init:false vertex_succs
+
+
+  let dist_is_all_flat (graph : t) : bool =
+    fold_vertex
+      (fun vertex acc -> ProbQuadruple.equal (trd3 vertex) ProbQuadruple.initial)
+      graph true
 end
 
 module PathUtils = struct

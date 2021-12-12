@@ -96,6 +96,7 @@ end
 
 module Utils = struct
   let random_select_elem (list : 'a list) : 'a =
+    if List.is_empty list then failwith "cannot select from an empty list" ;
     let random_index = Random.int_incl 0 (List.length list - 1) in
     List.nth_exn list random_index
 end
@@ -353,7 +354,9 @@ module PropagationRules = struct
             List.fold
               ~f:(fun ((graph_acc, affected) as smol_acc) vertex ->
                 let vertex_meth, vertex_loc, vertex_dist = vertex in
-                let ns_clusters_vertices = List.join @@ Memoize.NSClusters.get_ns_cluster () ~debug:false in
+                let ns_clusters_vertices =
+                  List.join @@ Memoize.NSClusters.get_ns_cluster () ~debug:false
+                in
                 if
                   NodeWiseFeatures.SingleFeature.bool_of_feature
                     (NodeWiseFeatures.SingleFeature.is_library_code vertex_meth)
@@ -409,7 +412,9 @@ module PropagationRules = struct
           List.fold
             ~f:(fun ((graph_acc, affected) as smol_acc) vertex ->
               let vertex_meth, vertex_loc, vertex_dist = vertex in
-              let ns_clusters_vertices = List.join @@ Memoize.NSClusters.get_ns_cluster () ~debug:false in
+              let ns_clusters_vertices =
+                List.join @@ Memoize.NSClusters.get_ns_cluster () ~debug:false
+              in
               if
                 NodeWiseFeatures.SingleFeature.bool_of_feature
                   (NodeWiseFeatures.SingleFeature.is_library_code vertex_meth)
@@ -489,10 +494,15 @@ module AskingRules = struct
   type t = {rule: rule; label: string}
 
   let ask_if_leaf_is_sink : rule =
-   fun (graph : G.t) (received_responses : Response.t list)
+   fun (snapshot : G.t) (received_responses : Response.t list)
        (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) : Question.t ->
     (* TODO: consider featuremaps *)
-    let all_leaves = G.collect_leaves graph in
+    let all_leaves_are_determined =
+      List.for_all (G.collect_df_leaves snapshot) ~f:(fun leaf ->
+          G.Saturation.dist_is_saturated (trd3 leaf) )
+    in
+    assert (not all_leaves_are_determined) ;
+    let all_leaves = G.collect_leaves snapshot in
     let random_leaf =
       (* Utils.random_select_elem all_leaves *)
       (* TEMP Hardcoded *)
@@ -503,10 +513,15 @@ module AskingRules = struct
 
 
   let ask_if_root_is_source : rule =
-   fun (graph : G.t) (received_responses : Response.t list)
+   fun (snapshot : G.t) (received_responses : Response.t list)
        (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) : Question.t ->
     (* TODO consider featuremaps *)
-    let all_roots = G.collect_roots graph in
+    let all_roots_are_determined =
+      List.for_all (G.collect_df_roots snapshot) ~f:(fun root ->
+          G.Saturation.dist_is_saturated (trd3 root) )
+    in
+    assert (not all_roots_are_determined) ;
+    let all_roots = G.collect_roots snapshot in
     let random_root =
       let random_index = Random.int_incl 0 (List.length all_roots - 1) in
       List.nth_exn all_roots random_index
@@ -516,8 +531,23 @@ module AskingRules = struct
 
   (** ask a method from a foreign package of its label. *)
   let ask_foreign_package_label : rule =
-   fun (graph : G.t) (received_responses : Response.t list)
+   fun (snapshot : G.t) (received_responses : Response.t list)
        (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) : Question.t ->
+    let all_foreign_codes_are_determined =
+      let all_foreign_codes =
+        G.fold_vertex
+          (fun vertex acc ->
+            if
+              NodeWiseFeatures.SingleFeature.bool_of_feature
+              @@ NodeWiseFeatures.SingleFeature.is_framework_method (fst3 vertex)
+            then vertex :: acc
+            else acc )
+          snapshot []
+      in
+      List.for_all all_foreign_codes ~f:(fun foreign_code ->
+          G.Saturation.dist_is_saturated (trd3 foreign_code) )
+    in
+    assert (not all_foreign_codes_are_determined) ;
     let all_foreign_package_vertices =
       G.fold_vertex
         (fun vertex acc ->
@@ -525,26 +555,48 @@ module AskingRules = struct
           if SingleFeature.bool_of_feature @@ SingleFeature.is_framework_method (fst3 vertex) then
             vertex :: acc
           else acc )
-        graph []
+        snapshot []
     in
     let random_foreign_vertex = Utils.random_select_elem all_foreign_package_vertices in
     Question.AskingForLabel (fst3 random_foreign_vertex)
 
 
-  let ask_from_ns_cluster : rule =
-   fun (graph : G.t) (received_responses : Response.t list)
+  let ask_indeterminate : rule =
+   (* NOTE this should *NOT* be run at the first round of Loop. *)
+   fun (snapshot : G.t) (received_responses : Response.t list)
        (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) : Question.t ->
-    let all_ns_clusters = GraphRepr.all_ns_clusters graph in
+    let all_indeterminates =
+      List.filter (G.all_vertices_of_graph snapshot) ~f:(fun vertex ->
+          ProbQuadruple.is_indeterminate (trd3 vertex) )
+    in
+    (* TODO: don't randomly pick one; make it consider what should be an influential indeterminate node. *)
+    let random_indeterminate_vertex = Utils.random_select_elem all_indeterminates in
+    Question.AskingForLabel (fst3 random_indeterminate_vertex)
+
+
+  let ask_from_ns_cluster_if_it_contains_internal_src_or_sink : rule =
+   fun (snapshot : G.t) (received_responses : Response.t list)
+       (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) : Question.t ->
+    let all_ns_clusters = Memoize.NSClusters.get_ns_cluster () ~debug:false in
+    let there_is_some_cluster_that_has_internal_src_or_sink =
+      List.for_all all_ns_clusters ~f:(fun ns_cluster ->
+          List.exists ns_cluster ~f:(fun vertex ->
+              G.is_df_internal (G.LiteralVertex.of_vertex vertex) snapshot
+              && (ProbQuadruple.is_source (trd3 vertex) || ProbQuadruple.is_sin (trd3 vertex)) ) )
+    in
+    assert there_is_some_cluster_that_has_internal_src_or_sink ;
     let not_asked_clusters =
       List.filter all_ns_clusters ~f:(fun cluster ->
           not
           @@ List.exists received_responses ~f:(fun received_response ->
                  List.mem ~equal:String.equal (List.map ~f:fst3 cluster)
-                   (Response.get_method received_response) ) )
+                   (Response.get_method received_response) )
+          && List.exists cluster ~f:(fun vertex ->
+                 ProbQuadruple.is_source (trd3 vertex) || ProbQuadruple.is_none (trd3 vertex) ) )
     in
     let random_cluster = Utils.random_select_elem not_asked_clusters in
     let random_vertex_in_picked_cluster = Utils.random_select_elem random_cluster in
-    if G.is_df_internal (G.LiteralVertex.of_vertex random_vertex_in_picked_cluster) graph then
+    if G.is_df_internal (G.LiteralVertex.of_vertex random_vertex_in_picked_cluster) snapshot then
       Question.AskingForConfirmation (fst3 random_vertex_in_picked_cluster, TaintLabel.None)
     else Question.AskingForLabel (fst3 random_vertex_in_picked_cluster)
 
@@ -553,7 +605,9 @@ module AskingRules = struct
     [ {label= "ask_if_leaf_is_sink"; rule= ask_if_leaf_is_sink}
     ; {label= "ask_if_root_is_source"; rule= ask_if_root_is_source}
     ; {label= "ask_foreign_package_label"; rule= ask_foreign_package_label}
-    ; {label= "ask_from_ns_cluster"; rule= ask_from_ns_cluster} ]
+    ; {label= "ask_indeterminate"; rule= ask_indeterminate}
+    ; { label= "ask_from_ns_cluster_if_it_contains_internal_src_or_sink"
+      ; rule= ask_from_ns_cluster_if_it_contains_internal_src_or_sink } ]
 end
 
 module MetaRules = struct
@@ -578,6 +632,7 @@ module MetaRules = struct
 
     (** main logic of this submodule. *)
     let assign_priority_on_propagation_rules prop_rules (graph : G.t) =
+      (* TODO static for now, but could be dynamic *)
       List.map ~f:(fun rule -> (rule, 1)) prop_rules
 
 
@@ -600,55 +655,34 @@ module MetaRules = struct
         (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) (asking_rules : AskingRules.t list) =
       (* rule R is applicable to vertex V iff (def) V has successor with labeled edge required by rule R
                                           iff (def) the embedded assertion succeeds *)
-      let all_leaves_are_determined =
-        List.for_all (G.collect_df_leaves snapshot) ~f:(fun leaf ->
-            G.Saturation.dist_is_saturated (trd3 leaf) )
-      in
-      let all_roots_are_determined =
-        List.for_all (G.collect_df_roots snapshot) ~f:(fun root ->
-            G.Saturation.dist_is_saturated (trd3 root) )
-      in
-      let all_foreign_codes_are_determined =
-        let all_foreign_codes =
-          G.fold_vertex
-            (fun vertex acc ->
-              if
-                NodeWiseFeatures.SingleFeature.bool_of_feature
-                @@ NodeWiseFeatures.SingleFeature.is_framework_method (fst3 vertex)
-              then vertex :: acc
-              else acc )
-            snapshot []
-        in
-        List.for_all all_foreign_codes ~f:(fun foreign_code ->
-            G.Saturation.dist_is_saturated (trd3 foreign_code) )
-      in
-      let all_ns_clusters_have_been_asked =
-        List.for_all (all_ns_clusters snapshot) ~f:(fun ns_cluster ->
-            List.for_all ns_cluster ~f:(fun vertex -> G.Saturation.dist_is_saturated (trd3 vertex)) )
-      in
       List.rev
       @@ List.fold
            ~f:(fun acc asking_rule ->
-             if
-               (String.equal asking_rule.label "ask_of_leaf_is_sink" && all_leaves_are_determined)
-               || String.equal asking_rule.label "ask_of_root_is_source"
-                  && all_roots_are_determined
-               || String.equal asking_rule.label "ask_foreign_package_label"
-                  && all_foreign_codes_are_determined
-               || String.equal asking_rule.label "ask_from_ns_cluster"
-                  && all_ns_clusters_have_been_asked
-             then acc
-             else
-               try
-                 let (_ : Question.t) = asking_rule.rule snapshot responses nfeaturemap in
-                 asking_rule :: acc
-               with Assert_failure _ -> acc )
+             try
+               let (_ : Question.t) = asking_rule.rule snapshot responses nfeaturemap in
+               asking_rule :: acc
+             with _ -> acc )
            ~init:[] asking_rules
 
 
-    let assign_priority_on_asking_rules (asking_rules : AskingRules.t list) (graph : G.t) =
-      (* TEMP *)
-      List.map ~f:(fun rule -> (rule, 1)) asking_rules
+    let assign_priority_on_asking_rules (asking_rules : AskingRules.t list) (graph : G.t) :
+        (AskingRules.t * int) list =
+      let open AskingRules in
+      asking_rules
+      >>= fun asking_rule ->
+      match asking_rule.label with
+      | "ask_if_leaf_is_sink" ->
+          return (asking_rule, 5)
+      | "ask_if_root_is_source" ->
+          return (asking_rule, 4)
+      | "ask_foreign_package_label" ->
+          return (asking_rule, 3)
+      | "ask_indeterminate" ->
+          return (asking_rule, 1)
+      | "ask_from_ns_cluster_if_it_contains_internal_src_or_sink" ->
+          return (asking_rule, 2)
+      | otherwise ->
+          failwith (otherwise ^ " is not covered!")
 
 
     (** choose the most applicable asking rule. *)

@@ -969,3 +969,51 @@ module Notebook30 = struct
 
   let _ = Float.( >= ) (first -. second) saturated_parameter
 end
+
+module Notebook31 = struct
+  let snapshot = test ()
+
+  (* we'll mark the inner NS clusters with Source/Sin with them as suspicious *)
+
+  (* Oops, we don't need another function. *)
+  (* ... no, we do need a function. but it's true that we don't need another module. *)
+
+  (* ok, let's do it this way.
+     - DONE first, leave the functions as indeterminate if those are internal.
+     - DONE second, ask the ns clusters only if they are indeterminate. *)
+end
+
+module Notebook32 = struct
+  let initial_snapshot = graph
+
+  let _ = MetaRules.ForAsking.asking_rules_selector graph [] nodewise_featuremap
+
+  let after_sin_snapshot = Deserializer.deserialize_graph "2021-12-12_17:42:56.bin"
+
+  let _ = MetaRules.ForAsking.asking_rules_selector graph [] after_sin_snapshot
+
+  (* asking_rules_selector is borken *)
+
+  let graph = after_sin_snapshot
+
+  let responses = [Response.ForLabel ("int[] JdbcTemplate.batchUpdate(String,List)", TaintLabel.Sink)]
+
+let nfeaturemap = nodewise_featuremap
+
+  open MetaRules.ForAsking
+
+  (* let asking_rules_selector (graph : G.t) (responses : Response.t list) *)
+  (*     (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) : AskingRules.t = *)
+  let priority_assigned =
+    assign_priority_on_asking_rules
+      (take_subset_of_applicable_asking_rules graph responses nfeaturemap AskingRules.all_rules)
+      graph
+
+
+  (* sort the asking rules by the priority, and get the first one. *)
+  let asking_rule =
+    fst @@ List.hd_exn
+    @@ List.sort
+         ~compare:(fun (_, priority1) (_, priority2) -> -Int.compare priority1 priority2)
+         priority_assigned
+end
