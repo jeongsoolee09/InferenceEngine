@@ -103,7 +103,8 @@ end
 
 (** Rules for propagating facts *)
 module PropagationRules = struct
-  type t = G.t -> Response.t -> Response.t list -> dry_run:bool -> G.t * Vertex.t list
+  type rule = G.t -> Response.t -> Response.t list -> dry_run:bool -> G.t * Vertex.t list
+  type t = {rule: rule; label: string}
 
   let is_internal_udf_vertex (vertex : G.LiteralVertex.t) (graph : G.t) =
     let data_flows_in =
@@ -124,7 +125,7 @@ module PropagationRules = struct
     data_flows_in && data_flows_out && is_udf
 
 
-  let internal_udf_vertex_is_none : t =
+  let internal_udf_vertex_is_none : rule =
    fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ~(dry_run : bool) :
        (G.t * Vertex.t list) ->
     let new_fact_method = Response.get_method new_fact in
@@ -166,7 +167,7 @@ module PropagationRules = struct
 
   (** propagating to contextually similar vertices: requires that the new_fact's method have
       successors with contextual similarity edge *)
-  let contextual_similarity_rule : t =
+  let contextual_similarity_rule : rule =
    fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ~(dry_run : bool) :
        (G.t * Vertex.t list) ->
     let new_fact_method = Response.get_method new_fact
@@ -225,7 +226,7 @@ module PropagationRules = struct
 
   (** Propagate the same info to nodes that are similar nodewise: requires that the new_fact's
       method have successors with nodewise simlarity edge *)
-  let nodewise_similarity_propagation_rule : t =
+  let nodewise_similarity_propagation_rule : rule =
    fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ~(dry_run : bool) :
        (G.t * Vertex.t list) ->
     let new_fact_method = Response.get_method new_fact
@@ -311,12 +312,11 @@ module PropagationRules = struct
                   ; san= succ_dist.san -. 0.1
                   ; non= succ_dist.non -. 0.1 }
                 else
-                  (* bump the likelihood of the successor being a source *)
-                  (* { ProbQuadruple.src= succ_dist.src -. 0.1 *)
-                  (* ; sin= succ_dist.sin -. 0.1 *)
-                  (* ; san= succ_dist.san -. 0.1 *)
-                  (* ; non= succ_dist.non +. 0.3 } *)
-                  raise NotImplemented
+                  (* bump the likelihood of the successor being a none *)
+                  { ProbQuadruple.src= succ_dist.src -. 0.3
+                  ; sin= succ_dist.sin -. 0.3
+                  ; san= succ_dist.san -. 0.3
+                  ; non= succ_dist.non +. 0.8 }
             | Indeterminate ->
                 succ_dist
           in
@@ -331,7 +331,7 @@ module PropagationRules = struct
     (propagated, similarity_succs)
 
 
-  let internal_nonbidirectional_library_node_is_a_src_if_leaf_is_sink : t =
+  let internal_nonbidirectional_library_node_is_a_src_if_leaf_is_sink : rule =
    fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ~(dry_run : bool) :
        (G.t * Vertex.t list) ->
     let new_fact_label = Response.get_label new_fact in
@@ -440,7 +440,7 @@ module PropagationRules = struct
         ~init:(new_fact_propagated, []) trunks_containing_vertices
 
 
-  let if_method_is_none_once_then_it's_none_everywhere : t =
+  let if_method_is_none_once_then_it's_none_everywhere : rule =
    fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ~(dry_run : bool) :
        (G.t * Vertex.t list) ->
     let new_fact_method = Response.get_method new_fact in
@@ -470,7 +470,7 @@ module PropagationRules = struct
   (** Propagate the same info to nodes with the same @annotations: requires that the new_fact's
       method have successors with nodewise simlarity edge bearing the same @annotation *)
 
-  let annotation_rule : t =
+  let annotation_rule : rule =
    fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ~(dry_run : bool) :
        (G.t * Vertex.t list) ->
     (* assert that there is at least one successor with the same annotation. *)
@@ -479,11 +479,11 @@ module PropagationRules = struct
 
 
   let all_rules =
-    [ contextual_similarity_rule
-    ; nodewise_similarity_propagation_rule
-    ; internal_udf_vertex_is_none
-    ; internal_nonbidirectional_library_node_is_a_src_if_leaf_is_sink
-    ; if_method_is_none_once_then_it's_none_everywhere ]
+    [ {rule= contextual_similarity_rule; label="contextual_similarity_rule"}
+    ; {rule= nodewise_similarity_propagation_rule; label="nodewise_similarity_propagation_rule"}
+    ; {rule= internal_udf_vertex_is_none; label="internal_udf_vertex_is_none"}
+    ; {rule= internal_nonbidirectional_library_node_is_a_src_if_leaf_is_sink; label="internal_nonbidirectional_library_node_is_a_src_if_leaf_is_sink"}
+    ;{rule= if_method_is_none_once_then_it's_none_everywhere; label= "if_method_is_none_once_then_it's_none_everywhere"}  ]
 end
 
 (* Use Random.int_incl for making a random integer. *)
@@ -592,7 +592,7 @@ module AskingRules = struct
                  List.mem ~equal:String.equal (List.map ~f:fst3 cluster)
                    (Response.get_method received_response) )
           && List.exists cluster ~f:(fun vertex ->
-                 ProbQuadruple.is_source (trd3 vertex) || ProbQuadruple.is_none (trd3 vertex) ) )
+                 ProbQuadruple.is_source (trd3 vertex) || ProbQuadruple.is_none (trd3 vertex) ))
     in
     let random_cluster = Utils.random_select_elem not_asked_clusters in
     let random_vertex_in_picked_cluster = Utils.random_select_elem random_cluster in
@@ -624,13 +624,12 @@ module MetaRules = struct
            ~f:(fun acc prop_rule ->
              try
                (* try applying a prop_rule *)
-               let (_ : G.t * Vertex.t list) = prop_rule graph new_fact prev_facts ~dry_run:true in
+               let (_ : G.t * Vertex.t list) = prop_rule.rule graph new_fact prev_facts ~dry_run:true in
                prop_rule :: acc
              with Assert_failure _ -> acc )
            ~init:[] prop_rules
 
 
-    (** main logic of this submodule. *)
     let assign_priority_on_propagation_rules prop_rules (graph : G.t) =
       (* TODO static for now, but could be dynamic *)
       List.map ~f:(fun rule -> (rule, 1)) prop_rules

@@ -74,7 +74,7 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t) (previous_sn
     let propagated_snapshot, current_propagation_targets =
       List.fold
         ~f:(fun (snapshot_acc, affected_vertices) (rule : PropagationRules.t) ->
-          let propagated, this_affected = rule snapshot_acc new_fact prev_facts ~dry_run:false in
+          let propagated, this_affected = rule.rule snapshot_acc new_fact prev_facts ~dry_run:false in
           (propagated, affected_vertices @ this_affected) )
         ~init:(current_snapshot, []) rules_to_propagate
     in
