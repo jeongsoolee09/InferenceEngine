@@ -5,3 +5,5 @@ _build/
 *.lisp
 *.bin
 Chain.json.*
+*.json
+*.txt
