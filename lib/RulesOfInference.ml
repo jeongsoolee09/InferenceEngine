@@ -44,6 +44,13 @@ module Response = struct
           (Bool.to_string bool)
 
 
+  let list_to_string (responses : t list) : string =
+    let contents =
+      List.fold responses ~f:(fun acc response -> acc ^ to_string response ^ ", ") ~init:""
+    in
+    F.asprintf "[%s]" contents
+
+
   let get_method (res : t) : string =
     match res with ForLabel (meth, _) -> meth | ForYesOrNo (meth, _, _) -> meth
 
@@ -104,6 +111,7 @@ end
 (** Rules for propagating facts *)
 module PropagationRules = struct
   type rule = G.t -> Response.t -> Response.t list -> dry_run:bool -> G.t * Vertex.t list
+
   type t = {rule: rule; label: string}
 
   let is_internal_udf_vertex (vertex : G.LiteralVertex.t) (graph : G.t) =
@@ -148,10 +156,10 @@ module PropagationRules = struct
           if not @@ is_internal_udf_vertex (G.LiteralVertex.of_vertex succ) graph then acc
           else
             let new_dist =
-              { ProbQuadruple.src= succ_dist.src -. 0.1
-              ; ProbQuadruple.sin= succ_dist.sin -. 0.1
-              ; ProbQuadruple.san= succ_dist.san -. 0.1
-              ; ProbQuadruple.non= succ_dist.non +. 0.3 }
+              { ProbQuadruple.src= succ_dist.src -. 0.4
+              ; ProbQuadruple.sin= succ_dist.sin -. 0.4
+              ; ProbQuadruple.san= succ_dist.san -. 0.4
+              ; ProbQuadruple.non= succ_dist.non +. 0.8 }
             in
             if not dry_run then
               Out_channel.fprintf Out_channel.stdout
@@ -182,24 +190,42 @@ module PropagationRules = struct
       G.get_succs graph (G.LiteralVertex.of_vertex vertex) ~label:EdgeLabel.ContextualSimilarity
     in
     assert (Int.( >= ) (List.length contextual_succs) 1) ;
+    Out_channel.output_string Out_channel.stdout "contextual_similarity_rule chosen" ;
+    Out_channel.newline Out_channel.stdout ;
     Out_channel.print_endline
     @@ F.asprintf "contextual_succs: %s" (Vertex.vertex_list_to_string contextual_succs) ;
     let propagated =
       List.fold
         ~f:(fun acc succ ->
           let succ_meth, succ_label, succ_dist = succ in
+          let is_inside_ns_cluster_containing_df_internals =
+            let containing_cluster_opt =
+              List.find (Memoize.NSClusters.get_ns_cluster () ~debug:false) ~f:(fun cluster ->
+                  List.mem cluster succ ~equal:Vertex.equal )
+            in
+            match containing_cluster_opt with
+            | None ->
+                false
+            | Some containing_cluster ->
+                List.exists containing_cluster ~f:(fun vertex ->
+                    G.is_df_internal (G.LiteralVertex.of_vertex vertex) graph )
+          in
           let new_dist =
             match new_fact_label with
             | Source ->
-                { ProbQuadruple.src= succ_dist.src +. 0.3
-                ; sin= succ_dist.sin -. 0.1
-                ; san= succ_dist.san -. 0.1
-                ; non= succ_dist.non -. 0.1 }
+                if is_inside_ns_cluster_containing_df_internals then succ_dist
+                else
+                  { ProbQuadruple.src= succ_dist.src +. 0.3
+                  ; sin= succ_dist.sin -. 0.1
+                  ; san= succ_dist.san -. 0.1
+                  ; non= succ_dist.non -. 0.1 }
             | Sink ->
-                { ProbQuadruple.src= succ_dist.src -. 0.1
-                ; sin= succ_dist.sin +. 0.3
-                ; san= succ_dist.san -. 0.1
-                ; non= succ_dist.non -. 0.1 }
+                if is_inside_ns_cluster_containing_df_internals then succ_dist
+                else
+                  { ProbQuadruple.src= succ_dist.src -. 0.1
+                  ; sin= succ_dist.sin +. 0.3
+                  ; san= succ_dist.san -. 0.1
+                  ; non= succ_dist.non -. 0.1 }
             | Sanitizer ->
                 { ProbQuadruple.src= succ_dist.src -. 0.1
                 ; sin= succ_dist.sin -. 0.1
@@ -236,11 +262,17 @@ module PropagationRules = struct
       |> List.filter ~f:(fun (meth, _, _) -> String.equal meth new_fact_method)
     in
     let similarity_succs =
-      new_fact_method_vertices
-      >>= fun vertex ->
-      G.get_succs graph (G.LiteralVertex.of_vertex vertex) ~label:EdgeLabel.NodeWiseSimilarity
+      let raw_succs =
+        new_fact_method_vertices
+        >>= fun vertex ->
+        G.get_succs graph (G.LiteralVertex.of_vertex vertex) ~label:EdgeLabel.NodeWiseSimilarity
+      in
+      let module VertexSet = Caml.Set.Make (Vertex) in
+      raw_succs |> VertexSet.of_list |> VertexSet.elements
     in
     assert (Int.( >= ) (List.length similarity_succs) 1) ;
+    Out_channel.output_string Out_channel.stdout "nodewise_similarity_propagation_rule chosen" ;
+    Out_channel.newline Out_channel.stdout ;
     Out_channel.print_endline
     @@ F.asprintf "nodewise_succs: %s" (Vertex.vertex_list_to_string similarity_succs) ;
     let propagated =
@@ -479,11 +511,13 @@ module PropagationRules = struct
 
 
   let all_rules =
-    [ {rule= contextual_similarity_rule; label="contextual_similarity_rule"}
-    ; {rule= nodewise_similarity_propagation_rule; label="nodewise_similarity_propagation_rule"}
-    ; {rule= internal_udf_vertex_is_none; label="internal_udf_vertex_is_none"}
-    ; {rule= internal_nonbidirectional_library_node_is_a_src_if_leaf_is_sink; label="internal_nonbidirectional_library_node_is_a_src_if_leaf_is_sink"}
-    ;{rule= if_method_is_none_once_then_it's_none_everywhere; label= "if_method_is_none_once_then_it's_none_everywhere"}  ]
+    [ {rule= contextual_similarity_rule; label= "contextual_similarity_rule"}
+    ; {rule= nodewise_similarity_propagation_rule; label= "nodewise_similarity_propagation_rule"}
+    ; {rule= internal_udf_vertex_is_none; label= "internal_udf_vertex_is_none"}
+    ; { rule= internal_nonbidirectional_library_node_is_a_src_if_leaf_is_sink
+      ; label= "internal_nonbidirectional_library_node_is_a_src_if_leaf_is_sink" }
+    ; { rule= if_method_is_none_once_then_it's_none_everywhere
+      ; label= "if_method_is_none_once_then_it's_none_everywhere" } ]
 end
 
 (* Use Random.int_incl for making a random integer. *)
@@ -497,18 +531,33 @@ module AskingRules = struct
    fun (snapshot : G.t) (received_responses : Response.t list)
        (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) : Question.t ->
     (* TODO: consider featuremaps *)
+    let all_non_sus_leaves =
+      G.collect_df_leaves snapshot
+      |> List.filter ~f:(fun leaf ->
+             let containing_cluster_opt =
+               List.find (Memoize.NSClusters.get_ns_cluster () ~debug:false) ~f:(fun cluster ->
+                   List.mem cluster leaf ~equal:Vertex.equal )
+             in
+             match containing_cluster_opt with
+             | None ->
+                 true
+             | Some containing_cluster ->
+                 not
+                 @@ List.exists containing_cluster ~f:(fun vertex ->
+                        G.is_df_internal (G.LiteralVertex.of_vertex vertex) snapshot
+                        || List.exists
+                             (recursively_find_preds snapshot
+                                (G.LiteralVertex.of_vertex vertex)
+                                ~label:EdgeLabel.DataFlow )
+                             ~f:(fun vertex ->
+                               NodeWiseFeatures.SingleFeature.is_main_method (fst3 vertex) ) ) )
+    in
     let all_leaves_are_determined =
-      List.for_all (G.collect_df_leaves snapshot) ~f:(fun leaf ->
-          G.Saturation.dist_is_saturated (trd3 leaf) )
+      List.for_all all_non_sus_leaves ~f:(fun leaf -> G.Saturation.dist_is_saturated (trd3 leaf))
     in
     assert (not all_leaves_are_determined) ;
-    let all_leaves = G.collect_leaves snapshot in
-    let random_leaf =
-      (* Utils.random_select_elem all_leaves *)
-      (* TEMP Hardcoded *)
-      (* ("void PrintStream.println(String)", "{ line 43 }", ProbQuadruple.initial) *)
-      ("int[] JdbcTemplate.batchUpdate(String,List)", "{ line 43 }", ProbQuadruple.initial)
-    in
+    print_endline @@ Vertex.vertex_list_to_string all_non_sus_leaves ;
+    let random_leaf = Utils.random_select_elem all_non_sus_leaves in
     Question.AskingForLabel (fst3 random_leaf)
 
 
@@ -521,7 +570,7 @@ module AskingRules = struct
           G.Saturation.dist_is_saturated (trd3 root) )
     in
     assert (not all_roots_are_determined) ;
-    let all_roots = G.collect_roots snapshot in
+    let all_roots = G.collect_df_roots snapshot in
     let random_root =
       let random_index = Random.int_incl 0 (List.length all_roots - 1) in
       List.nth_exn all_roots random_index
@@ -592,7 +641,7 @@ module AskingRules = struct
                  List.mem ~equal:String.equal (List.map ~f:fst3 cluster)
                    (Response.get_method received_response) )
           && List.exists cluster ~f:(fun vertex ->
-                 ProbQuadruple.is_source (trd3 vertex) || ProbQuadruple.is_none (trd3 vertex) ))
+                 ProbQuadruple.is_source (trd3 vertex) || ProbQuadruple.is_none (trd3 vertex) ) )
     in
     let random_cluster = Utils.random_select_elem not_asked_clusters in
     let random_vertex_in_picked_cluster = Utils.random_select_elem random_cluster in
@@ -624,7 +673,9 @@ module MetaRules = struct
            ~f:(fun acc prop_rule ->
              try
                (* try applying a prop_rule *)
-               let (_ : G.t * Vertex.t list) = prop_rule.rule graph new_fact prev_facts ~dry_run:true in
+               let (_ : G.t * Vertex.t list) =
+                 prop_rule.rule graph new_fact prev_facts ~dry_run:true
+               in
                prop_rule :: acc
              with Assert_failure _ -> acc )
            ~init:[] prop_rules

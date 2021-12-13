@@ -161,6 +161,11 @@ module SingleFeature = struct
       Bool (String.equal (string_of_feature methstring_package) this_project_package_name)
 
 
+  (* NOTE do not use this for a pairwise feature *)
+  let is_main_method (methstring : string) : bool =
+    String.is_substring ~substring:"main(" methstring
+
+
   let is_java_builtin_class_initializer (methstring : string) : feature =
     (* first, we read all the skip_func file, *)
     (* find the initializers in it, *)

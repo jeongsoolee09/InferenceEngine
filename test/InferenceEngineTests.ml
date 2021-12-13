@@ -1023,5 +1023,57 @@ module Notebook32 = struct
 end
 
 module Notebook33 = struct
-  
+  let after_2 = Deserializer.deserialize_graph "2021-12-13_15:15:52.bin"
+
+  (* Now let's debug this $h!t *)
+
+  (* hmm, we should leave the iterator/collection ns cluster as Indeterminate, too. *)
+
+  let ns_clusters = all_ns_clusters graph
+
+  let succ_vertex = ("boolean Iterator.hasNext()", "{ line 42 }", ProbQuadruple.initial)
+
+  let succ_vertex = ("void PrintStream.println(String)", "{ line 43 }", ProbQuadruple.initial)
+
+  let is_inside_ns_cluster_containing_df_internals =
+    let containing_cluster_opt =
+      List.find ns_clusters ~f:(fun cluster -> List.mem cluster succ_vertex ~equal:Vertex.equal)
+    in
+    match containing_cluster_opt with
+    | None ->
+        false
+    | Some containing_cluster ->
+        List.exists containing_cluster ~f:(fun vertex ->
+            G.is_df_internal (G.LiteralVertex.of_vertex vertex) graph )
+end
+
+module Notebook34 = struct
+  (* now we debug the asking rules. Why oh why?? *)
+  let after_2 = Deserializer.deserialize_graph "2021-12-13_16:13:4.bin"
+
+  let received_responses =
+    [Response.ForLabel ("int[] JdbcTemplate.batchUpdate(String,List)", TaintLabel.Sink)]
+
+
+  let _ = loop after_2 received_responses nodewise_featuremap 1
+
+  let test leaf =
+    let containing_cluster_opt =
+      List.find (Memoize.NSClusters.get_ns_cluster () ~debug:false) ~f:(fun cluster ->
+          List.mem cluster leaf ~equal:Vertex.equal )
+    in
+    match containing_cluster_opt with
+    | None ->
+        true
+    | Some containing_cluster ->
+        not
+        @@ List.exists containing_cluster ~f:(fun vertex ->
+               G.is_df_internal (G.LiteralVertex.of_vertex vertex) graph
+               || List.exists
+                    (recursively_find_preds graph
+                       (G.LiteralVertex.of_vertex vertex)
+                       ~label:EdgeLabel.DataFlow )
+                    ~f:(fun vertex -> NodeWiseFeatures.SingleFeature.is_main_method (fst3 vertex)) )
+
+  let _ = test ("void PrintStream.println(String)", "{ line 43 }", ProbQuadruple.initial)
 end
