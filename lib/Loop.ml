@@ -143,5 +143,4 @@ let rec loop (current_snapshot : G.t) (received_responses : Response.t list)
       let propagated' = SelfHeal.HealMisPropagation.heal_all propagated in
       Visualizer.visualize_at_the_face propagated' ;
       G.serialize_to_bin propagated' ;
-      reset_history () ;
       loop propagated' (response :: received_responses) nodewise_featuremap (count + 1)
