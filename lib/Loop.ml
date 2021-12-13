@@ -1,4 +1,5 @@
 open GraphRepr
+open ListMonad
 open RulesOfInference
 open FeatureMaps
 
@@ -25,40 +26,16 @@ module Visualizer = struct
     Out_channel.close open_out_chan
 end
 
-(* since the same history should be global to all propagator calls, we should declare it as a ref *)
-
-let propagation_history = ref []
-
-let have_been_before vertex = List.mem ~equal:Vertex.equal !propagation_history vertex
-
-let have_been_before_method method_ =
-  List.fold
-    ~f:(fun acc vertex -> String.equal (fst3 vertex) method_ || acc)
-    ~init:false !propagation_history
-
-
-let add_to_history vertex = propagation_history := vertex :: !propagation_history
-
-let reset_history () = propagation_history := []
-
-let print_history () =
-  Out_channel.output_string Out_channel.stdout "current history: [" ;
-  List.iter
-    ~f:(fun vertex -> Out_channel.output_string Out_channel.stdout (Vertex.to_string vertex ^ "; "))
-    !propagation_history ;
-  Out_channel.output_string Out_channel.stdout "]" ;
-  Out_channel.newline Out_channel.stdout
-
-
 (** (1) receive a rule to propagate, (2) use that propagation rule, and (3) spawn itself to the
     propagation targets. *)
 let rec propagator (new_fact : Response.t) (current_snapshot : G.t) (previous_snapshot : G.t option)
     (rules_to_propagate : PropagationRules.t list) (prev_facts : Response.t list)
-    (prop_rule_pool : PropagationRules.t list) : G.t =
+    (history : Vertex.t list) (prop_rule_pool : PropagationRules.t list) : G.t * Vertex.t list =
   if List.is_empty rules_to_propagate then
     (* if we can't propagate any further, terminate *)
-    current_snapshot
-  else if have_been_before_method (Response.get_method new_fact) then current_snapshot
+    (current_snapshot, [])
+  else if List.mem (history >>| fst3) (Response.get_method new_fact) ~equal:String.equal then
+    (current_snapshot, history)
   else (
     Out_channel.print_endline "==============================" ;
     Out_channel.print_endline
@@ -67,27 +44,31 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t) (previous_sn
       G.this_method_vertices current_snapshot (Response.get_method new_fact)
     in
     Out_channel.print_endline
-    @@ F.asprintf "current_visitng_vertices: %s"
+    @@ F.asprintf "current_visiting_vertices: %s"
          (Vertex.vertex_list_to_string current_visiting_vertices) ;
-    List.iter ~f:add_to_history current_visiting_vertices ;
     (* do the propagation *)
     let propagated_snapshot, current_propagation_targets =
       List.fold
         ~f:(fun (snapshot_acc, affected_vertices) (rule : PropagationRules.t) ->
-          let propagated, this_affected = rule.rule snapshot_acc new_fact prev_facts ~dry_run:false in
+          let propagated, this_affected =
+            rule.rule snapshot_acc new_fact prev_facts ~dry_run:false
+          in
           (propagated, affected_vertices @ this_affected) )
         ~init:(current_snapshot, []) rules_to_propagate
     in
     List.fold
-      ~f:(fun big_acc target ->
-        if have_been_before target || List.mem ~equal:Vertex.equal current_visiting_vertices target
-        then big_acc
+      ~f:(fun (big_acc, big_history) target ->
+        if
+          List.mem big_history target ~equal:Vertex.equal
+          || List.mem ~equal:Vertex.equal current_visiting_vertices target
+        then (big_acc, big_history)
         else (
           Out_channel.print_endline
           @@ F.asprintf "\npropagator is iterating on %s" (Vertex.to_string target) ;
           if
-            have_been_before target || List.mem ~equal:Vertex.equal current_visiting_vertices target
-          then big_acc
+            List.mem big_history target ~equal:Vertex.equal
+            || List.mem ~equal:Vertex.equal current_visiting_vertices target
+          then (big_acc, big_history)
           else
             let target_meth, target_loc, target_dist = target in
             (* summarize this node's distribution into a Response.t! *)
@@ -104,18 +85,19 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t) (previous_sn
               MetaRules.ForPropagation.take_subset_of_applicable_propagation_rules current_snapshot
                 target_rule_summary prev_facts prop_rule_pool
             in
-            let propagated =
+            let propagated, updated_history =
               List.fold
-                ~f:(fun smol_acc prop_rule ->
+                ~f:(fun (smol_acc, smol_history) prop_rule ->
                   propagator target_rule_summary smol_acc (Some current_snapshot) applicable_rules
                     (target_rule_summary :: new_fact :: prev_facts)
-                    prop_rule_pool )
-                ~init:big_acc applicable_rules
+                    smol_history prop_rule_pool )
+                ~init:(big_acc, big_history) applicable_rules
             in
             if Option.is_some previous_snapshot then
               G.print_snapshot_diff (Option.value_exn previous_snapshot) propagated ;
-            propagated ) )
-      ~init:propagated_snapshot current_propagation_targets )
+            (propagated, updated_history) ) )
+      ~init:(propagated_snapshot, current_visiting_vertices @ history)
+      current_propagation_targets )
 
 
 let rec loop (current_snapshot : G.t) (received_responses : Response.t list)
@@ -153,11 +135,13 @@ let rec loop (current_snapshot : G.t) (received_responses : Response.t list)
       let propagated =
         List.fold
           ~f:(fun acc prop_rule ->
-            propagator response acc None propagation_rules_to_apply received_responses
-              PropagationRules.all_rules )
+            fst
+            @@ propagator response acc None propagation_rules_to_apply received_responses []
+                 PropagationRules.all_rules )
           ~init:current_snapshot propagation_rules_to_apply
       in
       let propagated' = SelfHeal.HealMisPropagation.heal_all propagated in
       Visualizer.visualize_at_the_face propagated' ;
-      G.serialize_to_bin propagated';
+      G.serialize_to_bin propagated' ;
+      reset_history () ;
       loop propagated' (response :: received_responses) nodewise_featuremap (count + 1)
