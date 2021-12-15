@@ -35,12 +35,27 @@ let graph_to_dot (graph : G.t) ?(filename = "initial_graph.dot") : unit =
   Out_channel.close out_channel
 
 
+let graph_already_serialized (suffix : string) : string option =
+  Array.find (Sys.readdir ".") ~f:(fun str -> String.is_substring str ~substring:suffix)
+
+
 let init_graph (json : json) ~(debug : bool) : G.t =
+  (* let out = *)
+  (*   G.empty |> batch_add_vertex json |> batch_add_edge json *)
+  (*   |> EstablishSimEdges.make_nodewise_sim_edge |> EstablishSimEdges.make_contextual_sim_edge *)
+  (*   |> remove_bogus *)
+  let df_edges_added =
+    match graph_already_serialized "df_edges" with
+    | None ->
+      let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+      G.serialize_to_bin result ~suffix:"df_edges" ;
+      result
+    | Some filename -> Deserializer.deserialize_graph filename
+  in
   let out =
-    G.empty |> batch_add_vertex json |> batch_add_edge json
-    |> EstablishSimEdges.make_nodewise_sim_edge |> EstablishSimEdges.make_contextual_sim_edge
-    |> remove_bogus
+    df_edges_added |> EstablishSimEdges.make_nodewise_sim_edge
+    |> EstablishSimEdges.make_contextual_sim_edge |> remove_bogus
   in
   if debug then graph_to_dot out ~filename:(make_now_string 9 ^ ".dot") ;
-  Memoize.NSClusters.set_ns_cluster (all_ns_clusters out);
+  Memoize.NSClusters.set_ns_cluster (all_ns_clusters out) ;
   out

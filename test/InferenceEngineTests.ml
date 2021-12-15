@@ -283,9 +283,9 @@ module Notebook12 = struct
 
   let _ = trunk_finder ~start:v3 ~end_:v4 graph
 
-  let _ = Visualizer.visualize_at_the_face df_only_graph
+  let _ = Visualizer.visualize_snapshot df_only_graph ~micro:false ~autoopen:true
 
-  let _ = Visualizer.visualize_at_the_face graph
+  let _ = Visualizer.visualize_snapshot graph ~micro:false ~autoopen:true
 
   let _ =
     PathUtils.is_reachable
@@ -1076,4 +1076,85 @@ module Notebook34 = struct
                     ~f:(fun vertex -> NodeWiseFeatures.SingleFeature.is_main_method (fst3 vertex)) )
 
   let _ = test ("void PrintStream.println(String)", "{ line 43 }", ProbQuadruple.initial)
+end
+
+
+module Notebook35 = struct
+  (* this thing erroneously starts from CallSlice. *)
+  let json_piece_str = "{
+    \"defining_method\":
+      \"void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)\",
+    \"access_path\": \"(text, [])\",
+    \"location\": \"{ line 27, line 31 }\",
+    \"chain\": [
+      {
+        \"current_method\":
+          \"void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)\",
+        \"status\": \"Call\",
+        \"callee\": \"String TextNode.getText()\",
+        \"location\": \"{ line 27 }\",
+        \"with\": \"(param_getText_27_0, [])\"
+      },
+      {
+        \"current_method\":
+          \"void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)\",
+        \"status\": \"Define\",
+        \"access_path\": \"(text, [])\",
+        \"location\": \"{ line 27, line 31 }\",
+        \"using\": \"String TextNode.getText()\"
+      },
+      {
+        \"current_method\":
+          \"void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)\",
+        \"status\": \"Call\",
+        \"callee\": \"String String.substring(int)\",
+        \"location\": \"{ line 31 }\",
+        \"with\": \"(param_substring_31_0, [])\"
+      },
+      {
+        \"current_method\":
+          \"void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)\",
+        \"status\": \"Define\",
+        \"access_path\": \"($irvar13, [])\",
+        \"location\": \"{ line 31 }\",
+        \"using\": \"String String.substring(int)\"
+      },
+      {
+        \"current_method\":
+          \"void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)\",
+        \"status\": \"Define\",
+        \"access_path\": \"(text, [])\",
+        \"location\": \"{ line 27, line 31 }\",
+        \"using\":
+          \"void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)\"
+      },
+      {
+        \"current_method\":
+          \"void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)\",
+        \"status\": \"Call\",
+        \"callee\": \"char String.charAt(int)\",
+        \"location\": \"{ line 29 }\",
+        \"with\": \"(param_charAt_29_0, [])\"
+      },
+      {
+        \"current_method\":
+          \"void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)\",
+        \"status\": \"Define\",
+        \"access_path\": \"($irvar11, [])\",
+        \"location\": \"{ line 29 }\",
+        \"using\": \"char String.charAt(int)\"
+      },
+      {
+        \"current_method\":
+          \"void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)\",
+        \"status\": \"Dead\"
+      }
+    ]
+  }"
+
+  let parsed = Json.from_string json_piece_str
+end
+
+module Notebook36 = struct
+  (* gotta serialize the graph with DF Edges for speedy work. *)
 end

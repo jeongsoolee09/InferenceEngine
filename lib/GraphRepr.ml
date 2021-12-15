@@ -317,8 +317,8 @@ module G = struct
 
   type trunk = Trunk.t
 
-  let serialize_to_bin (graph : t) : unit =
-    let out_chan = Out_channel.create (make_now_string 9 ^ ".bin") in
+  let serialize_to_bin ?(suffix="") (graph : t) : unit =
+    let out_chan = Out_channel.create (make_now_string 9 ^ suffix ^ ".bin") in
     Out_channel.set_binary_mode out_chan true ;
     Marshal.to_channel out_chan graph [] ;
     Out_channel.close out_chan
@@ -600,7 +600,7 @@ module ChainSlice = struct
   (* current_method, location *)
   [@@deriving equal, compare]
 
-  let pp (slice : t) : string =
+  let to_string (slice : t) : string =
     match slice with
     | DefineSlice (curr, ap, loc, using) ->
         F.asprintf "DefineSlice (%s, %s, %s, %s)" curr ap loc using
@@ -618,8 +618,8 @@ module ChainSlice = struct
         F.asprintf "Temp (%s, %s)" curr loc
 
 
-  let to_string (slices : t list) : string =
-    let contents = List.fold ~f:(fun acc slice -> acc ^ pp slice ^ ", ") slices ~init:"" in
+  let list_to_string (slices : t list) : string =
+    let contents = List.fold ~f:(fun acc slice -> acc ^ to_string slice ^ ", ") slices ~init:"" in
     "[ " ^ contents ^ " ]"
 
 
@@ -773,22 +773,24 @@ module ChainRefiners = struct
 
   (** make a stub slice in front of the define slice of the chain. *)
   let process_head_define (chain_slices : ChainSlice.t list) : ChainSlice.t list =
-    let head_define = List.hd_exn chain_slices in
+    let head_define =
+      if ChainSlice.is_define @@ List.hd_exn chain_slices then List.hd_exn chain_slices
+      else List.nth_exn chain_slices 1
+    in
     let define_current_method_field, location_field, define_using_field =
       match head_define with
       | DefineSlice (current_method, _, location, using_method) ->
           (current_method, location, using_method)
-      | _ ->
+      | otherwise ->
+          Printf.printf "\nfailed on: %s\n" (ChainSlice.to_string otherwise) ;
           failwith "ahahahahah"
     in
-    let skip_func_method_names =
-      Deserializer.deserialize_skip_func ()
-      |> List.filter ~f:(fun str -> not @@ String.is_prefix ~prefix:"__" str)
-      >>| parse_skip_func
-    in
+    let skip_func_method_names = Deserializer.deserialize_skip_func () >>| parse_skip_func in
     if
       (not @@ String.equal define_current_method_field define_using_field)
-      && List.mem ~equal:String.equal skip_func_method_names (parse_skip_func define_using_field)
+      &&
+      try List.mem ~equal:String.equal skip_func_method_names (parse_skip_func define_using_field)
+      with Assert_failure _ -> true
     then Temp (define_using_field, location_field) :: chain_slices
     else chain_slices
 
@@ -808,15 +810,17 @@ module EdgeMaker = struct
       vertex. *)
   let refine_bicycle_chain (bicycle_chain : (ChainSlice.t * ChainSlice.t) list) :
       (ChainSlice.t * ChainSlice.t) list * G.LiteralVertex.t option =
-    let slice1, slice2 = List.last_exn bicycle_chain in
-    match slice2 with
-    | DefineSlice (_, ap, loc, using) as void_call_slice ->
-        let is_frontend_tmp_var_ap = String.is_prefix ~prefix:"($" in
-        if is_frontend_tmp_var_ap ap then
-          (List.slice bicycle_chain 0 (List.length bicycle_chain - 1), Some (using, loc))
-        else (bicycle_chain, None)
-    | _ ->
-        (bicycle_chain, None)
+    if List.is_empty bicycle_chain then ([], None)
+    else
+      let slice1, slice2 = List.last_exn bicycle_chain in
+      match slice2 with
+      | DefineSlice (_, ap, loc, using) as void_call_slice ->
+          let is_frontend_tmp_var_ap = String.is_prefix ~prefix:"($" in
+          if is_frontend_tmp_var_ap ap then
+            (List.slice bicycle_chain 0 (List.length bicycle_chain - 1), Some (using, loc))
+          else (bicycle_chain, None)
+      | _ ->
+          (bicycle_chain, None)
 
 
   let collect_voidcall_vertices (chain_slices : ChainSlice.t list) : G.LiteralVertex.t list =
@@ -926,7 +930,8 @@ let all_ns_clusters (graph : G.t) : G.V.t list list =
         let res = inner vertex [] in
         if List.is_empty res then acc else res :: acc
       else acc )
-    ~init:[] (G.all_vertices_of_graph graph) >>| List.stable_dedup
+    ~init:[] (G.all_vertices_of_graph graph)
+  >>| List.stable_dedup
 
 
 let recursively_find_preds (graph : G.t) (vertex : G.LiteralVertex.t) ~(label : EdgeLabel.t) :
