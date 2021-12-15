@@ -37,7 +37,7 @@ module SingleFeature = struct
 
   (** Pattern that captures (1) package name, (2) class name, and (3) method name from a unique
       identifier. *)
-  let id_regex = Str.regexp "\\(.*\\)\\.?\\([A-Z][a-zA-Z$]+\\)\\.\\([a-zA-Z<>$]+\\)(.*)"
+  let id_regex = Str.regexp "\\(.*\\)\\.?\\([A-Z][a-zA-Z$0-9]+\\)\\.\\([a-zA-Z<>$0-9]+\\)(.*)"
 
   (* unique_identifiers are strings of the format {package}.{classname}.{method_name}:{return_type_with_package}
      they are obtained from Procname.pp_unique_id. *)
@@ -66,7 +66,7 @@ module SingleFeature = struct
 
   (** Pattern that captures (1) rtntype, (2) class name, and (3) method name from a unique
       identifier. *)
-  let normalstring_regex = Str.regexp "\\(.*\\) \\([a-zA-Z$]+\\)\\.\\([a-zA-Z<>$]+\\)(.*)"
+  let normalstring_regex = Str.regexp "\\(.*\\) \\([a-zA-Z0-9$]+\\)\\.\\([a-zA-Z<>0-9$]+\\)(.*)"
 
   let extract_rtntype_from_normalstring (methstring : string) : feature =
     try
@@ -89,7 +89,7 @@ module SingleFeature = struct
     with Assert_failure _ -> failwithf "extract_method_name_from_normalstring: %s" methstring ()
 
 
-  let initstring_regex = Str.regexp "\\([a-zA-Z$]+\\)\\.\\([a-zA-Z<>$]+\\)(.*)"
+  let initstring_regex = Str.regexp "\\([a-zA-Z$]+\\)\\.\\([a-zA-Z0-9<>$]+\\)(.*)"
 
   let extract_class_name_from_initstring (initstring : string) : feature =
     try
