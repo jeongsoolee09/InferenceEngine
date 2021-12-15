@@ -36,27 +36,6 @@ open RulesOfInference;;
 module Json = Yojson.Basic
 type json = Json.t
 
-let json = Deserializer.deserialize_json ();;
-
-let graph = GraphMaker.init_graph json ~debug:true;;
-
-let received_responses = [];;
-
-let nodewise_featuremap = NodeWiseFeatures.init_feature_map graph;;
-
-let _ = G.serialize_to_bin graph;;
-
-let test () = loop graph received_responses nodewise_featuremap 1;;
-
-let trunk_finder ~(start : G.LiteralVertex.t) ~(end_ : G.LiteralVertex.t) (graph : G.t) : trunk list
-    =
-  let all_trunks = identify_trunks graph in
-  List.filter
-    ~f:(fun trunk ->
-      Vertex.equal (G.LiteralVertex.to_vertex start graph) (List.hd_exn trunk)
-      && Vertex.equal (G.LiteralVertex.to_vertex end_ graph) (List.last_exn trunk) )
-    all_trunks;;
-
 let fst3 (a, b, c) = a;;
 
 let snd3 (a, b, c) = b;;
