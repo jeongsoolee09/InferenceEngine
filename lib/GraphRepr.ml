@@ -317,7 +317,7 @@ module G = struct
 
   type trunk = Trunk.t
 
-  let serialize_to_bin ?(suffix="") (graph : t) : unit =
+  let serialize_to_bin ?(suffix = "") (graph : t) : unit =
     let out_chan = Out_channel.create (make_now_string 9 ^ suffix ^ ".bin") in
     Out_channel.set_binary_mode out_chan true ;
     Marshal.to_channel out_chan graph [] ;
@@ -503,6 +503,13 @@ module G = struct
     let all_vertices = all_vertices_of_graph graph in
     let module StringSet = Caml.Set.Make (String) in
     all_vertices >>| fst3 |> StringSet.of_list |> StringSet.elements
+
+
+  let all_non_frontend_methods_of_graph (graph : t) : string list =
+    all_methods_of_graph graph
+    |> List.filter ~f:(not << String.is_substring ~substring:"$Lambda$")
+    |> List.filter ~f:(not << String.is_substring ~substring:"lambda$")
+    |> List.filter ~f:(not << String.is_prefix ~prefix:"__")
 
 
   let is_bidirectional_vertex (vertex : LiteralVertex.t) (graph : t) ~(label : EdgeLabel.t) : bool =

@@ -289,7 +289,7 @@ module EstablishSimEdges = struct
     let open SimilarVertexPairExtractor in
     let all_vertices = G.all_vertices_of_graph graph in
     let contextual_similarity_map =
-      NodewisePairExtractor.update_nodewise_similarity_map (G.all_methods_of_graph graph)
+      NodewisePairExtractor.update_nodewise_similarity_map (G.all_non_frontend_methods_of_graph graph)
     in
     let above_threshold_entries =
       NodeWiseSimilarityMap.filter
