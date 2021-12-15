@@ -89,7 +89,7 @@ module SingleFeature = struct
     with Assert_failure _ -> failwithf "extract_method_name_from_normalstring: %s" methstring ()
 
 
-  let initstring_regex = Str.regexp "\\([a-zA-Z$]+\\)\\.\\([a-zA-Z0-9<>$]+\\)(.*)"
+  let initstring_regex = Str.regexp "\\([a-zA-Z0-9$]+\\)\\.\\([a-zA-Z0-9<>$]+\\)(.*)"
 
   let extract_class_name_from_initstring (initstring : string) : feature =
     try
@@ -156,9 +156,12 @@ module SingleFeature = struct
     if String.is_substring ~substring:"<init>" methstring then
       is_this_project_class_initializer methstring
     else
-      let this_method_id = find_unique_identifier_of_methstring methstring in
-      let methstring_package = extract_package_name_from_id this_method_id in
-      Bool (String.equal (string_of_feature methstring_package) this_project_package_name)
+      try
+        let this_method_id = find_unique_identifier_of_methstring methstring in
+        let methstring_package = extract_package_name_from_id this_method_id in
+        Bool (String.equal (string_of_feature methstring_package) this_project_package_name)
+      with _ -> (* It's very likely an interface method *)
+                Bool true
 
 
   (* NOTE do not use this for a pairwise feature *)
@@ -185,9 +188,12 @@ module SingleFeature = struct
     if String.is_substring ~substring:"<init>" methstring then
       is_java_builtin_class_initializer methstring
     else
-      let this_method_id = find_unique_identifier_of_methstring methstring in
-      let methstring_package = extract_package_name_from_id this_method_id in
-      Bool (String.is_prefix ~prefix:"java." (string_of_feature methstring_package))
+      try
+        let this_method_id = find_unique_identifier_of_methstring methstring in
+        let methstring_package = extract_package_name_from_id this_method_id in
+        Bool (String.is_prefix ~prefix:"java." (string_of_feature methstring_package))
+      with _ -> (* It's very likely an interface method *)
+                Bool true
 
 
   let is_framework_method (methstring : string) : feature =
@@ -312,5 +318,5 @@ let init_feature_map (graph : G.t) : FeatureMaps.NodeWiseFeatureMap.t =
   List.fold
     ~f:(fun acc meth ->
       FeatureMaps.NodeWiseFeatureMap.strong_update acc meth (run_all_single_features meth) )
-    (G.all_methods_of_graph graph)
+    (G.all_non_frontend_methods_of_graph graph)
     ~init:(FeatureMaps.NodeWiseFeatureMap.init graph)
