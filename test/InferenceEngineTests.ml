@@ -9,6 +9,7 @@ open Loop
 open RulesOfInference
 open NodeWiseFeatures
 open Yojson.Basic
+open GraphMaker
 module Json = Yojson.Basic
 
 type json = Json.t
@@ -1075,86 +1076,157 @@ module Notebook34 = struct
                        ~label:EdgeLabel.DataFlow )
                     ~f:(fun vertex -> NodeWiseFeatures.SingleFeature.is_main_method (fst3 vertex)) )
 
+
   let _ = test ("void PrintStream.println(String)", "{ line 43 }", ProbQuadruple.initial)
 end
 
-
 module Notebook35 = struct
   (* this thing erroneously starts from CallSlice. *)
-  let json_piece_str = "{
-    \"defining_method\":
-      \"void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)\",
-    \"access_path\": \"(text, [])\",
-    \"location\": \"{ line 27, line 31 }\",
-    \"chain\": [
-      {
-        \"current_method\":
-          \"void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)\",
-        \"status\": \"Call\",
-        \"callee\": \"String TextNode.getText()\",
-        \"location\": \"{ line 27 }\",
-        \"with\": \"(param_getText_27_0, [])\"
-      },
-      {
-        \"current_method\":
-          \"void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)\",
-        \"status\": \"Define\",
-        \"access_path\": \"(text, [])\",
-        \"location\": \"{ line 27, line 31 }\",
-        \"using\": \"String TextNode.getText()\"
-      },
-      {
-        \"current_method\":
-          \"void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)\",
-        \"status\": \"Call\",
-        \"callee\": \"String String.substring(int)\",
-        \"location\": \"{ line 31 }\",
-        \"with\": \"(param_substring_31_0, [])\"
-      },
-      {
-        \"current_method\":
-          \"void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)\",
-        \"status\": \"Define\",
-        \"access_path\": \"($irvar13, [])\",
-        \"location\": \"{ line 31 }\",
-        \"using\": \"String String.substring(int)\"
-      },
-      {
-        \"current_method\":
-          \"void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)\",
-        \"status\": \"Define\",
-        \"access_path\": \"(text, [])\",
-        \"location\": \"{ line 27, line 31 }\",
-        \"using\":
-          \"void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)\"
-      },
-      {
-        \"current_method\":
-          \"void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)\",
-        \"status\": \"Call\",
-        \"callee\": \"char String.charAt(int)\",
-        \"location\": \"{ line 29 }\",
-        \"with\": \"(param_charAt_29_0, [])\"
-      },
-      {
-        \"current_method\":
-          \"void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)\",
-        \"status\": \"Define\",
-        \"access_path\": \"($irvar11, [])\",
-        \"location\": \"{ line 29 }\",
-        \"using\": \"char String.charAt(int)\"
-      },
-      {
-        \"current_method\":
-          \"void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)\",
-        \"status\": \"Dead\"
-      }
-    ]
-  }"
+  let json_piece_str =
+    "{\n\
+    \    \"defining_method\":\n\
+    \      \"void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)\",\n\
+    \    \"access_path\": \"(text, [])\",\n\
+    \    \"location\": \"{ line 27, line 31 }\",\n\
+    \    \"chain\": [\n\
+    \      {\n\
+    \        \"current_method\":\n\
+    \          \"void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)\",\n\
+    \        \"status\": \"Call\",\n\
+    \        \"callee\": \"String TextNode.getText()\",\n\
+    \        \"location\": \"{ line 27 }\",\n\
+    \        \"with\": \"(param_getText_27_0, [])\"\n\
+    \      },\n\
+    \      {\n\
+    \        \"current_method\":\n\
+    \          \"void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)\",\n\
+    \        \"status\": \"Define\",\n\
+    \        \"access_path\": \"(text, [])\",\n\
+    \        \"location\": \"{ line 27, line 31 }\",\n\
+    \        \"using\": \"String TextNode.getText()\"\n\
+    \      },\n\
+    \      {\n\
+    \        \"current_method\":\n\
+    \          \"void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)\",\n\
+    \        \"status\": \"Call\",\n\
+    \        \"callee\": \"String String.substring(int)\",\n\
+    \        \"location\": \"{ line 31 }\",\n\
+    \        \"with\": \"(param_substring_31_0, [])\"\n\
+    \      },\n\
+    \      {\n\
+    \        \"current_method\":\n\
+    \          \"void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)\",\n\
+    \        \"status\": \"Define\",\n\
+    \        \"access_path\": \"($irvar13, [])\",\n\
+    \        \"location\": \"{ line 31 }\",\n\
+    \        \"using\": \"String String.substring(int)\"\n\
+    \      },\n\
+    \      {\n\
+    \        \"current_method\":\n\
+    \          \"void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)\",\n\
+    \        \"status\": \"Define\",\n\
+    \        \"access_path\": \"(text, [])\",\n\
+    \        \"location\": \"{ line 27, line 31 }\",\n\
+    \        \"using\":\n\
+    \          \"void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)\"\n\
+    \      },\n\
+    \      {\n\
+    \        \"current_method\":\n\
+    \          \"void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)\",\n\
+    \        \"status\": \"Call\",\n\
+    \        \"callee\": \"char String.charAt(int)\",\n\
+    \        \"location\": \"{ line 29 }\",\n\
+    \        \"with\": \"(param_charAt_29_0, [])\"\n\
+    \      },\n\
+    \      {\n\
+    \        \"current_method\":\n\
+    \          \"void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)\",\n\
+    \        \"status\": \"Define\",\n\
+    \        \"access_path\": \"($irvar11, [])\",\n\
+    \        \"location\": \"{ line 29 }\",\n\
+    \        \"using\": \"char String.charAt(int)\"\n\
+    \      },\n\
+    \      {\n\
+    \        \"current_method\":\n\
+    \          \"void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)\",\n\
+    \        \"status\": \"Dead\"\n\
+    \      }\n\
+    \    ]\n\
+    \  }"
+
 
   let parsed = Json.from_string json_piece_str
 end
 
 module Notebook36 = struct
-  (* gotta serialize the graph with DF Edges for speedy work. *)
+  (* gotta do some profiling on making NS edges. *)
+
+  let graph =
+    match graph_already_serialized "df_edges" with
+    | None ->
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
+
+
+  open SimilarVertexPairExtractor
+
+  (* OK *)
+  let all_methods = G.all_non_frontend_methods_of_graph graph
+
+  (* TODO: THIS IS THE CULPRIT *)
+  let nodewise_similarity_map =
+    NodewisePairExtractor.update_nodewise_similarity_map (G.all_non_frontend_methods_of_graph graph)
+
+
+  (* Not the culprit. *)
+  let initial_map = NodeWiseSimilarityMap.init (G.all_non_frontend_methods_of_graph graph)
+
+  let length = NodeWiseSimilarityMap.fold (fun _ _ acc -> acc + 1) initial_map 0
+  (* val length : int = 708122 🤯 *)
+
+  (* how should we deal with the NS explosion problem? *)
+  (* --> meh, no choice but to split the graph up. *)
+
+  (* but first, let's filter out the tests/ code and try again. *)
+end
+
+module Notebook37 = struct
+  (* filtering out test codes *)
+
+  (* first, we write a function that walks the given directory, considering it as a root. *)
+
+  (* hmm... we need to clone the repos first. *)
+  (* cloned the whole repo. now, let's write that function. *)
+
+  let _ = Sys.chdir "/Users/jslee/Taint-Analysis/Code/benchmarks/realworld/sagan"
+
+  let current_dir = "/Users/jslee/Taint-Analysis/Code/benchmarks/realworld/sagan/util"
+
+  let walk_for_extension (root_dir : string) (extension : string) : string list =
+    let rec inner (current_dir : string) (filename_acc : string list) =
+      let subdirectories =
+        Array.filter ~f:Sys.is_directory
+          (Array.map ~f:(fun name -> current_dir ^ "/" ^ name) (Sys.readdir current_dir))
+      in
+      let files_matching_extension =
+        Array.filter ~f:(not << Sys.is_directory)
+          (Array.map ~f:(fun name -> current_dir ^ "/" ^ name) (Sys.readdir current_dir))
+        |> Array.fold
+             ~f:(fun acc elem ->
+               if String.is_suffix elem ~suffix:extension then elem :: acc else acc )
+             ~init:[]
+      in
+      if Array.is_empty subdirectories then filename_acc @ files_matching_extension
+      else
+        Array.fold subdirectories
+          ~f:(fun acc subdirectory -> inner subdirectory acc)
+          ~init:(filename_acc @ files_matching_extension)
+    in
+    inner root_dir []
+
+
+  let _ = walk_for_extension "." ".java"
 end
