@@ -288,13 +288,14 @@ module EstablishSimEdges = struct
   let make_nodewise_sim_edge (graph : G.t) : G.t =
     let open SimilarVertexPairExtractor in
     let all_vertices = G.all_vertices_of_graph graph in
-    let contextual_similarity_map =
-      NodewisePairExtractor.update_nodewise_similarity_map (G.all_non_frontend_methods_of_graph graph)
+    let nodewise_similarity_map =
+      NodewisePairExtractor.update_nodewise_similarity_map
+        (G.all_non_frontend_methods_of_graph graph)
     in
     let above_threshold_entries =
       NodeWiseSimilarityMap.filter
         (fun _ similarity -> similarity >= NodeWiseSimilarityMap.threshold)
-        contextual_similarity_map
+        nodewise_similarity_map
     in
     NodeWiseSimilarityMap.fold
       (fun (method1, method2) _ acc ->
