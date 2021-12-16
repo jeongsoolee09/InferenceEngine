@@ -1,5 +1,7 @@
 open Yojson.Basic
 open GraphRepr
+open ListMonad
+open InfixOperators
 open SimilarityHandler
 module G = GraphRepr.G
 
@@ -74,11 +76,13 @@ module DirectoryManager = struct
   let walk_for_extension (root_dir : string) (extension : string) : string list =
     let rec inner (current_dir : string) (filename_acc : string list) =
       let subdirectories =
-        Array.filter ~f:Sys.is_directory
+        Array.filter
+          ~f:(fun name -> match Sys.is_directory name with `Yes -> true | _ -> false)
           (Array.map ~f:(fun name -> current_dir ^ "/" ^ name) (Sys.readdir current_dir))
       in
       let files_matching_extension =
-        Array.filter ~f:(not << Sys.is_directory)
+        Array.filter
+          ~f:(fun name -> match Sys.is_directory name with `No -> true | _ -> false)
           (Array.map ~f:(fun name -> current_dir ^ "/" ^ name) (Sys.readdir current_dir))
         |> Array.fold
              ~f:(fun acc elem ->
