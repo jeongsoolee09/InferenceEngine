@@ -499,6 +499,13 @@ module G = struct
     all_vertices_with_dup |> VertexSet.of_list |> VertexSet.elements
 
 
+  let all_non_frontend_vertices_of_graph (graph : t) : V.t list =
+    all_vertices_of_graph graph
+    |> List.filter ~f:(fun vertex -> not @@ String.is_substring (fst3 vertex) ~substring:"$Lambda$")
+    |> List.filter ~f:(fun vertex -> not @@ String.is_substring (fst3 vertex) ~substring:"lambda$")
+    |> List.filter ~f:(fun vertex -> not @@ String.is_prefix (fst3 vertex) ~prefix:"__")
+
+
   let all_methods_of_graph (graph : t) : string list =
     let all_vertices = all_vertices_of_graph graph in
     let module StringSet = Caml.Set.Make (String) in
