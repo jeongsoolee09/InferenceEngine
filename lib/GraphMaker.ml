@@ -47,15 +47,49 @@ let init_graph (json : json) ~(debug : bool) : G.t =
   let df_edges_added =
     match graph_already_serialized "df_edges" with
     | None ->
-      let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
-      G.serialize_to_bin result ~suffix:"df_edges" ;
-      result
-    | Some filename -> Deserializer.deserialize_graph filename
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
   in
-  let out =
-    df_edges_added |> EstablishSimEdges.make_nodewise_sim_edge
-    |> EstablishSimEdges.make_contextual_sim_edge |> remove_bogus
+  print_endline "\nDF edges established.\n" ;
+  let nodewise_sim_edges_added =
+    match graph_already_serialized "ns_edges" with
+    | None ->
+        let result = EstablishSimEdges.make_nodewise_sim_edge df_edges_added in
+        G.serialize_to_bin result ~suffix:"ns_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
   in
+  print_endline "\nNS edges established.\n" ;
+  let out = EstablishSimEdges.make_contextual_sim_edge nodewise_sim_edges_added |> remove_bogus in
   if debug then graph_to_dot out ~filename:(make_now_string 9 ^ ".dot") ;
   Memoize.NSClusters.set_ns_cluster (all_ns_clusters out) ;
   out
+
+
+module DirectoryManager = struct
+  let walk_for_extension (root_dir : string) (extension : string) : string list =
+    let rec inner (current_dir : string) (filename_acc : string list) =
+      let subdirectories =
+        Array.filter ~f:Sys.is_directory
+          (Array.map ~f:(fun name -> current_dir ^ "/" ^ name) (Sys.readdir current_dir))
+      in
+      let files_matching_extension =
+        Array.filter ~f:(not << Sys.is_directory)
+          (Array.map ~f:(fun name -> current_dir ^ "/" ^ name) (Sys.readdir current_dir))
+        |> Array.fold
+             ~f:(fun acc elem ->
+               if String.is_suffix elem ~suffix:extension then elem :: acc else acc )
+             ~init:[]
+      in
+      if Array.is_empty subdirectories then filename_acc @ files_matching_extension
+      else
+        Array.fold subdirectories
+          ~f:(fun acc subdirectory -> inner subdirectory acc)
+          ~init:(filename_acc @ files_matching_extension)
+    in
+    inner root_dir []
+end
