@@ -12,6 +12,8 @@ open Yojson.Basic
 open GraphMaker
 module Json = Yojson.Basic
 
+exception End
+
 type json = Json.t
 
 let json = Deserializer.deserialize_json ()
@@ -1156,6 +1158,8 @@ module Notebook35 = struct
 
 
   let parsed = Json.from_string json_piece_str
+
+  let _ = End
 end
 
 module Notebook36 = struct
@@ -1191,42 +1195,82 @@ module Notebook36 = struct
   (* --> meh, no choice but to split the graph up. *)
 
   (* but first, let's filter out the tests/ code and try again. *)
+  let _ = End
 end
 
 module Notebook37 = struct
-  (* filtering out test codes *)
+  (* let's filter out the test/ directory. *)
 
-  (* first, we write a function that walks the given directory, considering it as a root. *)
-
-  (* hmm... we need to clone the repos first. *)
-  (* cloned the whole repo. now, let's write that function. *)
-
-  let _ = Sys.chdir "/Users/jslee/Taint-Analysis/Code/benchmarks/realworld/sagan"
-
-  let current_dir = "/Users/jslee/Taint-Analysis/Code/benchmarks/realworld/sagan/util"
-
-  let walk_for_extension (root_dir : string) (extension : string) : string list =
-    let rec inner (current_dir : string) (filename_acc : string list) =
-      let subdirectories =
-        Array.filter ~f:Sys.is_directory
-          (Array.map ~f:(fun name -> current_dir ^ "/" ^ name) (Sys.readdir current_dir))
-      in
-      let files_matching_extension =
-        Array.filter ~f:(not << Sys.is_directory)
-          (Array.map ~f:(fun name -> current_dir ^ "/" ^ name) (Sys.readdir current_dir))
-        |> Array.fold
-             ~f:(fun acc elem ->
-               if String.is_suffix elem ~suffix:extension then elem :: acc else acc )
-             ~init:[]
-      in
-      if Array.is_empty subdirectories then filename_acc @ files_matching_extension
-      else
-        Array.fold subdirectories
-          ~f:(fun acc subdirectory -> inner subdirectory acc)
-          ~init:(filename_acc @ files_matching_extension)
-    in
-    inner root_dir []
+  let all_java_files =
+    GraphMaker.DirectoryManager.walk_for_extension
+      "/Users/jslee/Taint-Analysis/Code/benchmarks/realworld/sagan" ".java"
 
 
-  let _ = walk_for_extension "." ".java"
+  let _ = List.length all_java_files
+
+  let non_test_java_files =
+    List.filter ~f:(not << String.is_substring ~substring:"/test/") all_java_files
+
+
+  let _ = List.length non_test_java_files
+
+  let _ = List.iter ~f:print_endline non_test_java_files
+
+  (* has not decreased that much... well, anyways let's go for it *)
+
+  let sample_filename =
+    "/Users/jslee/Taint-Analysis/Code/benchmarks/realworld/sagan/sagan-site/src/main/java/sagan/site/events/InvalidCalendarException.java"
+
+
+  let extract_filename_without_extension_and_dirs (full_filename : string) : string =
+    let filename_only = List.last_exn @@ String.split ~on:'/' full_filename in
+    List.hd_exn @@ String.split ~on:'.' filename_only
+
+
+  (* I don't like string splits that much, but it works nonetheless!! *)
+
+  let test_java_files = List.filter ~f:(String.is_substring ~substring:"/test/") all_java_files
+
+  let test_java_classnames = test_java_files >>| extract_filename_without_extension_and_dirs
+
+  (* Very nice! *)
+
+  (* This is the initial map. *)
+
+  let graph =
+    match graph_already_serialized "df_edges" with
+    | None ->
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
+
+
+  let initial_map = NodeWiseSimilarityMap.init (G.all_non_frontend_methods_of_graph graph)
+
+  (* how many entries will disappear when we exclude all the test classes? *)
+
+  let _ = NodeWiseSimilarityMap.cardinal initial_map
+
+  let test_class_filtered =
+    NodeWiseSimilarityMap.filter
+      (fun (m1, m2) _ ->
+        let open NodeWiseFeatures.SingleFeature in
+        let m1_classname = string_of_feature @@ extract_class_name_from_methstring m1
+        and m2_classname = string_of_feature @@ extract_class_name_from_methstring m2 in
+        not
+          ( List.mem test_java_classnames m1_classname ~equal:String.equal
+          || List.mem test_java_classnames m2_classname ~equal:String.equal ) )
+      initial_map
+
+  let _ = NodeWiseSimilarityMap.cardinal test_class_filtered
+
+  let _ = 708122 - 660156
+
+  (* oh... not many are disappearing. A bit disappointing result I guess. *)
+
+  (* So, this means we must split the graph. *)
+
+  let _ = End
 end
