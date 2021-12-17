@@ -1264,6 +1264,7 @@ module Notebook37 = struct
           || List.mem test_java_classnames m2_classname ~equal:String.equal ) )
       initial_map
 
+
   let _ = NodeWiseSimilarityMap.cardinal test_class_filtered
 
   let _ = 708122 - 660156
@@ -1271,6 +1272,126 @@ module Notebook37 = struct
   (* oh... not many are disappearing. A bit disappointing result I guess. *)
 
   (* So, this means we must split the graph. *)
+
+  let _ = End
+end
+
+module Notebook38 = struct
+  (* we construct graphs from sagan-graph and sagan-site. *)
+
+  (* how do we do it? --> front and foremost, we check the nodewisesimiarity maps. *)
+
+  let graph =
+    match graph_already_serialized "df_edges" with
+    | None ->
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
+
+
+  let initial_map = NodeWiseSimilarityMap.init (G.all_non_frontend_methods_of_graph graph)
+
+  let all_java_files =
+    GraphMaker.DirectoryManager.walk_for_extension
+      "/Users/jslee/Taint-Analysis/Code/benchmarks/realworld/sagan" ".java"
+
+
+  let extract_filename_without_extension_and_dirs (full_filename : string) : string =
+    let filename_only = List.last_exn @@ String.split ~on:'/' full_filename in
+    List.hd_exn @@ String.split ~on:'.' filename_only
+
+
+  let renderer_classnames =
+    List.filter all_java_files ~f:(String.is_substring ~substring:"/renderer/")
+    >>| extract_filename_without_extension_and_dirs
+
+
+  let site_classnames =
+    List.filter all_java_files ~f:(String.is_substring ~substring:"/site/")
+    >>| extract_filename_without_extension_and_dirs
+
+
+  let non_test_java_files =
+    List.filter ~f:(not << String.is_substring ~substring:"/test/") all_java_files
+
+
+  let test_java_files = List.filter ~f:(String.is_substring ~substring:"/test/") all_java_files
+
+  let renderer_only_no_test =
+    NodeWiseSimilarityMap.filter
+      (fun (m1, m2) _ ->
+        let open NodeWiseFeatures.SingleFeature in
+        let m1_classname = string_of_feature @@ extract_class_name_from_methstring m1
+        and m2_classname = string_of_feature @@ extract_class_name_from_methstring m2 in
+        List.mem renderer_classnames m1_classname ~equal:String.equal
+        && List.mem renderer_classnames m2_classname ~equal:String.equal
+        && (not @@ List.mem test_java_files m1_classname ~equal:String.equal)
+        && (not @@ List.mem test_java_files m2_classname ~equal:String.equal) )
+      initial_map
+
+
+  let _ = NodeWiseSimilarityMap.cardinal renderer_only_no_test (* 2162 *)
+
+  let site_only_no_test =
+    NodeWiseSimilarityMap.filter
+      (fun (m1, m2) _ ->
+        let open NodeWiseFeatures.SingleFeature in
+        let m1_classname = string_of_feature @@ extract_class_name_from_methstring m1
+        and m2_classname = string_of_feature @@ extract_class_name_from_methstring m2 in
+        List.mem site_classnames m1_classname ~equal:String.equal
+        && List.mem site_classnames m2_classname ~equal:String.equal
+        && (not @@ List.mem test_java_files m1_classname ~equal:String.equal)
+        && (not @@ List.mem test_java_files m2_classname ~equal:String.equal) )
+      initial_map
+
+
+  let _ = NodeWiseSimilarityMap.cardinal site_only_no_test (* 15500 *)
+
+  open NodeWiseFeatures.SingleFeature
+
+  let _ = SimilarVertexPairExtractor.NodewisePairExtractor.update_nodewise_similarity_map
+
+  let all_methods = G.all_non_frontend_methods_of_graph graph
+
+  let callgraph = CallGraph.of_string_pair_list (Deserializer.deserialize_callgraph ())
+
+  let methods_appearing_in_renderer =
+    let renderer_methods =
+      List.filter
+        ~f:(fun methstring ->
+          let classname = string_of_feature @@ extract_class_name_from_methstring methstring in
+          List.mem renderer_classnames classname ~equal:String.equal )
+        all_methods
+    in
+    let renderer_callees =
+      renderer_methods
+      >>= fun renderer_method ->
+      try CallGraph.find_callees callgraph renderer_method with Invalid_argument _ -> []
+    in
+    renderer_methods @ renderer_callees
+
+
+  let methods_appearing_in_site =
+    let site_methods =
+      List.filter
+        ~f:(fun methstring ->
+          let classname = string_of_feature @@ extract_class_name_from_methstring methstring in
+          List.mem site_classnames classname ~equal:String.equal )
+        all_methods
+    in
+    let site_callees =
+      site_methods
+      >>= fun site_method ->
+      try CallGraph.find_callees callgraph site_method with Invalid_argument _ -> []
+    in
+    site_methods @ site_callees
+
+
+  let _ = List.length methods_appearing_in_renderer
+
+  let _ = List.length methods_appearing_in_site
 
   let _ = End
 end
