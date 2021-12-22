@@ -1,0 +1,9 @@
+{
+  "void RelationalDataAccessApplication.main(String[])": "no annotation",
+  "void RelationalDataAccessApplication.run()": "no annotation",
+  "String RelationalDataAccessApplication.create()": "no annotation",
+  "void RelationalDataAccessApplication.printer(Map)": "no annotation",
+  "Map RelationalDataAccessApplication.query()": "no annotation",
+  "RelationalDataAccessApplication.<init>()": "no annotation",
+  "void RelationalDataAccessApplication.bridge()": "no annotation"
+}
