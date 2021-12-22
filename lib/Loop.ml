@@ -59,7 +59,9 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t) (previous_sn
       List.fold
         ~f:(fun (snapshot_acc, affected_vertices) (rule : PropagationRules.t) ->
           let propagated, this_affected =
-            rule.rule snapshot_acc new_fact prev_facts ~dry_run:false
+            let out = rule.rule snapshot_acc new_fact prev_facts ~dry_run:false in
+            Visualizer.visualize_snapshot (fst out) ~micro:true ~autoopen:false ;
+            out
           in
           (propagated, affected_vertices @ this_affected) )
         ~init:(current_snapshot, []) rules_to_propagate
@@ -97,9 +99,13 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t) (previous_sn
               let propagated, updated_history =
                 List.fold
                   ~f:(fun (smol_acc, smol_history) prop_rule ->
-                    propagator target_rule_summary smol_acc (Some current_snapshot) applicable_rules
-                      (target_rule_summary :: new_fact :: prev_facts)
-                      smol_history prop_rule_pool )
+                    let out =
+                      propagator target_rule_summary smol_acc (Some current_snapshot)
+                        applicable_rules
+                        (target_rule_summary :: new_fact :: prev_facts)
+                        smol_history prop_rule_pool
+                    in
+                    out )
                   ~init:(big_acc, big_history) applicable_rules
               in
               if Option.is_some previous_snapshot then
@@ -108,7 +114,6 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t) (previous_sn
         ~init:(propagated_snapshot, current_visiting_vertices @ history)
         current_propagation_targets
     in
-    Visualizer.visualize_snapshot (fst out) ~micro:true ~autoopen:false ;
     out )
 
 
