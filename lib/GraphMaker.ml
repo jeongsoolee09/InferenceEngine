@@ -28,7 +28,6 @@ let batch_add_edge (raw_json : json) (graph : G.t) =
 (*   in *)
 (*   List.fold ~f:(fun acc bogus -> G.remove_vertex acc bogus) ~init:graph boguses *)
 
-
 (** Function for debugging by exporting Ocamlgraph to Graphviz Dot *)
 let graph_to_dot (graph : G.t) ?(filename = "initial_graph.dot") : unit =
   let out_channel = Out_channel.create filename in
@@ -66,34 +65,10 @@ let init_graph (json : json) ~(debug : bool) : G.t =
         Deserializer.deserialize_graph filename
   in
   print_endline "\nNS edges established.\n" ;
-  let out = EstablishSimEdges.make_contextual_sim_edge nodewise_sim_edges_added (* |> remove_bogus *) in
+  let out =
+    EstablishSimEdges.make_contextual_sim_edge nodewise_sim_edges_added
+    (* |> remove_bogus *)
+  in
   if debug then graph_to_dot out ~filename:(make_now_string 9 ^ ".dot") ;
   Memoize.NSClusters.set_ns_cluster (all_ns_clusters out) ;
   out
-
-
-module DirectoryManager = struct
-  let walk_for_extension (root_dir : string) (extension : string) : string list =
-    let rec inner (current_dir : string) (filename_acc : string list) =
-      let subdirectories =
-        Array.filter
-          ~f:(fun name -> match Sys.is_directory name with `Yes -> true | _ -> false)
-          (Array.map ~f:(fun name -> current_dir ^ "/" ^ name) (Sys.readdir current_dir))
-      in
-      let files_matching_extension =
-        Array.filter
-          ~f:(fun name -> match Sys.is_directory name with `No -> true | _ -> false)
-          (Array.map ~f:(fun name -> current_dir ^ "/" ^ name) (Sys.readdir current_dir))
-        |> Array.fold
-             ~f:(fun acc elem ->
-               if String.is_suffix elem ~suffix:extension then elem :: acc else acc )
-             ~init:[]
-      in
-      if Array.is_empty subdirectories then filename_acc @ files_matching_extension
-      else
-        Array.fold subdirectories
-          ~f:(fun acc subdirectory -> inner subdirectory acc)
-          ~init:(filename_acc @ files_matching_extension)
-    in
-    inner root_dir []
-end
