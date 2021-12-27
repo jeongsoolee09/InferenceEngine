@@ -17,7 +17,7 @@ module NodeWiseSimilarityMap = struct
 
   type t = Int.t WithMethodPairDomain.t
 
-  let threshold = 4 (* TEMP *)
+  let threshold = 5 (* TEMP *)
 
   let init (all_methods : Method.t list) : t =
     let method_pairs =
@@ -94,7 +94,7 @@ module SimilarVertexPairExtractor = struct
       ; (belong_to_same_class, 2)
       ; (belong_to_same_package, 2)
       ; (return_type_is_another's_class, 3)
-      ; (is_both_java_builtin, 3)
+      ; (is_both_java_builtin, 2)
       ; (is_both_initializer, 4) ]
 
 
