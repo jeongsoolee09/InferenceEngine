@@ -1,22 +1,12 @@
-/* var slider = document.getElementById("myRange"); */
-/* var output = document.getElementById("demo"); */
-/* output.innerHTML = slider.value; */
-
-/* slider.oninput = function() { */
-/*     output.innerHTML = this.value; */
-
-/* } */
-
 open Webapi.Dom
-open Belt.Option
+open Belt
 
-@val external document: Document.t = "document"
+let slider = document->Document.getElementById("myRange")->Option.getExn
+let output = document->Document.getElementById("demo")->Option.getExn
 
-let slider = getExn(Document.getElementById("myRange", document))
-let output = getExn(Document.getElementById("demo", document))
+output->Element.setInnerText(slider->Element.getAttribute("value")->Option.getExn)
 
-Element.setInnerText(output, getExn(Element.getAttribute("value", slider)))
-
-Element.addEventListener("value", _ => 
-    Element.setInnerHTML(output, getExn(Element.getAttribute("value", slider))), slider)
-
+slider->Element.addEventListener("input", _ => {
+  let value = slider->Element.asNode->HtmlInputElement.ofNode->Option.getExn->HtmlInputElement.value
+  output->Element.setInnerHTML(value)
+})
