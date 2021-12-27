@@ -9,18 +9,19 @@ exception NotImplemented
 module Random = Core_kernel.Random
 
 module Question = struct
-  type t = AskingForLabel of string | AskingForConfirmation of (string * TaintLabel.t)
+  type t = AskingForLabel of Method.t | AskingForConfirmation of (Method.t * TaintLabel.t)
 
   (** make a prompt message out of a question term. *)
   let make_prompt (question : t) : string =
     match question with
     | AskingForLabel meth ->
-        F.asprintf "What label does %s bear? [src|sin|san|non]: " meth
+        F.asprintf "What label does %s bear? [src|sin|san|non]: " (Method.to_string meth)
     | AskingForConfirmation (meth, label) ->
-        F.asprintf "Method %s is a %s, right? [yes|no]: " meth (TaintLabel.to_string label)
+        F.asprintf "Method %s is a %s, right? [yes|no]: " (Method.to_string meth)
+          (TaintLabel.to_string label)
 
 
-  let get_method (question : t) : string =
+  let get_method (question : t) : Method.t =
     match question with AskingForLabel meth -> meth | AskingForConfirmation (meth, _) -> meth
 
 
@@ -33,14 +34,14 @@ module Question = struct
 end
 
 module Response = struct
-  type t = ForLabel of (string * TaintLabel.t) | ForYesOrNo of (string * TaintLabel.t * bool)
+  type t = ForLabel of (Method.t * TaintLabel.t) | ForYesOrNo of (Method.t * TaintLabel.t * bool)
 
   let to_string (response : t) : string =
     match response with
     | ForLabel (meth_, label) ->
-        F.asprintf "ForLabel (%s, %s)" meth_ (TaintLabel.to_string label)
+        F.asprintf "ForLabel (%s, %s)" (Method.to_string meth_) (TaintLabel.to_string label)
     | ForYesOrNo (meth_, label, bool) ->
-        F.asprintf "ForYesOrNo (%s, %s, %s)" meth_ (TaintLabel.to_string label)
+        F.asprintf "ForYesOrNo (%s, %s, %s)" (Method.to_string meth_) (TaintLabel.to_string label)
           (Bool.to_string bool)
 
 
@@ -51,7 +52,7 @@ module Response = struct
     F.asprintf "[%s]" contents
 
 
-  let get_method (res : t) : string =
+  let get_method (res : t) : Method.t =
     match res with ForLabel (meth, _) -> meth | ForYesOrNo (meth, _, _) -> meth
 
 
@@ -71,12 +72,12 @@ module Response = struct
         raise @@ Invalid_argument "this is not a response of a question asking for label"
 
 
-  let response_of_dist (method_ : string) (dist : ProbQuadruple.t) : t =
+  let response_of_dist (method_ : Method.t) (dist : ProbQuadruple.t) : t =
     let label = ProbQuadruple.determine_label dist in
     ForLabel (method_, label)
 
 
-  let response_of_string_forlabel (method_ : string) (response_str : string) : t =
+  let response_of_string_forlabel (method_ : Method.t) (response_str : string) : t =
     match response_str with
     | "src" | "source" ->
         ForLabel (method_, TaintLabel.Source)
@@ -90,8 +91,8 @@ module Response = struct
         raise @@ Invalid_argument otherwise
 
 
-  let response_of_string_foryesorno (method_ : string) (label : TaintLabel.t) (response_str : string)
-      : t =
+  let response_of_string_foryesorno (method_ : Method.t) (label : TaintLabel.t)
+      (response_str : string) : t =
     match response_str with
     | "yes" | "y" ->
         ForYesOrNo (method_, label, true)
@@ -125,8 +126,8 @@ module PropagationRules = struct
       List.exists
         ~f:(fun str ->
           let open NodeWiseFeatures.SingleFeature in
-          let classname = string_of_feature @@ extract_class_name_from_methstring meth in
-          let methname = string_of_feature @@ extract_method_name_from_methstring meth in
+          let classname = extract_class_name_from_method meth in
+          let methname = extract_method_name_from_method meth in
           String.is_substring ~substring:(classname ^ "." ^ methname) str )
         all_udfs
     in
@@ -139,7 +140,7 @@ module PropagationRules = struct
     let new_fact_method = Response.get_method new_fact in
     let new_fact_method_vertices =
       G.all_vertices_of_graph graph
-      |> List.filter ~f:(fun (meth, _, _) -> String.equal meth new_fact_method)
+      |> List.filter ~f:(fun (meth, _, _) -> Method.equal meth new_fact_method)
     in
     let df_succs =
       new_fact_method_vertices
@@ -161,12 +162,12 @@ module PropagationRules = struct
               ; ProbQuadruple.san= succ_dist.san -. 0.4
               ; ProbQuadruple.non= succ_dist.non +. 0.8 }
             in
-            if not dry_run then
-              Out_channel.fprintf Out_channel.stdout
-                "%s propagated its info to %s (internal_vertex_none), its dist is now %s\n"
-                new_fact_method
-                (G.LiteralVertex.to_string (G.LiteralVertex.of_vertex succ))
-                (ProbQuadruple.to_string new_dist) ;
+            (* if not dry_run then *)
+            (*   Out_channel.fprintf Out_channel.stdout *)
+            (*     "%s propagated its info to %s (internal_vertex_none), its dist is now %s\n" *)
+            (*     new_fact_method *)
+            (*     (G.LiteralVertex.to_string (G.LiteralVertex.of_vertex succ)) *)
+            (*     (ProbQuadruple.to_string new_dist) ; *)
             G.strong_update_dist succ new_dist acc )
         ~init:graph df_succs
     in
@@ -182,7 +183,7 @@ module PropagationRules = struct
     and new_fact_label = Response.get_label new_fact in
     let new_fact_method_vertices =
       G.all_vertices_of_graph graph
-      |> List.filter ~f:(fun (meth, _, _) -> String.equal meth new_fact_method)
+      |> List.filter ~f:(fun (meth, _, _) -> Method.equal meth new_fact_method)
     in
     let contextual_succs =
       new_fact_method_vertices
@@ -192,8 +193,8 @@ module PropagationRules = struct
     assert (Int.( >= ) (List.length contextual_succs) 1) ;
     Out_channel.output_string Out_channel.stdout "contextual_similarity_rule chosen" ;
     Out_channel.newline Out_channel.stdout ;
-    Out_channel.print_endline
-    @@ F.asprintf "contextual_succs: %s" (Vertex.vertex_list_to_string contextual_succs) ;
+    (* Out_channel.print_endline *)
+    (* @@ F.asprintf "contextual_succs: %s" (Vertex.vertex_list_to_string contextual_succs) ; *)
     let propagated =
       List.fold
         ~f:(fun acc succ ->
@@ -239,11 +240,11 @@ module PropagationRules = struct
             | Indeterminate ->
                 succ_dist
           in
-          if not dry_run then
-            Out_channel.fprintf Out_channel.stdout
-              "%s propagated its info to %s (contextual), its dist is now %s\n" new_fact_method
-              (G.LiteralVertex.to_string (G.LiteralVertex.of_vertex succ))
-              (ProbQuadruple.to_string new_dist) ;
+          (* if not dry_run then *)
+          (*   Out_channel.fprintf Out_channel.stdout *)
+          (*     "%s propagated its info to %s (contextual), its dist is now %s\n" new_fact_method *)
+          (*     (G.LiteralVertex.to_string (G.LiteralVertex.of_vertex succ)) *)
+          (*     (ProbQuadruple.to_string new_dist) ; *)
           G.strong_update_dist succ new_dist acc )
         contextual_succs ~init:graph
     in
@@ -259,7 +260,7 @@ module PropagationRules = struct
     and new_fact_label = Response.get_label new_fact in
     let new_fact_method_vertices =
       G.all_vertices_of_graph graph
-      |> List.filter ~f:(fun (meth, _, _) -> String.equal meth new_fact_method)
+      |> List.filter ~f:(fun (meth, _, _) -> Method.equal meth new_fact_method)
     in
     let similarity_succs =
       let raw_succs =
@@ -273,8 +274,8 @@ module PropagationRules = struct
     assert (Int.( >= ) (List.length similarity_succs) 1) ;
     Out_channel.output_string Out_channel.stdout "nodewise_similarity_propagation_rule chosen" ;
     Out_channel.newline Out_channel.stdout ;
-    Out_channel.print_endline
-    @@ F.asprintf "nodewise_succs: %s" (Vertex.vertex_list_to_string similarity_succs) ;
+    (* Out_channel.print_endline *)
+    (* @@ F.asprintf "nodewise_succs: %s" (Vertex.vertex_list_to_string similarity_succs) ; *)
     let propagated =
       List.fold
         ~f:(fun acc succ ->
@@ -352,11 +353,11 @@ module PropagationRules = struct
             | Indeterminate ->
                 succ_dist
           in
-          if not dry_run then
-            Out_channel.fprintf Out_channel.stdout
-              "%s propagated its info to %s (nodewise), its dist is now %s\n" new_fact_method
-              (G.LiteralVertex.to_string (G.LiteralVertex.of_vertex succ))
-              (ProbQuadruple.to_string new_dist) ;
+          (* if not dry_run then *)
+          (*   Out_channel.fprintf Out_channel.stdout *)
+          (*     "%s propagated its info to %s (nodewise), its dist is now %s\n" new_fact_method *)
+          (*     (G.LiteralVertex.to_string (G.LiteralVertex.of_vertex succ)) *)
+          (*     (ProbQuadruple.to_string new_dist) ; *)
           G.strong_update_dist succ new_dist acc )
         similarity_succs ~init:graph
     in
@@ -390,25 +391,24 @@ module PropagationRules = struct
                   List.join @@ Memoize.NSClusters.get_ns_cluster () ~debug:false
                 in
                 if
-                  NodeWiseFeatures.SingleFeature.bool_of_feature
-                    (NodeWiseFeatures.SingleFeature.is_library_code vertex_meth)
+                  NodeWiseFeatures.SingleFeature.is_library_code vertex_meth
                   && (not @@ G.is_df_leaf (G.LiteralVertex.of_vertex vertex) graph)
-                  && (not @@ String.is_substring ~substring:"<init>" vertex_meth)
+                  && (not @@ NodeWiseFeatures.SingleFeature.is_initializer vertex_meth)
                   && (not @@ List.mem ~equal:Vertex.equal ns_clusters_vertices vertex)
-                then (
+                then
                   let new_dist =
                     { ProbQuadruple.src= vertex_dist.src +. 0.3
                     ; sin= vertex_dist.sin -. 0.1
                     ; san= vertex_dist.san -. 0.1
                     ; non= vertex_dist.non -. 0.1 }
                   in
-                  if not dry_run then
-                    Out_channel.fprintf Out_channel.stdout
-                      "%s propagated its info to %s (internal_src), its dist is now %s\n"
-                      new_fact_method
-                      (G.LiteralVertex.to_string (G.LiteralVertex.of_vertex vertex))
-                      (ProbQuadruple.to_string new_dist) ;
-                  (G.strong_update_dist vertex new_dist graph_acc, vertex :: affected) )
+                  (* if not dry_run then *)
+                  (*   Out_channel.fprintf Out_channel.stdout *)
+                  (*     "%s propagated its info to %s (internal_src), its dist is now %s\n" *)
+                  (*     new_fact_method *)
+                  (*     (G.LiteralVertex.to_string (G.LiteralVertex.of_vertex vertex)) *)
+                  (*     (ProbQuadruple.to_string new_dist) ; *)
+                  (G.strong_update_dist vertex new_dist graph_acc, vertex :: affected)
                 else smol_acc )
               ~init:big_acc trunk )
           ~init:(graph, []) trunks_containing_vertices
@@ -448,10 +448,9 @@ module PropagationRules = struct
                 List.join @@ Memoize.NSClusters.get_ns_cluster () ~debug:false
               in
               if
-                NodeWiseFeatures.SingleFeature.bool_of_feature
-                  (NodeWiseFeatures.SingleFeature.is_library_code vertex_meth)
+                NodeWiseFeatures.SingleFeature.is_library_code vertex_meth
                 && (not @@ G.is_df_leaf (G.LiteralVertex.of_vertex vertex) graph)
-                && (not @@ String.is_substring ~substring:"<init>" vertex_meth)
+                && (not @@ NodeWiseFeatures.SingleFeature.is_initializer vertex_meth)
                 && (not @@ List.mem ~equal:Vertex.equal ns_clusters_vertices vertex)
               then (
                 let new_dist =
@@ -463,7 +462,7 @@ module PropagationRules = struct
                 if not dry_run then
                   Out_channel.fprintf Out_channel.stdout
                     "%s propagated its info to %s (internal_src), its dist is now %s\n"
-                    new_fact_method
+                    (Method.to_string new_fact_method)
                     (G.LiteralVertex.to_string (G.LiteralVertex.of_vertex vertex))
                     (ProbQuadruple.to_string new_dist) ;
                 (G.strong_update_dist vertex new_dist graph_acc, vertex :: affected) )
@@ -488,11 +487,11 @@ module PropagationRules = struct
             ; san= vertex_dist.san -. 0.1
             ; non= vertex_dist.non +. 0.3 }
           in
-          if not dry_run then
-            Out_channel.printf "%s propagated its info to %s (internal_src), its dist is now %s\n"
-              new_fact_method
-              (G.LiteralVertex.to_string (G.LiteralVertex.of_vertex this_method_vertex))
-              (ProbQuadruple.to_string new_dist) ;
+          (* if not dry_run then *)
+          (*   Out_channel.printf "%s propagated its info to %s (internal_src), its dist is now %s\n" *)
+          (*     new_fact_method *)
+          (*     (G.LiteralVertex.to_string (G.LiteralVertex.of_vertex this_method_vertex)) *)
+          (*     (ProbQuadruple.to_string new_dist) ; *)
           ( G.strong_update_dist this_method_vertex new_dist graph_acc
           , this_method_vertex :: affected ) )
         ~init:(graph, [])
@@ -550,15 +549,15 @@ module AskingRules = struct
                                 (G.LiteralVertex.of_vertex vertex)
                                 ~label:EdgeLabel.DataFlow )
                              ~f:(fun vertex ->
-                               NodeWiseFeatures.SingleFeature.is_main_method (fst3 vertex) ) ) )
+                               NodeWiseFeatures.SingleFeature.is_main_method
+                                 (Vertex.get_method vertex) ) ) )
     in
     let all_leaves_are_determined =
       List.for_all all_non_sus_leaves ~f:(fun leaf -> G.Saturation.dist_is_saturated (trd3 leaf))
     in
     assert (not all_leaves_are_determined) ;
-    print_endline @@ Vertex.vertex_list_to_string all_non_sus_leaves ;
     let random_leaf = Utils.random_select_elem all_non_sus_leaves in
-    Question.AskingForLabel (fst3 random_leaf)
+    Question.AskingForLabel (Vertex.get_method random_leaf)
 
 
   let ask_if_root_is_source : rule =
@@ -575,7 +574,7 @@ module AskingRules = struct
       let random_index = Random.int_incl 0 (List.length all_roots - 1) in
       List.nth_exn all_roots random_index
     in
-    Question.AskingForLabel (fst3 random_root)
+    Question.AskingForLabel (Vertex.get_method random_root)
 
 
   (** ask a method from a foreign package of its label. *)
@@ -586,10 +585,8 @@ module AskingRules = struct
       let all_foreign_codes =
         G.fold_vertex
           (fun vertex acc ->
-            if
-              NodeWiseFeatures.SingleFeature.bool_of_feature
-              @@ NodeWiseFeatures.SingleFeature.is_framework_method (fst3 vertex)
-            then vertex :: acc
+            if NodeWiseFeatures.SingleFeature.is_framework_method (Vertex.get_method vertex) then
+              vertex :: acc
             else acc )
           snapshot []
       in
@@ -601,13 +598,12 @@ module AskingRules = struct
       G.fold_vertex
         (fun vertex acc ->
           let open NodeWiseFeatures in
-          if SingleFeature.bool_of_feature @@ SingleFeature.is_framework_method (fst3 vertex) then
-            vertex :: acc
+          if SingleFeature.is_framework_method (Vertex.get_method vertex) then vertex :: acc
           else acc )
         snapshot []
     in
     let random_foreign_vertex = Utils.random_select_elem all_foreign_package_vertices in
-    Question.AskingForLabel (fst3 random_foreign_vertex)
+    Question.AskingForLabel (Vertex.get_method random_foreign_vertex)
 
 
   let ask_indeterminate : rule =
@@ -620,7 +616,7 @@ module AskingRules = struct
     in
     (* TODO: don't randomly pick one; make it consider what should be an influential indeterminate node. *)
     let random_indeterminate_vertex = Utils.random_select_elem all_indeterminates in
-    Question.AskingForLabel (fst3 random_indeterminate_vertex)
+    Question.AskingForLabel (Vertex.get_method random_indeterminate_vertex)
 
 
   let ask_from_ns_cluster_if_it_contains_internal_src_or_sink : rule =
@@ -638,7 +634,8 @@ module AskingRules = struct
       List.filter all_ns_clusters ~f:(fun cluster ->
           not
           @@ List.exists received_responses ~f:(fun received_response ->
-                 List.mem ~equal:String.equal (List.map ~f:fst3 cluster)
+                 List.mem ~equal:Method.equal
+                   (List.map ~f:Vertex.get_method cluster)
                    (Response.get_method received_response) )
           && List.exists cluster ~f:(fun vertex ->
                  ProbQuadruple.is_source (trd3 vertex) || ProbQuadruple.is_none (trd3 vertex) ) )
@@ -646,8 +643,8 @@ module AskingRules = struct
     let random_cluster = Utils.random_select_elem not_asked_clusters in
     let random_vertex_in_picked_cluster = Utils.random_select_elem random_cluster in
     if G.is_df_internal (G.LiteralVertex.of_vertex random_vertex_in_picked_cluster) snapshot then
-      Question.AskingForConfirmation (fst3 random_vertex_in_picked_cluster, TaintLabel.None)
-    else Question.AskingForLabel (fst3 random_vertex_in_picked_cluster)
+      Question.AskingForConfirmation (Vertex.get_method random_vertex_in_picked_cluster, TaintLabel.None)
+    else Question.AskingForLabel (Vertex.get_method random_vertex_in_picked_cluster)
 
 
   let all_rules : t list =
@@ -750,7 +747,6 @@ module MetaRules = struct
              ~compare:(fun (_, priority1) (_, priority2) -> -Int.compare priority1 priority2)
              priority_assigned
       in
-      print_endline @@ asking_rule.label ;
       asking_rule
   end
 end

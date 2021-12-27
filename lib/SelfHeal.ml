@@ -37,7 +37,7 @@ module HealMisPropagation = struct
       G.all_vertices_of_graph graph
       |> List.filter ~f:(fun vertex ->
              let vertex_method = fst3 vertex in
-             String.is_substring ~substring:"<init>" vertex_method )
+             NodeWiseFeatures.SingleFeature.is_initializer vertex_method )
     in
     let all_init_vertices_with_no_immediate_lib_code =
       List.filter all_init_vertices ~f:(fun vertex ->
@@ -45,8 +45,7 @@ module HealMisPropagation = struct
             G.get_succs graph (G.LiteralVertex.of_vertex vertex) ~label:EdgeLabel.DataFlow
           in
           List.for_all df_succ_vertices ~f:(fun vertex ->
-              not @@ NodeWiseFeatures.SingleFeature.bool_of_feature
-              @@ NodeWiseFeatures.SingleFeature.is_library_code (fst3 vertex) ) )
+              not @@ NodeWiseFeatures.SingleFeature.is_library_code (fst3 vertex) ) )
     in
     List.fold all_init_vertices_with_no_immediate_lib_code
       ~f:(fun acc init_vertex ->
@@ -65,15 +64,11 @@ module HealMisPropagation = struct
     let this_project_main_vertices =
       G.fold_vertex
         (fun vertex acc ->
-          if not @@ String.is_substring ~substring:"main(" (fst3 vertex) then acc
+          if not @@ String.is_substring ~substring:"main(" (Vertex.to_string vertex) then acc
           else
-            let vertex_method_id =
-              NodeWiseFeatures.SingleFeature.find_unique_identifier_of_methstring (fst3 vertex)
-            in
-            let vertex_method_package =
-              NodeWiseFeatures.SingleFeature.string_of_feature
-              @@ NodeWiseFeatures.SingleFeature.extract_package_name_from_id vertex_method_id
-            in
+            let open NodeWiseFeatures.SingleFeature in
+            let vertex_method_id = find_unique_identifier_of_method (Vertex.get_method vertex) in
+            let vertex_method_package = UniqueID.extract_package_name_from_id vertex_method_id in
             if
               String.equal vertex_method_package
                 NodeWiseFeatures.SingleFeature.this_project_package_name

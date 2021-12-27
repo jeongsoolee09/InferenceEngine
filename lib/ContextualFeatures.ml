@@ -12,7 +12,7 @@ module TrunkFeatures = struct
       ~f:(fun acc vertex ->
         let matching =
           List.mem
-            ~equal:(fun (meth1, _, _) (meth2, _, _) -> String.equal meth1 meth2)
+            ~equal:(fun (meth1, _, _) (meth2, _, _) -> Method.equal meth1 meth2)
             trunk2 vertex
         in
         if matching then acc + 1 else acc )
@@ -28,19 +28,19 @@ module TrunkFeatures = struct
       match Int.compare trunk1_length trunk2_length with
       | -1 ->
           (* trunk1 is shorter: prepend some fillers *)
-          let fillers = List.init ~f:(fun _ -> "filler") (trunk2_length - trunk1_length) in
+          let fillers = List.init ~f:(fun _ -> Method.of_string "filler") (trunk2_length - trunk1_length) in
           (fillers @ trunk1_only_methods, trunk2_only_methods)
       | 0 ->
           (trunk1_only_methods, trunk2_only_methods)
       | 1 ->
           (* trunk2 is shorter: prepend some fillers *)
-          let fillers = List.init ~f:(fun _ -> "filler") (trunk1_length - trunk2_length) in
+          let fillers = List.init ~f:(fun _ -> Method.of_string "filler") (trunk1_length - trunk2_length) in
           (trunk1_only_methods, fillers @ trunk2_only_methods)
       | _ ->
           failwith "this is impossible"
     in
     let zipped = List.zip_exn (List.rev trunk1_revised) (List.rev trunk2_revised) in
-    let suffix = List.take_while ~f:(fun (v1, v2) -> String.equal v1 v2) zipped in
+    let suffix = List.take_while ~f:(fun (m1, m2) -> Method.equal m1 m2) zipped in
     List.length suffix
 
 
@@ -53,18 +53,18 @@ module TrunkFeatures = struct
       match Int.compare trunk1_length trunk2_length with
       | -1 ->
           (* trunk1 is shorter: append some fillers *)
-          let fillers = List.init ~f:(fun _ -> "filler") (trunk2_length - trunk1_length) in
+          let fillers = List.init ~f:(fun _ -> Method.of_string "filler") (trunk2_length - trunk1_length) in
           (trunk1_only_methods @ fillers, trunk2_only_methods)
       | 0 ->
           (trunk1_only_methods, trunk2_only_methods)
       | 1 ->
           (* trunk2 is shorter: append some fillers *)
-          let fillers = List.init ~f:(fun _ -> "filler") (trunk1_length - trunk2_length) in
+          let fillers = List.init ~f:(fun _ -> Method.of_string "filler") (trunk1_length - trunk2_length) in
           (trunk1_only_methods, trunk2_only_methods @ fillers)
       | _ ->
           failwith "this is impossible"
     in
     let zipped = List.zip_exn trunk1_revised trunk2_revised in
-    let prefix = List.take_while ~f:(fun (v1, v2) -> String.equal v1 v2) zipped in
+    let prefix = List.take_while ~f:(fun (m1, m2) -> Method.equal m1 m2) zipped in
     List.length prefix
 end

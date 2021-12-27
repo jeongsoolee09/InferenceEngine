@@ -110,23 +110,48 @@ module ProbQuadruple = struct
     TaintLabel.equal (determine_label dist) TaintLabel.Indeterminate
 end
 
+module LocationSet = struct
+  type t = LocationSet of String.t [@@deriving compare, equal, sexp]
+
+  let of_string (string : String.t) : t =
+    (* this doesn't have to be so stringent, does it? Let's not use regexp! *)
+    let starts_with_open_curly_brace = String.is_prefix ~prefix:"{" string
+    and ends_with_closing_curly_brace = String.is_suffix ~suffix:"}" string
+    and has_line_as_substring = String.is_substring ~substring:"line" string in
+    assert (starts_with_open_curly_brace && ends_with_closing_curly_brace && has_line_as_substring) ;
+    LocationSet string
+
+
+  let to_string (LocationSet str : t) : string = str
+
+  let dummy = LocationSet "{ line -1 }"
+end
+
 module Vertex = struct
-  type t = string * string * ProbQuadruple.t [@@deriving compare]
+  type t = Method.t * LocationSet.t * ProbQuadruple.t [@@deriving compare]
 
   let hash = Hashtbl.hash
 
   let equal ((meth1, locset1, _) : t) ((meth2, locset2, _) : t) : bool =
     (* we ignore the quadruple in defining the identity: that's just an attribute *)
-    String.equal meth1 meth2 && String.equal locset1 locset2
+    Method.equal meth1 meth2 && LocationSet.equal locset1 locset2
 
+
+  let get_method (meth, _, _) : Method.t = meth
+
+  let get_loc (_, loc, _) : LocationSet.t = loc
+
+  let get_dist (_, _, dist) : ProbQuadruple.t = dist
 
   let to_string ((procstring, locstring, _) : t) : string =
-    F.asprintf "(\"%s\", \"%s\")" procstring locstring
+    F.asprintf "(\"%s\", \"%s\")" (Method.to_string procstring) (LocationSet.to_string locstring)
 
 
   let vertex_list_to_string (lst : t list) : string =
     let accumed = List.fold ~f:(fun acc vertex -> acc ^ to_string vertex ^ "; ") ~init:"" lst in
     F.asprintf "[%s]" accumed
+
+  let dummy = (Method.dummy, LocationSet.dummy, ProbQuadruple.initial)
 end
 
 module EdgeLabel = struct
@@ -156,13 +181,13 @@ module G = struct
 
 
   module LiteralVertex = struct
-    type t = string * string [@@deriving compare, equal, sexp]
+    type t = Method.t * LocationSet.t [@@deriving compare, equal, sexp]
 
     let to_vertex ((meth, loc) : t) (graph : BiDiGraph.t) : Vertex.t =
       let res_opt =
         fold_vertex
           (fun ((target_meth, target_loc, dist) as vertex) acc ->
-            if String.equal meth target_meth && String.equal loc target_loc then Some vertex
+            if Method.equal meth target_meth && LocationSet.equal loc target_loc then Some vertex
             else acc )
           graph None
       in
@@ -170,10 +195,13 @@ module G = struct
       | Some vertex ->
           vertex
       | None ->
-          failwithf "could not find dist for (\"%s\", \"%s\")" meth loc ()
+          failwithf "could not find dist for (\"%s\", \"%s\")" (Method.to_string meth)
+            (LocationSet.to_string loc) ()
 
 
-    let to_string ((meth, loc) : t) : string = F.asprintf "(\"%s\", \"%s\")" meth loc
+    let to_string ((meth, loc) : t) : string =
+      F.asprintf "(\"%s\", \"%s\")" (Method.to_string meth) (LocationSet.to_string loc)
+
 
     let of_vertex ((str1, str2, _) : Vertex.t) : t = (str1, str2)
   end
@@ -202,18 +230,21 @@ module G = struct
         graph true
   end
 
-  let lookup_dist_for_meth_and_loc (meth : string) (loc : string) (graph : t) : ProbQuadruple.t =
+  let lookup_dist_for_meth_and_loc (meth : Method.t) (loc : LocationSet.t) (graph : t) :
+      ProbQuadruple.t =
     let res_opt =
       fold_vertex
         (fun (target_meth, target_loc, dist) acc ->
-          if String.equal meth target_meth && String.equal loc target_loc then Some dist else acc )
+          if Method.equal meth target_meth && LocationSet.equal loc target_loc then Some dist
+          else acc )
         graph None
     in
     match res_opt with
     | Some dist ->
         dist
     | None ->
-        failwithf "could not find dist for (\"%s\", \"%s\")" meth loc ()
+        failwithf "could not find dist for (\"%s\", \"%s\")" (Method.to_string meth)
+          (LocationSet.to_string loc) ()
 
 
   let print_snapshot_diff_verbose prev_snapshot next_snapshot =
@@ -233,7 +264,8 @@ module G = struct
     List.iter
       ~f:(fun ((meth, loc), prev_dist, next_dist) ->
         Out_channel.output_string Out_channel.stdout
-        @@ F.asprintf "Vertex (%s, %s)'s dist was updated from %s to %s" meth loc
+        @@ F.asprintf "Vertex (%s, %s)'s dist was updated from %s to %s" (Method.to_string meth)
+             (LocationSet.to_string loc)
              (ProbQuadruple.to_string prev_dist)
              (ProbQuadruple.to_string next_dist) ;
         Out_channel.newline Out_channel.stdout ;
@@ -261,8 +293,9 @@ module G = struct
     List.iter
       ~f:(fun ((meth, loc), prev_label, next_label) ->
         Out_channel.output_string Out_channel.stdout
-        @@ F.asprintf "Vertex (%s, %s)'s label was updated from %s to %s" meth loc
-             (TaintLabel.to_string prev_label) (TaintLabel.to_string next_label) ;
+        @@ F.asprintf "Vertex (%s, %s)'s label was updated from %s to %s" (Method.to_string meth)
+             (LocationSet.to_string loc) (TaintLabel.to_string prev_label)
+             (TaintLabel.to_string next_label) ;
         Out_channel.newline Out_channel.stdout ;
         Out_channel.newline Out_channel.stdout )
       diff
@@ -272,7 +305,9 @@ module G = struct
 
   let default_vertex_attributes _ = []
 
-  let vertex_name ((meth, locset, _) : V.t) : string = F.asprintf "\"(%s, %s)\"" meth locset
+  let vertex_name ((meth, locset, _) : V.t) : string =
+    F.asprintf "\"(%s, %s)\"" (Method.to_string meth) (LocationSet.to_string locset)
+
 
   let vertex_attributes ((meth, locset, dist) : V.t) =
     match ProbQuadruple.determine_label dist with
@@ -468,9 +503,10 @@ module G = struct
     v2_is_v1's_succ && v1_is_v2's_succ
 
 
-  let this_method_vertices (graph : t) (method_ : string) : V.t list =
+  let this_method_vertices (graph : t) (method_ : Method.t) : V.t list =
     fold_vertex
-      (fun vertex acc -> if String.equal method_ (fst3 vertex) then vertex :: acc else acc)
+      (fun vertex acc ->
+        if Method.equal method_ (Vertex.get_method vertex) then vertex :: acc else acc )
       graph []
 
 
@@ -501,22 +537,31 @@ module G = struct
 
   let all_non_frontend_vertices_of_graph (graph : t) : V.t list =
     all_vertices_of_graph graph
-    |> List.filter ~f:(fun vertex -> not @@ String.is_substring (fst3 vertex) ~substring:"$Lambda$")
-    |> List.filter ~f:(fun vertex -> not @@ String.is_substring (fst3 vertex) ~substring:"lambda$")
-    |> List.filter ~f:(fun vertex -> not @@ String.is_prefix (fst3 vertex) ~prefix:"__")
+    |> List.filter ~f:(fun vertex ->
+           not
+           @@ String.is_substring
+                (vertex |> Vertex.get_method |> Method.to_string)
+                ~substring:"$Lambda$" )
+    |> List.filter ~f:(fun vertex ->
+           not
+           @@ String.is_substring
+                (vertex |> Vertex.get_method |> Method.to_string)
+                ~substring:"lambda$" )
+    |> List.filter ~f:(fun vertex ->
+           not @@ String.is_prefix (vertex |> Vertex.get_method |> Method.to_string) ~prefix:"__" )
 
 
-  let all_methods_of_graph (graph : t) : string list =
+  let all_methods_of_graph (graph : t) : Method.t list =
     let all_vertices = all_vertices_of_graph graph in
-    let module StringSet = Caml.Set.Make (String) in
-    all_vertices >>| fst3 |> StringSet.of_list |> StringSet.elements
+    let module MethodSet = Caml.Set.Make (Method) in
+    all_vertices >>| Vertex.get_method |> MethodSet.of_list |> MethodSet.elements
 
 
-  let all_non_frontend_methods_of_graph (graph : t) : string list =
+  let all_non_frontend_methods_of_graph (graph : t) : Method.t list =
     all_methods_of_graph graph
-    |> List.filter ~f:(not << String.is_substring ~substring:"$Lambda$")
-    |> List.filter ~f:(not << String.is_substring ~substring:"lambda$")
-    |> List.filter ~f:(not << String.is_prefix ~prefix:"__")
+    |> List.filter ~f:(not << String.is_substring ~substring:"$Lambda$" << Method.to_string)
+    |> List.filter ~f:(not << String.is_substring ~substring:"lambda$" << Method.to_string)
+    |> List.filter ~f:(not << String.is_prefix ~prefix:"__" << Method.to_string)
 
 
   let is_bidirectional_vertex (vertex : LiteralVertex.t) (graph : t) ~(label : EdgeLabel.t) : bool =
@@ -727,19 +772,19 @@ module VertexMaker = struct
   let vertex_of_chain_slice (chain_slice : ChainSlice.t) : G.V.t =
     match chain_slice with
     | DefineSlice (current, _, loc, _) ->
-        (current, loc, ProbQuadruple.initial)
+        (Method.of_string current, LocationSet.of_string loc, ProbQuadruple.initial)
     | CallSlice (current, callee, loc, _) ->
-        (callee, loc, ProbQuadruple.initial)
+        (Method.of_string callee, LocationSet.of_string loc, ProbQuadruple.initial)
     | VoidCallSlice (current, callee, loc, _) ->
-        (callee, loc, ProbQuadruple.initial)
+        (Method.of_string callee, LocationSet.of_string loc, ProbQuadruple.initial)
     | RedefineSlice (current, loc, _) ->
-        (current, loc, ProbQuadruple.initial)
+        (Method.of_string current, LocationSet.of_string loc, ProbQuadruple.initial)
     | DeadSlice current ->
-        (current, "", ProbQuadruple.initial)
+        (Method.of_string current, LocationSet.of_string "{ line }", ProbQuadruple.initial)
     | DeadByCycleSlice current ->
-        (current, "", ProbQuadruple.initial)
+        (Method.of_string current, LocationSet.of_string "{ line }", ProbQuadruple.initial)
     | Temp (current, loc) ->
-        (current, loc, ProbQuadruple.initial)
+        (Method.of_string current, LocationSet.of_string loc, ProbQuadruple.initial)
 
 
   module VertexSet = Set.Make (Vertex)
@@ -831,7 +876,8 @@ module EdgeMaker = struct
       | DefineSlice (_, ap, loc, using) as void_call_slice ->
           let is_frontend_tmp_var_ap = String.is_prefix ~prefix:"($" in
           if is_frontend_tmp_var_ap ap then
-            (List.slice bicycle_chain 0 (List.length bicycle_chain - 1), Some (using, loc))
+            (List.slice bicycle_chain 0 (List.length bicycle_chain - 1),
+             Some (Method.of_string using, LocationSet.of_string loc))
           else (bicycle_chain, None)
       | _ ->
           (bicycle_chain, None)

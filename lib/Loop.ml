@@ -42,7 +42,7 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t) (previous_sn
   if List.is_empty rules_to_propagate then
     (* if we can't propagate any further, terminate *)
     (current_snapshot, [])
-  else if List.mem (history >>| fst3) (Response.get_method new_fact) ~equal:String.equal then
+  else if List.mem (history >>| fst3) (Response.get_method new_fact) ~equal:Method.equal then
     (current_snapshot, history)
   else (
     Out_channel.print_endline "==============================" ;
@@ -51,9 +51,9 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t) (previous_sn
     let current_visiting_vertices =
       G.this_method_vertices current_snapshot (Response.get_method new_fact)
     in
-    Out_channel.print_endline
-    @@ F.asprintf "current_visiting_vertices: %s"
-         (Vertex.vertex_list_to_string current_visiting_vertices) ;
+    (* Out_channel.print_endline *)
+    (* @@ F.asprintf "current_visiting_vertices: %s" *)
+    (*      (Vertex.vertex_list_to_string current_visiting_vertices) ; *)
     (* do the propagation *)
     let propagated_snapshot, current_propagation_targets =
       List.fold
@@ -87,11 +87,11 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t) (previous_sn
                 Response.response_of_dist (fst3 target)
                   (G.lookup_dist_for_meth_and_loc target_meth target_loc propagated_snapshot)
               in
-              Out_channel.print_endline
-              @@ F.asprintf "\ntarget_rule_summary of %s: %s, dist: %s\n" (fst3 target)
-                   (Response.to_string target_rule_summary)
-                   (ProbQuadruple.to_string
-                      (G.lookup_dist_for_meth_and_loc target_meth target_loc propagated_snapshot) ) ;
+              (* Out_channel.print_endline *)
+              (* @@ F.asprintf "\ntarget_rule_summary of %s: %s, dist: %s\n" (fst3 target) *)
+              (*      (Response.to_string target_rule_summary) *)
+              (*      (ProbQuadruple.to_string *)
+              (*         (G.lookup_dist_for_meth_and_loc target_meth target_loc propagated_snapshot) ) ; *)
               let applicable_rules =
                 MetaRules.ForPropagation.take_subset_of_applicable_propagation_rules
                   current_snapshot target_rule_summary prev_facts prop_rule_pool

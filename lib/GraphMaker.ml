@@ -20,13 +20,13 @@ let batch_add_edge (raw_json : json) (graph : G.t) =
   edge_added
 
 
-let remove_bogus (graph : G.t) =
-  let boguses =
-    G.fold_vertex
-      (fun ((meth, _, _) as vertex) acc -> if String.is_empty meth then vertex :: acc else acc)
-      graph []
-  in
-  List.fold ~f:(fun acc bogus -> G.remove_vertex acc bogus) ~init:graph boguses
+(* let remove_bogus (graph : G.t) = *)
+(*   let boguses = *)
+(*     G.fold_vertex *)
+(*       (fun ((meth, _, _) as vertex) acc -> if String.is_empty meth then vertex :: acc else acc) *)
+(*       graph [] *)
+(*   in *)
+(*   List.fold ~f:(fun acc bogus -> G.remove_vertex acc bogus) ~init:graph boguses *)
 
 
 (** Function for debugging by exporting Ocamlgraph to Graphviz Dot *)
@@ -66,7 +66,7 @@ let init_graph (json : json) ~(debug : bool) : G.t =
         Deserializer.deserialize_graph filename
   in
   print_endline "\nNS edges established.\n" ;
-  let out = EstablishSimEdges.make_contextual_sim_edge nodewise_sim_edges_added |> remove_bogus in
+  let out = EstablishSimEdges.make_contextual_sim_edge nodewise_sim_edges_added (* |> remove_bogus *) in
   if debug then graph_to_dot out ~filename:(make_now_string 9 ^ ".dot") ;
   Memoize.NSClusters.set_ns_cluster (all_ns_clusters out) ;
   out

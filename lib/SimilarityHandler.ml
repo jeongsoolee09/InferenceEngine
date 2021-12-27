@@ -5,32 +5,32 @@ open GraphRepr
 open NodeWiseFeatures
 open ContextualFeatures
 
-module StringPair = struct
-  type t = string * string [@@deriving compare]
+module MethodPair = struct
+  type t = Method.t * Method.t [@@deriving compare]
 
-  let to_string (s1, s2) = F.asprintf "(%s, %s)" s1 s2
+  let to_string (m1, m2) = F.asprintf "(%s, %s)" (Method.to_string m1) (Method.to_string m2)
 end
 
 module NodeWiseSimilarityMap = struct
-  module WithMethodPairDomain = Caml.Map.Make (StringPair)
+  module WithMethodPairDomain = Caml.Map.Make (MethodPair)
   include WithMethodPairDomain
 
   type t = Int.t WithMethodPairDomain.t
 
   let threshold = 4 (* TEMP *)
 
-  let init (all_methods : string list) : t =
+  let init (all_methods : Method.t list) : t =
     let method_pairs =
       let* method1 = all_methods in
       let* method2 = all_methods in
-      if not @@ String.equal method1 method2 then return (method1, method2) else []
+      if not @@ Method.equal method1 method2 then return (method1, method2) else []
     in
     List.fold
       ~f:(fun acc pair -> WithMethodPairDomain.add pair 0 acc)
       method_pairs ~init:WithMethodPairDomain.empty
 
 
-  let is_similar_nodewise (meth1 : string) (meth2 : string) (map : t) : bool =
+  let is_similar_nodewise (meth1 : Method.t) (meth2 : Method.t) (map : t) : bool =
     Int.( >= ) (find (meth1, meth2) map) threshold
 end
 
@@ -69,16 +69,16 @@ module TrunkSimilarityMap = struct
 end
 
 module ContextualSimilarityMap = struct
-  module WithMethodPairDomain = Caml.Map.Make (StringPair)
+  module WithMethodPairDomain = Caml.Map.Make (MethodPair)
   include WithMethodPairDomain
 
   type t = Int.t WithMethodPairDomain.t
 
-  let init (all_methods : string list) : t =
+  let init (all_methods : Method.t list) : t =
     let method_pairs =
       let* method1 = all_methods in
       let* method2 = all_methods in
-      if not @@ String.equal method1 method2 then return (method1, method2) else []
+      if not @@ Method.equal method1 method2 then return (method1, method2) else []
     in
     List.fold
       ~f:(fun acc pair -> WithMethodPairDomain.add pair 0 acc)
@@ -99,7 +99,7 @@ module SimilarVertexPairExtractor = struct
 
 
     (** Run all extractors for every method pair. *)
-    let get_nodewise_similarity (method_pair : string * string) : int =
+    let get_nodewise_similarity (method_pair : Method.t * Method.t) : int =
       (* execute all extractors. *)
       List.fold
         ~f:(fun current_score (feature, score) ->
@@ -109,7 +109,7 @@ module SimilarVertexPairExtractor = struct
 
     (** main functionality: calculate the nodewise simliarity of each method and organize those in a
         table. *)
-    let update_nodewise_similarity_map (all_methods : string list) : NodeWiseSimilarityMap.t =
+    let update_nodewise_similarity_map (all_methods : Method.t list) : NodeWiseSimilarityMap.t =
       let initial_map = NodeWiseSimilarityMap.init all_methods in
       NodeWiseSimilarityMap.fold
         (fun ((m1, m2) as pair) _ acc ->
@@ -149,7 +149,7 @@ module SimilarVertexPairExtractor = struct
 
     (** find vertices dangling from the trunk with bidirectional edges, e.g. if a -> b -> c <-> d,
         find d *)
-    let find_bidirectionals_in_trunk (trunk : trunk) (graph : G.t) : vertex list =
+    let find_bidirectionals_in_trunk (trunk : trunk) (graph : G.t) : G.V.t list =
       let with_bidirectional_edges =
         G.fold_vertex
           (fun vertex acc ->
@@ -175,25 +175,28 @@ module SimilarVertexPairExtractor = struct
 
     (** given a trunk pair, get the pairs of methods that are contextually similar to each other. *)
     let identify_similar_method_from_similar_trunk ((trunk1, trunk2) : trunk * trunk) (graph : G.t)
-        : (string * string) list =
+        : (Method.t * Method.t) list =
       (* 1. trunk's roots are similar *)
       let trunk1_root = List.hd_exn trunk1 and trunk2_root = List.hd_exn trunk2 in
       (* 2. trunk's leaves are similar *)
       let trunk1_leaf = List.last_exn trunk1 and trunk2_leaf = List.last_exn trunk2 in
+      let open NodeWiseFeatures.SingleFeature in
       let root_pair_list =
         if
           (not @@ Vertex.equal trunk1_root trunk2_root)
           && not
-               ( String.is_substring (fst3 trunk1_root) ~substring:"<init>"
-               || String.is_substring (fst3 trunk2_root) ~substring:"<init>" )
-        then [(fst3 trunk1_root, fst3 trunk2_root); (fst3 trunk2_root, fst3 trunk1_root)]
+               ( (is_initializer @@ Vertex.get_method trunk1_root)
+               || (is_initializer @@ Vertex.get_method trunk2_root) )
+        then
+          [ (Vertex.get_method trunk1_root, Vertex.get_method trunk2_root)
+          ; (Vertex.get_method trunk2_root, Vertex.get_method trunk1_root) ]
         else []
       and leaf_pair_list =
         if
           (not @@ Vertex.equal trunk1_leaf trunk2_leaf)
           && not
-               ( String.is_substring (fst3 trunk1_leaf) ~substring:"<init>"
-               || String.is_substring (fst3 trunk2_leaf) ~substring:"<init>" )
+               ( (is_initializer @@ Vertex.get_method trunk1_leaf)
+               || (is_initializer @@ Vertex.get_method trunk2_leaf) )
         then [(fst3 trunk1_leaf, fst3 trunk2_leaf); (fst3 trunk2_leaf, fst3 trunk1_leaf)]
         else []
       in
@@ -238,17 +241,17 @@ module SimilarVertexPairExtractor = struct
         similar, and if list_a = [a; c; d; a; a; a;] and list_b = [f; g; h; b; b; i; j], then pair
         up second and third occurrences of a's with first and second occurrences of b's. *)
     let smart_pairup_vertices (trunk_a : trunk) (trunk_b : trunk)
-        ((trunk_a_similar, trunk_b_similar) : string * string) : (vertex * vertex) list =
+        ((trunk_a_similar, trunk_b_similar) : Method.t * Method.t) : (G.V.t * G.V.t) list =
       let with_list_index (lst : 'a list) : (int * 'a) list =
         List.rev @@ List.foldi ~f:(fun index acc elem -> (index, elem) :: acc) ~init:[] lst
       in
       let trunk_a_processed =
         trunk_a
-        |> List.filter ~f:(fun vertex -> String.equal trunk_a_similar (fst3 vertex))
+        |> List.filter ~f:(fun vertex -> Method.equal trunk_a_similar (Vertex.get_method vertex))
         |> List.stable_dedup |> with_list_index
       and trunk_b_processed =
         trunk_b
-        |> List.filter ~f:(fun vertex -> String.equal trunk_b_similar (fst3 vertex))
+        |> List.filter ~f:(fun vertex -> Method.equal trunk_b_similar (Vertex.get_method vertex))
         |> List.stable_dedup |> with_list_index
       in
       if Int.( >= ) (List.length trunk_a) (List.length trunk_b) then
@@ -261,7 +264,9 @@ module SimilarVertexPairExtractor = struct
                 ~f:(fun ((current_min, _) as current_min_tuple) ((a_index, a_elem) as a_tuple) ->
                   let diff = Int.abs (Int.( - ) a_index b_index) in
                   if diff <= current_min then a_tuple else current_min_tuple )
-                ~init:(Int.max_value, ("", "", ProbQuadruple.initial))
+                ~init:
+                  ( Int.max_value
+                  , Vertex.dummy )
                 trunk_a_processed
             in
             (b_elem, snd a_elem_with_smallest_diff) :: acc )
@@ -276,7 +281,7 @@ module SimilarVertexPairExtractor = struct
                 ~f:(fun ((current_min, _) as current_min_tuple) ((b_index, b_elem) as b_tuple) ->
                   let diff = Int.abs (Int.( - ) b_index a_index) in
                   if diff <= current_min then b_tuple else current_min_tuple )
-                ~init:(Int.max_value, ("", "", ProbQuadruple.initial))
+                ~init:(Int.max_value, Vertex.dummy)
                 trunk_b_processed
             in
             (a_elem, snd b_elem_with_smallest_diff) :: acc )
@@ -300,9 +305,9 @@ module EstablishSimEdges = struct
     NodeWiseSimilarityMap.fold
       (fun (method1, method2) _ acc ->
         let method1_vertices =
-          List.filter ~f:(fun (meth, _, _) -> String.equal meth method1) all_vertices
+          List.filter ~f:(fun (meth, _, _) -> Method.equal meth method1) all_vertices
         and method2_vertices =
-          List.filter ~f:(fun (meth, _, _) -> String.equal meth method2) all_vertices
+          List.filter ~f:(fun (meth, _, _) -> Method.equal meth method2) all_vertices
         in
         (* we'll use smart_pairup_vertices to ensure we don't connect two distant vertices. *)
         let smart_pairedup : (Vertex.t * Vertex.t) list =

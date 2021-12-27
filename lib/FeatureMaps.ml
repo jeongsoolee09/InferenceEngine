@@ -3,7 +3,7 @@ open GraphRepr
 open ListMonad
 
 module NodeWiseFeatureMap = struct
-  module WithMethodDomain = Caml.Map.Make (String)
+  module WithMethodDomain = Caml.Map.Make (Method)
   include WithMethodDomain
 
   type feature = Int of int | String of string | Bool of bool [@@deriving equal]
@@ -15,6 +15,6 @@ module NodeWiseFeatureMap = struct
     List.fold (G.all_non_frontend_methods_of_graph graph) ~f:(fun acc meth -> add meth [Int 0] acc) ~init:empty
 
 
-  let strong_update (map : t) (meth_ : string) (new_ : feature list) =
+  let strong_update (map : t) (meth_ : Method.t) (new_ : feature list) =
     remove meth_ map |> add meth_ new_
 end
