@@ -693,8 +693,8 @@ module PathUtils = struct
 
   (** For every leaf, print paths to the leaf from the given source, where the given graph may
       contain a cycle, using a customized DFS algorithm **)
-  let enumerate_paths_from_source_to_leaves (g: G.t) (source : G.LiteralVertex.t) :
-      G.V.t list list =
+  let enumerate_paths_from_source_to_leaves (g : G.t) (source : G.LiteralVertex.t) : G.V.t list list
+      =
     let rec inner (current : G.LiteralVertex.t) (smol_acc : Vertex.t list)
         (big_acc : Vertex.t list list) (current_havebeenmap : HaveBeenMap.t) : G.V.t list list =
       if G.is_leaf current g then List.rev smol_acc :: big_acc
@@ -703,7 +703,9 @@ module PathUtils = struct
         List.fold
           ~f:(fun acc child ->
             if
-              HaveBeenMap.find (G.LiteralVertex.to_vertex current g.graph, child) current_havebeenmap
+              HaveBeenMap.find
+                (G.LiteralVertex.to_vertex current g.graph, child)
+                current_havebeenmap
               >= 1
             then acc
             else
@@ -750,11 +752,10 @@ let find_trunks_containing_vertex graph vertex =
   List.filter ~f:(fun trunk -> List.mem ~equal:Vertex.equal trunk vertex) all_trunks
 
 
-(* TODO under construction *)
 let all_ns_clusters (graph : G.t) : G.V.t list list =
   let module Hashtbl = Caml.Hashtbl in
   let cache = Hashtbl.create 777 in
-  match Hashtbl.find_opt cache graph with
+  match Hashtbl.find_opt cache graph.label with
   | None ->
       let rec inner (vertex : G.V.t) (acc : G.V.t list) : G.V.t list =
         let all_ns_bidirectionals =
@@ -793,7 +794,7 @@ let all_ns_clusters (graph : G.t) : G.V.t list list =
           ~init:[] (G.all_vertices_of_graph graph)
         >>| List.stable_dedup
       in
-      Hashtbl.add cache graph out ;
+      Hashtbl.add cache graph.label out ;
       out
   | Some memoized_result ->
       memoized_result
@@ -802,9 +803,7 @@ let all_ns_clusters (graph : G.t) : G.V.t list list =
 let recursively_find_preds (g : G.t) (vertex : G.LiteralVertex.t) ~(label : EdgeLabel.t) :
     G.V.t list =
   let rec inner (current_vertex : G.V.t) (big_acc : G.V.t list) =
-    let current_vertex_df_preds =
-      G.get_preds g (G.LiteralVertex.of_vertex current_vertex) ~label
-    in
+    let current_vertex_df_preds = G.get_preds g (G.LiteralVertex.of_vertex current_vertex) ~label in
     let to_explore =
       List.filter current_vertex_df_preds ~f:(fun pred ->
           not @@ List.mem big_acc pred ~equal:Vertex.equal )

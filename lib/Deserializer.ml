@@ -19,21 +19,43 @@ let deserialize_config () =
 
 let project_root = deserialize_config ()
 
-let deserialize_json () : json =
-  let in_channel = In_channel.create (project_root ^ "Chain.json") in
-  let out = Json.from_channel in_channel in
-  In_channel.close in_channel ;
-  out
+let deserialize_json =
+  let cache : json ref = ref (`Assoc []) in
+  fun () : json ->
+    if Yojson.Basic.equal !cache (`Assoc []) then (
+      let in_channel = In_channel.create (project_root ^ "Chain.json") in
+      let out = Json.from_channel in_channel in
+      In_channel.close in_channel ;
+      cache := out ;
+      out )
+    else !cache
 
 
-let deserialize_method_txt () : string list =
-  In_channel.read_lines (project_root ^ "Methods.txt") |> List.filter ~f:(not << String.is_empty)
+let deserialize_method_txt =
+  let cache : string list ref = ref [] in
+  fun () : string list ->
+    if List.is_empty !cache then (
+      let out =
+        In_channel.read_lines (project_root ^ "Methods.txt")
+        |> List.filter ~f:(not << String.is_empty)
+      in
+      cache := out ;
+      out )
+    else !cache
 
 
-let deserialize_skip_func () : string list =
-  In_channel.read_lines (project_root ^ "skip_func.txt")
-  |> List.filter ~f:(not << String.is_prefix ~prefix:"__")
-  |> List.filter ~f:(not << String.is_empty)
+let deserialize_skip_func =
+  let cache : string list ref = ref [] in
+  fun () : string list ->
+    if List.is_empty !cache then (
+      let out =
+        In_channel.read_lines (project_root ^ "skip_func.txt")
+        |> List.filter ~f:(not << String.is_prefix ~prefix:"__")
+        |> List.filter ~f:(not << String.is_empty)
+      in
+      cache := out ;
+      out )
+    else !cache
 
 
 let deserialize_graph (filename : string) =
@@ -42,9 +64,17 @@ let deserialize_graph (filename : string) =
   Marshal.from_channel in_chan
 
 
-let deserialize_callgraph () : (string * string) list =
-  let regexp = Str.regexp "\\(.*\\) -> \\(.*\\)" in
-  In_channel.read_lines (project_root ^ "Callgraph.txt")
-  >>| fun string ->
-  assert (Str.string_match regexp string 0) ;
-  (Str.matched_group 1 string, Str.matched_group 2 string)
+let deserialize_callgraph =
+  let cache = ref [] in
+  fun () : (string * string) list ->
+    if List.is_empty !cache then (
+      let out =
+        let regexp = Str.regexp "\\(.*\\) -> \\(.*\\)" in
+        In_channel.read_lines (project_root ^ "Callgraph.txt")
+        >>| fun string ->
+        assert (Str.string_match regexp string 0) ;
+        (Str.matched_group 1 string, Str.matched_group 2 string)
+      in
+      cache := out ;
+      out )
+    else !cache

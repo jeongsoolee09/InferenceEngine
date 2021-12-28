@@ -24,7 +24,7 @@ let received_responses = []
 
 let nodewise_featuremap = NodeWiseFeatures.init_feature_map graph
 
-let test () = loop graph received_responses nodewise_featuremap 1
+let demo () = loop graph received_responses nodewise_featuremap 1
 
 let trunk_finder ~(start : G.LiteralVertex.t) ~(end_ : G.LiteralVertex.t) (graph : G.t) : trunk list
     =
@@ -156,7 +156,7 @@ module Notebook37 = struct
   (* let's filter out the test/ directory. *)
 
   let all_java_files =
-    GraphMaker.DirectoryManager.walk_for_extension
+    DirectoryManager.walk_for_extension
       "/Users/jslee/Taint-Analysis/Code/benchmarks/realworld/sagan" ".java"
 
 
@@ -269,11 +269,28 @@ module Notebook38 = struct
 end
 
 module Notebook39 = struct
-  let x = 1
+  (* how do we make a closure to memoize the output? *)
 
-  let y = 2
+  let f =
+    let x = ref "" in
+    fun y ->
+      if not @@ String.equal !x "" then !x
+      else (
+        for i = 0 to 1000000000 do
+          ()
+        done ;
+        let out = "done!" in
+        x := "done!" ;
+        out )
 
-  let _ = x + y
+
+  (* --> This is how we memoize the $hit bro! *)
+
+  let _ = Hashtbl.hash graph
+
+  let new_snapshot = demo ()
+
+  let _ = Hashtbl.hash graph <> Hashtbl.hash new_snapshot
 
   let _ = End
 end
