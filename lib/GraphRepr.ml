@@ -308,7 +308,7 @@ module G = struct
           (* TEMP: the vertex should not be isolated *)
           if Int.( = ) (out_degree graph vertex) 0 && Int.( = ) (in_degree graph vertex) 0 then acc
           else
-            let dist = trd3 vertex in
+            let dist = Vertex.get_dist vertex in
             dist_is_saturated dist && acc )
         graph true
   end
@@ -664,7 +664,7 @@ module G = struct
 
   let dist_is_all_flat (graph : t) : bool =
     fold_vertex
-      (fun vertex acc -> ProbQuadruple.equal (trd3 vertex) ProbQuadruple.initial)
+      (fun vertex acc -> ProbQuadruple.equal (Vertex.get_dist vertex) ProbQuadruple.initial)
       graph true
 end
 
@@ -687,8 +687,9 @@ module PathUtils = struct
     List.mem ~equal:G.V.equal descendants dest
 
 
-  let increment_option (prev : int option) : int option =
-    match prev with None -> None | Some n -> Some (n + 1)
+  let increment_option prev =
+    let ( >>= ) = Option.( >>= ) and return = Option.return in
+    prev >>= fun x -> return (x + 1)
 
 
   (** For every leaf, print paths to the leaf from the given source, where the given graph may
