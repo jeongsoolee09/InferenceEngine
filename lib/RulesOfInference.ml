@@ -201,7 +201,7 @@ module PropagationRules = struct
           let succ_meth, succ_label, succ_dist = succ in
           let is_inside_ns_cluster_containing_df_internals =
             let containing_cluster_opt =
-              List.find (Memoize.NSClusters.get_ns_cluster () ~debug:false) ~f:(fun cluster ->
+              List.find (all_ns_clusters graph) ~f:(fun cluster ->
                   List.mem cluster succ ~equal:Vertex.equal )
             in
             match containing_cluster_opt with
@@ -387,9 +387,7 @@ module PropagationRules = struct
             List.fold
               ~f:(fun ((graph_acc, affected) as smol_acc) vertex ->
                 let vertex_meth, vertex_loc, vertex_dist = vertex in
-                let ns_clusters_vertices =
-                  List.join @@ Memoize.NSClusters.get_ns_cluster () ~debug:false
-                in
+                let ns_clusters_vertices = List.join @@ all_ns_clusters graph in
                 if
                   NodeWiseFeatures.SingleFeature.is_library_code vertex_meth
                   && (not @@ G.is_df_leaf (G.LiteralVertex.of_vertex vertex) graph)
@@ -444,9 +442,7 @@ module PropagationRules = struct
           List.fold
             ~f:(fun ((graph_acc, affected) as smol_acc) vertex ->
               let vertex_meth, vertex_loc, vertex_dist = vertex in
-              let ns_clusters_vertices =
-                List.join @@ Memoize.NSClusters.get_ns_cluster () ~debug:false
-              in
+              let ns_clusters_vertices = List.join @@ all_ns_clusters graph in
               if
                 NodeWiseFeatures.SingleFeature.is_library_code vertex_meth
                 && (not @@ G.is_df_leaf (G.LiteralVertex.of_vertex vertex) graph)
@@ -534,7 +530,7 @@ module AskingRules = struct
       G.collect_df_leaves snapshot
       |> List.filter ~f:(fun leaf ->
              let containing_cluster_opt =
-               List.find (Memoize.NSClusters.get_ns_cluster () ~debug:false) ~f:(fun cluster ->
+               List.find (all_ns_clusters snapshot) ~f:(fun cluster ->
                    List.mem cluster leaf ~equal:Vertex.equal )
              in
              match containing_cluster_opt with
@@ -622,16 +618,15 @@ module AskingRules = struct
   let ask_from_ns_cluster_if_it_contains_internal_src_or_sink : rule =
    fun (snapshot : G.t) (received_responses : Response.t list)
        (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) : Question.t ->
-    let all_ns_clusters = Memoize.NSClusters.get_ns_cluster () ~debug:false in
     let there_is_some_cluster_that_has_internal_src_or_sink =
-      List.for_all all_ns_clusters ~f:(fun ns_cluster ->
+      List.for_all (all_ns_clusters snapshot) ~f:(fun ns_cluster ->
           List.exists ns_cluster ~f:(fun vertex ->
               G.is_df_internal (G.LiteralVertex.of_vertex vertex) snapshot
               && (ProbQuadruple.is_source (trd3 vertex) || ProbQuadruple.is_sin (trd3 vertex)) ) )
     in
     assert there_is_some_cluster_that_has_internal_src_or_sink ;
     let not_asked_clusters =
-      List.filter all_ns_clusters ~f:(fun cluster ->
+      List.filter (all_ns_clusters snapshot) ~f:(fun cluster ->
           not
           @@ List.exists received_responses ~f:(fun received_response ->
                  List.mem ~equal:Method.equal
@@ -643,7 +638,8 @@ module AskingRules = struct
     let random_cluster = Utils.random_select_elem not_asked_clusters in
     let random_vertex_in_picked_cluster = Utils.random_select_elem random_cluster in
     if G.is_df_internal (G.LiteralVertex.of_vertex random_vertex_in_picked_cluster) snapshot then
-      Question.AskingForConfirmation (Vertex.get_method random_vertex_in_picked_cluster, TaintLabel.None)
+      Question.AskingForConfirmation
+        (Vertex.get_method random_vertex_in_picked_cluster, TaintLabel.None)
     else Question.AskingForLabel (Vertex.get_method random_vertex_in_picked_cluster)
 
 

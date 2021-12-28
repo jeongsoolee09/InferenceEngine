@@ -151,6 +151,7 @@ module Vertex = struct
     let accumed = List.fold ~f:(fun acc vertex -> acc ^ to_string vertex ^ "; ") ~init:"" lst in
     F.asprintf "[%s]" accumed
 
+
   let dummy = (Method.dummy, LocationSet.dummy, ProbQuadruple.initial)
 end
 
@@ -164,9 +165,91 @@ module VertexPair = struct
   type t = Vertex.t * Vertex.t [@@deriving equal, compare]
 end
 
+module BiDiGraph = Graph.Persistent.Digraph.ConcreteBidirectionalLabeled (Vertex) (EdgeLabel)
+
 module G = struct
-  module BiDiGraph = Graph.Persistent.Digraph.ConcreteBidirectionalLabeled (Vertex) (EdgeLabel)
-  include BiDiGraph
+  type t = {graph: BiDiGraph.t; label: String.t; desc: String.t}
+
+  (* ==================== Really Boring Wrapping Logic ==================== *)
+
+  module V = BiDiGraph.V
+  module E = BiDiGraph.E
+
+  let is_directed = BiDiGraph.is_directed
+
+  let is_empty g = BiDiGraph.is_empty g.graph
+
+  let nb_vertex g = BiDiGraph.nb_vertex g.graph
+
+  let nb_edges g = BiDiGraph.nb_edges g.graph
+
+  let out_degree g = BiDiGraph.out_degree g.graph
+
+  let in_degree g = BiDiGraph.in_degree g.graph
+
+  let mem_vertex g v = BiDiGraph.mem_vertex g.graph v
+
+  let mem_edge g v1 v2 = BiDiGraph.mem_edge g.graph v1 v2
+
+  let mem_edge_e g e = BiDiGraph.mem_edge_e g.graph e
+
+  let find_edge g v1 v2 = BiDiGraph.find_edge g.graph v1 v2
+
+  let find_all_edges g v1 v2 = BiDiGraph.find_all_edges g.graph v1 v2
+
+  let succ g v = BiDiGraph.succ g.graph v
+
+  let pred g v = BiDiGraph.pred g.graph v
+
+  let succ_e g v = BiDiGraph.succ_e g.graph v
+
+  let pred_e g v = BiDiGraph.pred_e g.graph v
+
+  let iter_vertex f g = BiDiGraph.iter_vertex f g.graph
+
+  let fold_vertex f g init = BiDiGraph.fold_vertex f g.graph init
+
+  let iter_edges f g = BiDiGraph.iter_edges f g.graph
+
+  let fold_edges f g init = BiDiGraph.fold_edges f g.graph init
+
+  let iter_edges_e f g = BiDiGraph.iter_edges_e f g.graph
+
+  let fold_edges_e f g init = BiDiGraph.fold_edges_e f g.graph init
+
+  let map_vertex f g = {g with graph= BiDiGraph.map_vertex f g.graph}
+
+  let iter_succ f g v = BiDiGraph.iter_succ f g.graph v
+
+  let iter_pred f g v = BiDiGraph.iter_pred f g.graph v
+
+  let fold_succ f g v init = BiDiGraph.fold_succ f g.graph v init
+
+  let fold_pred f g v init = BiDiGraph.fold_pred f g.graph v init
+
+  let iter_succ_e f g v = BiDiGraph.iter_succ_e f g.graph v
+
+  let fold_succ_e f g v init = BiDiGraph.fold_succ_e f g.graph v init
+
+  let iter_pred_e f g v = BiDiGraph.iter_pred_e f g.graph v
+
+  let fold_pred_e f g v init = BiDiGraph.fold_pred_e f g.graph v
+
+  let empty = {graph= BiDiGraph.empty; label= ""; desc= ""}
+
+  let add_vertex g v = {g with graph= BiDiGraph.add_vertex g.graph v}
+
+  let remove_vertex g v = {g with graph= BiDiGraph.remove_vertex g.graph v}
+
+  let add_edge g v1 v2 = {g with graph= BiDiGraph.add_edge g.graph v1 v2}
+
+  let add_edge_e g e = {g with graph= BiDiGraph.add_edge_e g.graph e}
+
+  let remove_edge g v1 v2 = {g with graph= BiDiGraph.remove_edge g.graph v1 v2}
+
+  let remove_edge_e g e = {g with graph= BiDiGraph.remove_edge_e g.graph e}
+
+  (* ====================================================================== *)
 
   let equal (snapshot1 : t) (snapshot2 : t) : bool =
     (* G1 = G2 <=> V1 = V2 && E1 = E2 *)
@@ -185,7 +268,7 @@ module G = struct
 
     let to_vertex ((meth, loc) : t) (graph : BiDiGraph.t) : Vertex.t =
       let res_opt =
-        fold_vertex
+        BiDiGraph.fold_vertex
           (fun ((target_meth, target_loc, dist) as vertex) acc ->
             if Method.equal meth target_meth && LocationSet.equal loc target_loc then Some vertex
             else acc )
@@ -301,7 +384,7 @@ module G = struct
       diff
 
 
-  let graph_attributes _ = []
+  let graph_attributes g = [`Label g.label]
 
   let default_vertex_attributes _ = []
 
@@ -378,57 +461,57 @@ module G = struct
       graph []
 
 
-  let is_root (vertex : LiteralVertex.t) (graph : t) : bool =
-    Int.equal (in_degree graph (LiteralVertex.to_vertex vertex graph)) 0
+  let is_root (vertex : LiteralVertex.t) (g : t) : bool =
+    Int.equal (in_degree g (LiteralVertex.to_vertex vertex g.graph)) 0
 
 
-  let is_leaf (vertex : LiteralVertex.t) (graph : t) : bool =
-    Int.equal (out_degree graph (LiteralVertex.to_vertex vertex graph)) 0
+  let is_leaf (vertex : LiteralVertex.t) (g : t) : bool =
+    Int.equal (out_degree g (LiteralVertex.to_vertex vertex g.graph)) 0
 
 
-  let any_label_preds (vertex : LiteralVertex.t) (graph : t) =
+  let any_label_preds (vertex : LiteralVertex.t) (g : t) =
     fold_edges
       (fun v1 v2 acc ->
-        if Vertex.equal v2 (LiteralVertex.to_vertex vertex graph) then v1 :: acc else acc )
-      graph []
+        if Vertex.equal v2 (LiteralVertex.to_vertex vertex g.graph) then v1 :: acc else acc )
+      g []
 
 
-  let any_label_succs (vertex : LiteralVertex.t) (graph : t) =
+  let any_label_succs (vertex : LiteralVertex.t) (g : t) =
     fold_edges
       (fun v1 v2 acc ->
-        if Vertex.equal v1 (LiteralVertex.to_vertex vertex graph) then v2 :: acc else acc )
-      graph []
+        if Vertex.equal v1 (LiteralVertex.to_vertex vertex g.graph) then v2 :: acc else acc )
+      g []
 
 
-  let find_in_edges (vertex : LiteralVertex.t) (graph : t) : E.t list =
+  let find_in_edges (vertex : LiteralVertex.t) (g : t) : E.t list =
     fold_edges_e
       (fun ((_, label, v2) as edge) acc ->
-        if V.equal (LiteralVertex.to_vertex vertex graph) v2 then edge :: acc else acc )
-      graph []
+        if V.equal (LiteralVertex.to_vertex vertex g.graph) v2 then edge :: acc else acc )
+      g []
 
 
-  let get_preds (vertex : LiteralVertex.t) (graph : t) ~(label : EdgeLabel.t) : Vertex.t list =
-    fold_edges_e List.cons graph []
+  let get_preds (vertex : LiteralVertex.t) (g : t) ~(label : EdgeLabel.t) : Vertex.t list =
+    fold_edges_e List.cons g []
     |> List.filter ~f:(fun (_, target_label, v2) ->
-           Vertex.equal (LiteralVertex.to_vertex vertex graph) v2
+           Vertex.equal (LiteralVertex.to_vertex vertex g.graph) v2
            && EdgeLabel.equal label target_label )
     >>| fst3
 
 
-  let get_succs (vertex : LiteralVertex.t) (graph : t) ~(label : EdgeLabel.t) : Vertex.t list =
-    fold_edges_e List.cons graph []
+  let get_succs (vertex : LiteralVertex.t) (g : t) ~(label : EdgeLabel.t) : Vertex.t list =
+    fold_edges_e List.cons g []
     |> List.filter ~f:(fun (v, target_label, _) ->
-           Vertex.equal (LiteralVertex.to_vertex vertex graph) v
+           Vertex.equal (LiteralVertex.to_vertex vertex g.graph) v
            && EdgeLabel.equal label target_label )
     >>| fst3
 
 
-  let get_preds_any (vertex : LiteralVertex.t) (graph : t) : Vertex.t list =
-    fold_pred List.cons graph (LiteralVertex.to_vertex vertex graph) []
+  let get_preds_any (vertex : LiteralVertex.t) (g : t) : Vertex.t list =
+    fold_pred List.cons g (LiteralVertex.to_vertex vertex g.graph) []
 
 
-  let get_succs_any (vertex : LiteralVertex.t) (graph : t) : Vertex.t list =
-    fold_succ List.cons graph (LiteralVertex.to_vertex vertex graph) []
+  let get_succs_any (vertex : LiteralVertex.t) (g : t) : Vertex.t list =
+    fold_succ List.cons g (LiteralVertex.to_vertex vertex g.graph) []
 
 
   let is_df_root (vertex : LiteralVertex.t) (graph : t) : bool =
@@ -465,40 +548,40 @@ module G = struct
     |> List.filter ~f:(fun (_, target_label, _) -> EdgeLabel.equal label target_label)
 
 
-  let get_succs (graph : t) (vertex : LiteralVertex.t) ~(label : EdgeLabel.t) : V.t list =
+  let get_succs (g : t) (vertex : LiteralVertex.t) ~(label : EdgeLabel.t) : V.t list =
     let out_df_edges =
       fold_edges_e
         (fun ((v1, target_label, _) as edge) acc ->
           if
-            Vertex.equal v1 (LiteralVertex.to_vertex vertex graph)
+            Vertex.equal v1 (LiteralVertex.to_vertex vertex g.graph)
             && EdgeLabel.equal target_label label
           then edge :: acc
           else acc )
-        graph []
+        g []
     in
     out_df_edges >>| trd3
 
 
-  let get_preds (graph : t) (vertex : LiteralVertex.t) ~(label : EdgeLabel.t) : V.t list =
+  let get_preds (g : t) (vertex : LiteralVertex.t) ~(label : EdgeLabel.t) : V.t list =
     let in_df_edges =
       fold_edges_e
         (fun ((_, target_label, v2) as edge) acc ->
           if
-            Vertex.equal v2 (LiteralVertex.to_vertex vertex graph)
+            Vertex.equal v2 (LiteralVertex.to_vertex vertex g.graph)
             && EdgeLabel.equal target_label label
           then edge :: acc
           else acc )
-        graph []
+        g []
     in
     in_df_edges >>| fst3
 
 
-  let is_pointing_to_each_other (v1 : LiteralVertex.t) (v2 : LiteralVertex.t) (graph : t)
+  let is_pointing_to_each_other (v1 : LiteralVertex.t) (v2 : LiteralVertex.t) (g : t)
       ~(label : EdgeLabel.t) : bool =
     let v2_is_v1's_succ =
-      List.mem ~equal:Vertex.equal (get_succs graph v1 ~label) (LiteralVertex.to_vertex v2 graph)
+      List.mem ~equal:Vertex.equal (get_succs g v1 ~label) (LiteralVertex.to_vertex v2 g.graph)
     and v1_is_v2's_succ =
-      List.mem ~equal:Vertex.equal (get_succs graph v2 ~label) (LiteralVertex.to_vertex v1 graph)
+      List.mem ~equal:Vertex.equal (get_succs g v2 ~label) (LiteralVertex.to_vertex v1 g.graph)
     in
     v2_is_v1's_succ && v1_is_v2's_succ
 
@@ -610,30 +693,30 @@ module PathUtils = struct
 
   (** For every leaf, print paths to the leaf from the given source, where the given graph may
       contain a cycle, using a customized DFS algorithm **)
-  let enumerate_paths_from_source_to_leaves (graph : G.t) (source : G.LiteralVertex.t) :
+  let enumerate_paths_from_source_to_leaves (g: G.t) (source : G.LiteralVertex.t) :
       G.V.t list list =
     let rec inner (current : G.LiteralVertex.t) (smol_acc : Vertex.t list)
         (big_acc : Vertex.t list list) (current_havebeenmap : HaveBeenMap.t) : G.V.t list list =
-      if G.is_leaf current graph then List.rev smol_acc :: big_acc
+      if G.is_leaf current g then List.rev smol_acc :: big_acc
       else
-        let children = G.succ graph (G.LiteralVertex.to_vertex current graph) in
+        let children = G.succ g (G.LiteralVertex.to_vertex current g.graph) in
         List.fold
           ~f:(fun acc child ->
             if
-              HaveBeenMap.find (G.LiteralVertex.to_vertex current graph, child) current_havebeenmap
+              HaveBeenMap.find (G.LiteralVertex.to_vertex current g.graph, child) current_havebeenmap
               >= 1
             then acc
             else
               let current_alist_updated =
                 HaveBeenMap.update
-                  (G.LiteralVertex.to_vertex current graph, child)
+                  (G.LiteralVertex.to_vertex current g.graph, child)
                   increment_option current_havebeenmap
               in
               inner (G.LiteralVertex.of_vertex child) (child :: smol_acc) acc current_alist_updated
             )
           ~init:big_acc children
     in
-    inner source [G.LiteralVertex.to_vertex source graph] [] (HaveBeenMap.init graph)
+    inner source [G.LiteralVertex.to_vertex source g.graph] [] (HaveBeenMap.init g)
 
 
   (** Find all paths from the given source to the given destination. **)
@@ -646,295 +729,6 @@ module PathUtils = struct
 end
 
 module Dot = Graph.Graphviz.Dot (G)
-
-module ChainSlice = struct
-  type t =
-    | DefineSlice of (string * string * string * string) (* current_method, access_path, location, using *)
-    | CallSlice of (string * string * string * string) (* current_method, callee, location, with *)
-    | VoidCallSlice of (string * string * string * string) (* current_method, callee, location, with *)
-    | RedefineSlice of (string * string * string) (* current_method, location, access_path *)
-    | DeadSlice of string (* current_method *)
-    | DeadByCycleSlice of string (* current_method *)
-    | Temp of (string * string)
-  (* current_method, location *)
-  [@@deriving equal, compare]
-
-  let to_string (slice : t) : string =
-    match slice with
-    | DefineSlice (curr, ap, loc, using) ->
-        F.asprintf "DefineSlice (%s, %s, %s, %s)" curr ap loc using
-    | CallSlice (curr, callee, loc, with_) ->
-        F.asprintf "CallSlice (%s, %s, %s, %s)" curr callee loc with_
-    | VoidCallSlice (curr, ap, loc, using) ->
-        F.asprintf "VoidCallSlice (%s, %s, %s, %s)" curr ap loc using
-    | RedefineSlice (curr, loc, ap) ->
-        F.asprintf "RedefineSlice (%s, %s, %s)" curr loc ap
-    | DeadSlice curr ->
-        F.asprintf "DeadSlice (%s)" curr
-    | DeadByCycleSlice curr ->
-        F.asprintf "DeadByCycleSlice (%s)" curr
-    | Temp (curr, loc) ->
-        F.asprintf "Temp (%s, %s)" curr loc
-
-
-  let list_to_string (slices : t list) : string =
-    let contents = List.fold ~f:(fun acc slice -> acc ^ to_string slice ^ ", ") slices ~init:"" in
-    "[ " ^ contents ^ " ]"
-
-
-  let is_define slice = match slice with DefineSlice _ -> true | _ -> false
-
-  let is_call slice = match slice with CallSlice _ -> true | _ -> false
-
-  let is_voidcall slice = match slice with VoidCallSlice _ -> true | _ -> false
-
-  let is_redefine slice = match slice with RedefineSlice _ -> true | _ -> false
-
-  let is_dead slice = match slice with DeadSlice _ -> true | _ -> false
-
-  let is_deadbycycle slice = match slice with DeadByCycleSlice _ -> true | _ -> false
-
-  let chain_slice_of_json_assoc (json_assoc : json) : t =
-    match json_assoc with
-    | `Assoc alist -> (
-      match List.Assoc.find_exn alist "status" ~equal:String.equal with
-      | `String "Define" ->
-          let current_method =
-            Util.to_string @@ List.Assoc.find_exn alist "current_method" ~equal:String.equal
-          in
-          let access_path =
-            Util.to_string @@ List.Assoc.find_exn alist "access_path" ~equal:String.equal
-          in
-          let location =
-            Util.to_string @@ List.Assoc.find_exn alist "location" ~equal:String.equal
-          in
-          let using = Util.to_string @@ List.Assoc.find_exn alist "using" ~equal:String.equal in
-          DefineSlice (current_method, access_path, location, using)
-      | `String "Call" ->
-          let current_method =
-            Util.to_string @@ List.Assoc.find_exn alist "current_method" ~equal:String.equal
-          in
-          let callee = Util.to_string @@ List.Assoc.find_exn alist "callee" ~equal:String.equal in
-          let location =
-            Util.to_string @@ List.Assoc.find_exn alist "location" ~equal:String.equal
-          in
-          let with_ = Util.to_string @@ List.Assoc.find_exn alist "with" ~equal:String.equal in
-          CallSlice (current_method, callee, location, with_)
-      | `String "VoidCall" ->
-          let current_method =
-            Util.to_string @@ List.Assoc.find_exn alist "current_method" ~equal:String.equal
-          in
-          let callee = Util.to_string @@ List.Assoc.find_exn alist "callee" ~equal:String.equal in
-          let location =
-            Util.to_string @@ List.Assoc.find_exn alist "location" ~equal:String.equal
-          in
-          let with_ = Util.to_string @@ List.Assoc.find_exn alist "with" ~equal:String.equal in
-          VoidCallSlice (current_method, callee, location, with_)
-      | `String "Redefine" ->
-          let current_method =
-            Util.to_string @@ List.Assoc.find_exn alist "current_method" ~equal:String.equal
-          in
-          let location =
-            Util.to_string @@ List.Assoc.find_exn alist "location" ~equal:String.equal
-          in
-          let access_path =
-            Util.to_string @@ List.Assoc.find_exn alist "access_path" ~equal:String.equal
-          in
-          RedefineSlice (current_method, location, access_path)
-      | `String "Dead" ->
-          let current_method =
-            Util.to_string @@ List.Assoc.find_exn alist "current_method" ~equal:String.equal
-          in
-          DeadSlice current_method
-      | `String "DeadByCycle" ->
-          let current_method =
-            Util.to_string @@ List.Assoc.find_exn alist "current_method" ~equal:String.equal
-          in
-          DeadByCycleSlice current_method
-      | otherwise ->
-          raise @@ Invalid_argument (Yojson.Basic.to_string otherwise) )
-    | _ ->
-        failwith "Type Error1"
-end
-
-module ChainSliceManager = struct
-  let wrapped_chain_list_of_raw_json : json -> json list = Util.to_list
-
-  let chain_slice_list_of_wrapped_chain (json : json) : ChainSlice.t list =
-    match Util.member "chain" json with
-    | `List json_list ->
-        json_list >>| ChainSlice.chain_slice_of_json_assoc
-    | _ ->
-        failwith "Type Error2"
-end
-
-module VertexMaker = struct
-  let vertex_of_chain_slice (chain_slice : ChainSlice.t) : G.V.t =
-    match chain_slice with
-    | DefineSlice (current, _, loc, _) ->
-        (Method.of_string current, LocationSet.of_string loc, ProbQuadruple.initial)
-    | CallSlice (current, callee, loc, _) ->
-        (Method.of_string callee, LocationSet.of_string loc, ProbQuadruple.initial)
-    | VoidCallSlice (current, callee, loc, _) ->
-        (Method.of_string callee, LocationSet.of_string loc, ProbQuadruple.initial)
-    | RedefineSlice (current, loc, _) ->
-        (Method.of_string current, LocationSet.of_string loc, ProbQuadruple.initial)
-    | DeadSlice current ->
-        (Method.of_string current, LocationSet.of_string "{ line }", ProbQuadruple.initial)
-    | DeadByCycleSlice current ->
-        (Method.of_string current, LocationSet.of_string "{ line }", ProbQuadruple.initial)
-    | Temp (current, loc) ->
-        (Method.of_string current, LocationSet.of_string loc, ProbQuadruple.initial)
-
-
-  module VertexSet = Set.Make (Vertex)
-
-  let get_all_vertices (raw_json : json) : G.V.t list =
-    let vertices_with_dup =
-      ChainSliceManager.wrapped_chain_list_of_raw_json raw_json
-      >>= ChainSliceManager.chain_slice_list_of_wrapped_chain
-      |> List.filter ~f:(fun slice ->
-             (not @@ ChainSlice.is_dead slice) && (not @@ ChainSlice.is_deadbycycle slice) )
-      >>| vertex_of_chain_slice
-    in
-    (* remove duplicates by switching to and from a set *)
-    let out = vertices_with_dup |> VertexSet.of_list |> VertexSet.elements in
-    out
-
-
-  let deserialize_all_important_methods () =
-    Deserializer.deserialize_method_txt ()
-    |> List.filter ~f:(fun method_str ->
-           (not @@ String.is_substring method_str ~substring:"lambda")
-           && (not @@ String.is_substring method_str ~substring:"Lambda")
-           && (not @@ String.is_substring method_str ~substring:"<init>")
-           && (not @@ String.is_substring method_str ~substring:"<clinit>") )
-end
-
-module ChainRefiners = struct
-  let parse_skip_func (raw_signature : string) : string =
-    let pattern = Str.regexp ".*\\.\\(.+\\)(.*)" in
-    assert (Str.string_match pattern raw_signature 0) ;
-    Str.matched_group 1 raw_signature
-
-
-  let delete_inner_deads (chain_slices : ChainSlice.t list) : ChainSlice.t list =
-    let all_but_last = List.drop_last_exn chain_slices in
-    let dead_filtered =
-      List.filter
-        ~f:(fun chain_slice ->
-          (not @@ ChainSlice.is_dead chain_slice) && (not @@ ChainSlice.is_deadbycycle chain_slice)
-          )
-        all_but_last
-    in
-    dead_filtered
-
-
-  (** make a stub slice in front of the define slice of the chain. *)
-  let process_head_define (chain_slices : ChainSlice.t list) : ChainSlice.t list =
-    let head_define =
-      if ChainSlice.is_define @@ List.hd_exn chain_slices then List.hd_exn chain_slices
-      else List.nth_exn chain_slices 1
-    in
-    let define_current_method_field, location_field, define_using_field =
-      match head_define with
-      | DefineSlice (current_method, _, location, using_method) ->
-          (current_method, location, using_method)
-      | otherwise ->
-          Printf.printf "\nfailed on: %s\n" (ChainSlice.to_string otherwise) ;
-          failwith "ahahahahah"
-    in
-    let skip_func_method_names = Deserializer.deserialize_skip_func () >>| parse_skip_func in
-    if
-      (not @@ String.equal define_current_method_field define_using_field)
-      &&
-      try List.mem ~equal:String.equal skip_func_method_names (parse_skip_func define_using_field)
-      with Assert_failure _ -> true
-    then Temp (define_using_field, location_field) :: chain_slices
-    else chain_slices
-
-
-  let process_chainslices (chainslices : ChainSlice.t list) : ChainSlice.t list =
-    let processors = [delete_inner_deads; process_head_define] in
-    List.fold ~f:(fun acc processor -> processor acc) ~init:chainslices processors
-end
-
-module EdgeMaker = struct
-  let make_bicycle_chain (list : 'a list) : ('a * 'a) list =
-    let all_but_last = List.drop_last_exn list and all_but_first = List.tl_exn list in
-    List.zip_exn all_but_last all_but_first
-
-
-  (** Refines a raw chain-slice list into a G.E.t list, also emit an optional info of a void-call
-      vertex. *)
-  let refine_bicycle_chain (bicycle_chain : (ChainSlice.t * ChainSlice.t) list) :
-      (ChainSlice.t * ChainSlice.t) list * G.LiteralVertex.t option =
-    if List.is_empty bicycle_chain then ([], None)
-    else
-      let slice1, slice2 = List.last_exn bicycle_chain in
-      match slice2 with
-      | DefineSlice (_, ap, loc, using) as void_call_slice ->
-          let is_frontend_tmp_var_ap = String.is_prefix ~prefix:"($" in
-          if is_frontend_tmp_var_ap ap then
-            (List.slice bicycle_chain 0 (List.length bicycle_chain - 1),
-             Some (Method.of_string using, LocationSet.of_string loc))
-          else (bicycle_chain, None)
-      | _ ->
-          (bicycle_chain, None)
-
-
-  let collect_voidcall_vertices (chain_slices : ChainSlice.t list) : G.LiteralVertex.t list =
-    List.rev
-    @@ List.fold
-         ~f:(fun acc chain_slice ->
-           if ChainSlice.is_voidcall chain_slice then
-             (G.LiteralVertex.of_vertex @@ VertexMaker.vertex_of_chain_slice chain_slice) :: acc
-           else acc )
-         ~init:[] chain_slices
-
-
-  (** Converts a raw chain-slice list into a G.E.t list, together with an optional info of a
-      void-call vertex. *)
-  let edge_list_of_chain_slice_list (chain_slices : ChainSlice.t list) :
-      (G.E.t list * G.LiteralVertex.t list) list =
-    let processed = ChainRefiners.process_chainslices chain_slices in
-    let all_void_calls = collect_voidcall_vertices chain_slices in
-    let bicycle_chain_of_chain_slices = make_bicycle_chain processed in
-    let refined_bicycle_chain, frontend_define_vertex_opt =
-      refine_bicycle_chain bicycle_chain_of_chain_slices
-    in
-    let edge_list =
-      refined_bicycle_chain
-      >>| fun (cs1, cs2) ->
-      ( VertexMaker.vertex_of_chain_slice cs1
-      , EdgeLabel.DataFlow
-      , VertexMaker.vertex_of_chain_slice cs2 )
-    in
-    return
-      ( edge_list
-      , match frontend_define_vertex_opt with
-        | Some frontend_define_vertex ->
-            frontend_define_vertex :: all_void_calls
-        | None ->
-            all_void_calls )
-
-
-  let get_all_edges_and_frontend_defines (raw_json : json) =
-    let edge_list_and_frontend_define_vertex_opt_list =
-      ChainSliceManager.wrapped_chain_list_of_raw_json raw_json
-      >>| ChainSliceManager.chain_slice_list_of_wrapped_chain >>= edge_list_of_chain_slice_list
-    in
-    ( edge_list_and_frontend_define_vertex_opt_list >>= fst
-    , edge_list_and_frontend_define_vertex_opt_list >>= snd )
-
-
-  let get_all_edges (raw_json : json) : G.E.t list =
-    raw_json |> get_all_edges_and_frontend_defines |> fst
-
-
-  let get_all_frontend_define_vertices (raw_json : json) : G.LiteralVertex.t list =
-    raw_json |> get_all_edges_and_frontend_defines |> snd
-end
 
 let identify_trunks (graph : G.t) : G.Trunk.t list =
   let df_only_graph = G.leave_only_df_edges graph in
@@ -956,49 +750,60 @@ let find_trunks_containing_vertex graph vertex =
   List.filter ~f:(fun trunk -> List.mem ~equal:Vertex.equal trunk vertex) all_trunks
 
 
+(* TODO under construction *)
 let all_ns_clusters (graph : G.t) : G.V.t list list =
-  let rec inner (vertex : G.V.t) (acc : G.V.t list) : G.V.t list =
-    let all_ns_bidirectionals =
-      List.filter
-        ~f:(fun other_vertex ->
-          G.is_pointing_to_each_other
-            (G.LiteralVertex.of_vertex vertex)
-            (G.LiteralVertex.of_vertex other_vertex)
-            graph ~label:EdgeLabel.NodeWiseSimilarity )
-        (G.all_vertices_of_graph graph)
-    in
-    let vertices_to_explore =
-      List.filter
-        ~f:(fun vertex -> not @@ List.mem ~equal:Vertex.equal acc vertex)
-        all_ns_bidirectionals
-    in
-    if
-      not
-      @@ G.is_bidirectional_vertex
-           (G.LiteralVertex.of_vertex vertex)
-           graph ~label:EdgeLabel.NodeWiseSimilarity
-      || List.is_empty vertices_to_explore
-    then acc (* we can't recurse anymore *)
-    else
-      List.fold
-        ~f:(fun smol_acc new_vertex -> smol_acc @ inner new_vertex (vertex :: new_vertex :: acc))
-        ~init:[] vertices_to_explore
-  in
-  List.fold
-    ~f:(fun acc vertex ->
-      if not @@ List.mem ~equal:G.V.equal (List.join acc) vertex then
-        let res = inner vertex [] in
-        if List.is_empty res then acc else res :: acc
-      else acc )
-    ~init:[] (G.all_vertices_of_graph graph)
-  >>| List.stable_dedup
+  let module Hashtbl = Caml.Hashtbl in
+  let cache = Hashtbl.create 777 in
+  match Hashtbl.find_opt cache graph with
+  | None ->
+      let rec inner (vertex : G.V.t) (acc : G.V.t list) : G.V.t list =
+        let all_ns_bidirectionals =
+          List.filter
+            ~f:(fun other_vertex ->
+              G.is_pointing_to_each_other
+                (G.LiteralVertex.of_vertex vertex)
+                (G.LiteralVertex.of_vertex other_vertex)
+                graph ~label:EdgeLabel.NodeWiseSimilarity )
+            (G.all_vertices_of_graph graph)
+        in
+        let vertices_to_explore =
+          List.filter
+            ~f:(fun vertex -> not @@ List.mem ~equal:Vertex.equal acc vertex)
+            all_ns_bidirectionals
+        in
+        if
+          not
+          @@ G.is_bidirectional_vertex
+               (G.LiteralVertex.of_vertex vertex)
+               graph ~label:EdgeLabel.NodeWiseSimilarity
+          || List.is_empty vertices_to_explore
+        then acc (* we can't recurse anymore *)
+        else
+          List.fold
+            ~f:(fun smol_acc new_vertex -> smol_acc @ inner new_vertex (vertex :: new_vertex :: acc))
+            ~init:[] vertices_to_explore
+      in
+      let out =
+        List.fold
+          ~f:(fun acc vertex ->
+            if not @@ List.mem ~equal:G.V.equal (List.join acc) vertex then
+              let res = inner vertex [] in
+              if List.is_empty res then acc else res :: acc
+            else acc )
+          ~init:[] (G.all_vertices_of_graph graph)
+        >>| List.stable_dedup
+      in
+      Hashtbl.add cache graph out ;
+      out
+  | Some memoized_result ->
+      memoized_result
 
 
-let recursively_find_preds (graph : G.t) (vertex : G.LiteralVertex.t) ~(label : EdgeLabel.t) :
+let recursively_find_preds (g : G.t) (vertex : G.LiteralVertex.t) ~(label : EdgeLabel.t) :
     G.V.t list =
   let rec inner (current_vertex : G.V.t) (big_acc : G.V.t list) =
     let current_vertex_df_preds =
-      G.get_preds graph (G.LiteralVertex.of_vertex current_vertex) ~label
+      G.get_preds g (G.LiteralVertex.of_vertex current_vertex) ~label
     in
     let to_explore =
       List.filter current_vertex_df_preds ~f:(fun pred ->
@@ -1010,7 +815,7 @@ let recursively_find_preds (graph : G.t) (vertex : G.LiteralVertex.t) ~(label : 
         ~f:(fun smol_acc vertex -> inner vertex (vertex :: smol_acc))
         ~init:big_acc to_explore
   in
-  inner (G.LiteralVertex.to_vertex vertex graph) []
+  inner (G.LiteralVertex.to_vertex vertex g.graph) []
 
 
 (** 어떤 root로부터 시작하는 trunk 중 가장 먼 곳에 있는 leaf *)
