@@ -46,4 +46,3 @@ let get_compilation_unit_subdirs (root_dir : string) : string list =
   Sys.readdir root_dir
   |> Array.map ~f:(fun subdir -> root_dir ^ "/" ^ subdir)
   |> Array.filter ~f:is_directory |> Array.filter ~f:has_java |> Array.to_list
-  >>| fun subdir -> root_dir ^ "/" ^ subdir
