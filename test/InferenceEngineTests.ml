@@ -10,6 +10,7 @@ open RulesOfInference
 open NodeWiseFeatures
 open Yojson.Basic
 open GraphMaker
+open DirectoryManager
 module Json = Yojson.Basic
 
 exception End
@@ -272,9 +273,9 @@ module Notebook39 = struct
   (* how do we make a closure to memoize the output? *)
 
   let f =
-    let x = ref "" in
+    let x = ref "dummy" in
     fun y ->
-      if not @@ String.equal !x "" then !x
+      if not @@ String.equal !x "dummy" then !x
       else (
         for i = 0 to 1000000000 do
           ()
@@ -291,6 +292,28 @@ module Notebook39 = struct
   let new_snapshot = demo ()
 
   let _ = Hashtbl.hash graph <> Hashtbl.hash new_snapshot
+
+  let _ = End
+end
+
+module Notebook40 = struct
+  let root_dir = "/Users/jslee/Taint-Analysis/Code/benchmarks/realworld/sagan"
+
+  (* let () = Sys.chdir root_dir *)
+
+  let _ = Sys.readdir root_dir
+
+  let has_java (dir : string) : bool = not @@ List.is_empty @@ walk_for_extension dir ".java"
+
+  let _ = has_java "./sagan-renderer" (* true *)
+
+  let _ = has_java "./sagan-client" (* false *)
+
+  let _ = has_java "./sagan-site" (* true *)
+
+  let _ = get_compilation_unit_subdirs root_dir
+
+  (* get_compilation_unit_subdirs works nicely *)
 
   let _ = End
 end
