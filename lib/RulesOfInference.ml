@@ -126,8 +126,8 @@ module PropagationRules = struct
       List.exists
         ~f:(fun str ->
           let open NodeWiseFeatures.SingleFeature in
-          let classname = extract_class_name_from_method meth in
-          let methname = extract_method_name_from_method meth in
+          let classname = Method.get_class_name meth in
+          let methname = Method.get_method_name meth in
           String.is_substring ~substring:(classname ^ "." ^ methname) str )
         all_udfs
     in
@@ -391,7 +391,7 @@ module PropagationRules = struct
                 if
                   NodeWiseFeatures.SingleFeature.is_library_code vertex_meth
                   && (not @@ G.is_df_leaf (G.LiteralVertex.of_vertex vertex) graph)
-                  && (not @@ NodeWiseFeatures.SingleFeature.is_initializer vertex_meth)
+                  && (not @@ Method.is_initializer vertex_meth)
                   && (not @@ List.mem ~equal:Vertex.equal ns_clusters_vertices vertex)
                 then
                   let new_dist =
@@ -446,7 +446,7 @@ module PropagationRules = struct
               if
                 NodeWiseFeatures.SingleFeature.is_library_code vertex_meth
                 && (not @@ G.is_df_leaf (G.LiteralVertex.of_vertex vertex) graph)
-                && (not @@ NodeWiseFeatures.SingleFeature.is_initializer vertex_meth)
+                && (not @@ Method.is_initializer vertex_meth)
                 && (not @@ List.mem ~equal:Vertex.equal ns_clusters_vertices vertex)
               then (
                 let new_dist =

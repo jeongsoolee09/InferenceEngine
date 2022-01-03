@@ -20,7 +20,7 @@ let is_initializer_methname (string : String.t) : bool =
 module UniqueID = struct
   let id_regex = Str.regexp "\\(.*\\)\\.?\\([A-Z][a-zA-Z$0-9]+\\)\\.\\([a-zA-Z<>$0-9]+\\)(.*)"
 
-  let extract_package_name_from_id (unique_identifier : string) : string =
+  let get_package_name (unique_identifier : string) : string =
     try
       assert (Str.string_match id_regex unique_identifier 0) ;
       Str.matched_group 1 unique_identifier
@@ -28,75 +28,101 @@ module UniqueID = struct
       failwithf "extract_package_name_from_id failed: %s" unique_identifier ()
 
 
-  let extract_class_name_from_id (unique_identifier : string) : string =
+  let get_class_name (unique_identifier : string) : string =
     try
       assert (Str.string_match id_regex unique_identifier 0) ;
       Str.matched_group 2 unique_identifier
     with Assert_failure _ -> failwithf "extract_class_name_from_id: %s" unique_identifier ()
 
 
-  let extract_method_name_from_id (unique_identifier : string) : string =
+  let get_method_name (unique_identifier : string) : string =
     try
       assert (Str.string_match id_regex unique_identifier 0) ;
       Str.matched_group 3 unique_identifier
     with Assert_failure _ -> failwithf "extract_method_name_from_id: %s" unique_identifier ()
 end
 
-(** Pattern that captures (1) rtntype, (2) class name, and (3) method name from a unique identifier. *)
-let normalstring_regex = Str.regexp "\\(.*\\) \\([a-zA-Z0-9$]+\\)\\.\\([a-zA-Z<>0-9$]+\\)(.*)"
+module NormalString = struct
+  (** Pattern that captures (1) rtntype, (2) class name, and (3) method name from a unique
+      identifier. *)
+  let normalstring_regex = Str.regexp "\\(.*\\) \\([a-zA-Z0-9$]+\\)\\.\\([a-zA-Z<>0-9$]+\\)(.*)"
 
-let extract_rtntype_from_normalstring (methstring : String.t) : string =
-  try
-    assert (Str.string_match normalstring_regex methstring 0) ;
-    Str.matched_group 1 methstring
-  with Assert_failure _ -> failwithf "extract_rtntype_from_normalstring: %s" methstring ()
-
-
-let extract_class_name_from_normalstring (methstring : String.t) : string =
-  try
-    assert (Str.string_match normalstring_regex methstring 0) ;
-    Str.matched_group 2 methstring
-  with Assert_failure _ -> failwithf "extract_class_name_from_normalstring: %s" methstring ()
+  let get_return_type (methstring : String.t) : string =
+    try
+      assert (Str.string_match normalstring_regex methstring 0) ;
+      Str.matched_group 1 methstring
+    with Assert_failure _ -> failwithf "extract_rtntype_from_normalstring: %s" methstring ()
 
 
-let extract_method_name_from_normalstring (methstring : String.t) : string =
-  try
-    assert (Str.string_match normalstring_regex methstring 0) ;
-    Str.matched_group 3 methstring
-  with Assert_failure _ -> failwithf "extract_methstringname_from_normalstring: %s" methstring ()
+  let get_class_name (methstring : String.t) : string =
+    try
+      assert (Str.string_match normalstring_regex methstring 0) ;
+      Str.matched_group 2 methstring
+    with Assert_failure _ -> failwithf "extract_class_name_from_normalstring: %s" methstring ()
 
 
-let initstring_regex = Str.regexp "\\([a-zA-Z0-9$]+\\)\\.\\([a-zA-Z0-9<>$]+\\)(.*)"
+  let get_method_name (methstring : String.t) : string =
+    try
+      assert (Str.string_match normalstring_regex methstring 0) ;
+      Str.matched_group 3 methstring
+    with Assert_failure _ ->
+      failwithf "extract_methstringname_from_normalstring: %s" methstring ()
+end
 
-let extract_class_name_from_initstring (initstring : String.t) : string =
-  try
-    assert (Str.string_match initstring_regex initstring 0) ;
-    Str.matched_group 1 initstring
-  with Assert_failure _ -> failwithf "extract_class_name_from_initstring: %s" initstring ()
+module InitString = struct
+  let initstring_regex = Str.regexp "\\([a-zA-Z0-9$]+\\)\\.\\([a-zA-Z0-9<>$]+\\)(.*)"
 
-
-let extract_method_name_from_initstring (initstring : String.t) : string =
-  try
-    assert (Str.string_match initstring_regex initstring 0) ;
-    Str.matched_group 2 initstring
-  with Assert_failure _ -> failwithf "extract_method_name_from_initstring: %s" initstring ()
-
-
-let extract_rtntype_from_methname (methname : String.t) : string =
-  if String.is_substring ~substring:"<init>" methname then "" (* nothing, bro! *)
-  else extract_rtntype_from_normalstring methname
+  let get_class_name (initstring : String.t) : string =
+    try
+      assert (Str.string_match initstring_regex initstring 0) ;
+      Str.matched_group 1 initstring
+    with Assert_failure _ -> failwithf "extract_class_name_from_initstring: %s" initstring ()
 
 
-let extract_class_name_from_methname (methname : String.t) : string =
-  if String.is_substring ~substring:"<init>" methname then
-    extract_class_name_from_initstring methname
-  else extract_class_name_from_normalstring methname
+  let get_method_name (initstring : String.t) : string =
+    try
+      assert (Str.string_match initstring_regex initstring 0) ;
+      Str.matched_group 2 initstring
+    with Assert_failure _ -> failwithf "extract_method_name_from_initstring: %s" initstring ()
+end
+
+let get_return_type_of_methname (methname : String.t) : string =
+  if is_initializer_methname methname then "" (* nothing, bro! *)
+  else NormalString.get_return_type methname
 
 
-let extract_method_name_from_methname (methname : String.t) : string =
-  if String.is_substring ~substring:"<init>" methname then
-    extract_method_name_from_initstring methname
-  else extract_method_name_from_normalstring methname
+let get_class_name_of_methname (methname : String.t) : string =
+  if is_initializer_methname methname then InitString.get_class_name methname
+  else NormalString.get_class_name methname
+
+
+let get_method_name_of_methname (methname : String.t) : string =
+  if is_initializer_methname methname then InitString.get_method_name methname
+  else NormalString.get_method_name methname
+
+
+let get_return_type (method_ : t) : string =
+  match method_ with
+  | NormalMethod (UDF {methname}) | NormalMethod (API {methname}) ->
+      NormalString.get_return_type methname
+  | Initializer (UDF {methname}) | Initializer (API {methname}) ->
+      ""
+
+
+let get_class_name (method_ : t) : string =
+  match method_ with
+  | NormalMethod (UDF {methname}) | NormalMethod (API {methname}) ->
+      NormalString.get_class_name methname
+  | Initializer (UDF {methname}) | Initializer (API {methname}) ->
+      InitString.get_class_name methname
+
+
+let get_method_name (method_ : t) : string =
+  match method_ with
+  | NormalMethod (UDF {methname}) | NormalMethod (API {methname}) ->
+      NormalString.get_method_name methname
+  | Initializer (UDF {methname}) | Initializer (API {methname}) ->
+      InitString.get_method_name methname
 
 
 let comp_unit_of_methname (methname : String.t) : String.t =
@@ -105,7 +131,7 @@ let comp_unit_of_methname (methname : String.t) : String.t =
   let out =
     List.fold
       ~f:(fun acc (abs_dir, classnames) ->
-        let class_name = extract_class_name_from_methname methname in
+        let class_name = get_class_name_of_methname methname in
         if List.mem classnames class_name ~equal:String.equal then Some abs_dir else None )
       abs_dirs_and_classnames ~init:None
   in
@@ -117,8 +143,8 @@ let comp_unit_of_methname (methname : String.t) : String.t =
 
 
 let is_api_code_methname (methname : String.t) : bool =
-  let classname = extract_class_name_from_methname methname
-  and methname = extract_method_name_from_methname methname in
+  let classname = get_class_name_of_methname methname
+  and methname = get_method_name_of_methname methname in
   let classname_methname = F.asprintf "%s.%s" classname methname in
   List.exists
     ~f:(fun line -> String.is_substring ~substring:classname_methname line)
@@ -138,8 +164,8 @@ let to_string (method_ : t) : string =
 
 let is_api_method (method_ : t) : bool =
   let methname = to_string method_ in
-  let classname = extract_class_name_from_methname methname
-  and methname = extract_method_name_from_methname methname in
+  let classname = get_class_name_of_methname methname
+  and methname = get_method_name_of_methname methname in
   let classname_methname = F.asprintf "%s.%s" classname methname in
   List.exists
     ~f:(fun line -> String.is_substring ~substring:classname_methname line)
@@ -156,10 +182,8 @@ let of_string (string : String.t) : t =
 
 
 let find_unique_identifier_of_method (methname : String.t) : string =
-  let method_classname =
-    if is_initializer_methname methname then extract_class_name_from_initstring methname
-    else extract_class_name_from_normalstring methname
-  and method_method_name = extract_method_name_from_methname methname in
+  let method_classname = get_class_name_of_methname methname
+  and method_method_name = get_method_name_of_methname methname in
   List.find_exn
     ~f:(fun unique_id ->
       String.is_substring

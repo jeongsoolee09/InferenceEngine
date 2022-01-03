@@ -37,7 +37,7 @@ module HealMisPropagation = struct
       G.all_vertices_of_graph graph
       |> List.filter ~f:(fun vertex ->
              let vertex_method = fst3 vertex in
-             NodeWiseFeatures.SingleFeature.is_initializer vertex_method )
+             Method.is_initializer vertex_method )
     in
     let all_init_vertices_with_no_immediate_lib_code =
       List.filter all_init_vertices ~f:(fun vertex ->
@@ -68,7 +68,7 @@ module HealMisPropagation = struct
           else
             let open NodeWiseFeatures.SingleFeature in
             let vertex_method_id = find_unique_identifier_of_method (Vertex.get_method vertex) in
-            let vertex_method_package = UniqueID.extract_package_name_from_id vertex_method_id in
+            let vertex_method_package = Method.UniqueID.get_package_name vertex_method_id in
             if
               String.equal vertex_method_package
                 NodeWiseFeatures.SingleFeature.this_project_package_name

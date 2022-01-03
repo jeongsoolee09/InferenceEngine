@@ -250,8 +250,8 @@ module SimilarVertexPairExtractor = struct
         if
           (not @@ Vertex.equal trunk1_root trunk2_root)
           && not
-               ( (is_initializer @@ Vertex.get_method trunk1_root)
-               || (is_initializer @@ Vertex.get_method trunk2_root) )
+               ( (Method.is_initializer @@ Vertex.get_method trunk1_root)
+               || (Method.is_initializer @@ Vertex.get_method trunk2_root) )
         then
           [ (Vertex.get_method trunk1_root, Vertex.get_method trunk2_root)
           ; (Vertex.get_method trunk2_root, Vertex.get_method trunk1_root) ]
@@ -260,8 +260,8 @@ module SimilarVertexPairExtractor = struct
         if
           (not @@ Vertex.equal trunk1_leaf trunk2_leaf)
           && not
-               ( (is_initializer @@ Vertex.get_method trunk1_leaf)
-               || (is_initializer @@ Vertex.get_method trunk2_leaf) )
+               ( (Method.is_initializer @@ Vertex.get_method trunk1_leaf)
+               || (Method.is_initializer @@ Vertex.get_method trunk2_leaf) )
         then [(fst3 trunk1_leaf, fst3 trunk2_leaf); (fst3 trunk2_leaf, fst3 trunk1_leaf)]
         else []
       in

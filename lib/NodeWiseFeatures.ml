@@ -2,6 +2,7 @@ open ListMonad
 open InfixOperators
 open GraphRepr
 open FeatureMaps
+open Method
 
 exception TODO
 
@@ -19,106 +20,9 @@ module SingleFeature = struct
   (* unique_identifiers are strings of the format {package}.{classname}.{method_name}:{return_type_with_package}
      they are obtained from Procname.pp_unique_id. *)
 
-  let is_initializer (method_ : Method.t) : bool =
-    String.is_substring ~substring:"<init>" (Method.to_string method_)
-
-
-  module UniqueID = struct
-    let extract_package_name_from_id (unique_identifier : string) : string =
-      try
-        assert (Str.string_match id_regex unique_identifier 0) ;
-        Str.matched_group 1 unique_identifier
-      with Assert_failure _ ->
-        failwithf "extract_package_name_from_id failed: %s" unique_identifier ()
-
-
-    let extract_class_name_from_id (unique_identifier : string) : string =
-      try
-        assert (Str.string_match id_regex unique_identifier 0) ;
-        Str.matched_group 2 unique_identifier
-      with Assert_failure _ -> failwithf "extract_class_name_from_id: %s" unique_identifier ()
-
-
-    let extract_method_name_from_id (unique_identifier : string) : string =
-      try
-        assert (Str.string_match id_regex unique_identifier 0) ;
-        Str.matched_group 3 unique_identifier
-      with Assert_failure _ -> failwithf "extract_method_name_from_id: %s" unique_identifier ()
-  end
-
-  (** Pattern that captures (1) rtntype, (2) class name, and (3) method name from a unique
-      identifier. *)
-  let normalstring_regex = Str.regexp "\\(.*\\) \\([a-zA-Z0-9$]+\\)\\.\\([a-zA-Z<>0-9$]+\\)(.*)"
-
-  let extract_rtntype_from_normalstring (method_ : Method.t) : string =
-    let methstring = Method.to_string method_ in
-    try
-      assert (Str.string_match normalstring_regex methstring 0) ;
-      Str.matched_group 1 methstring
-    with Assert_failure _ -> failwithf "extract_rtntype_from_normalstring: %s" methstring ()
-
-
-  let extract_class_name_from_normalstring (method_ : Method.t) : string =
-    let methstring = Method.to_string method_ in
-    try
-      assert (Str.string_match normalstring_regex methstring 0) ;
-      Str.matched_group 2 methstring
-    with Assert_failure _ -> failwithf "extract_class_name_from_normalstring: %s" methstring ()
-
-
-  let extract_method_name_from_normalstring (method_ : Method.t) : string =
-    let methstring = Method.to_string method_ in
-    try
-      assert (Str.string_match normalstring_regex methstring 0) ;
-      Str.matched_group 3 methstring
-    with Assert_failure _ ->
-      failwithf "extract_methstringname_from_normalstring: %s" methstring ()
-
-
-  let initstring_regex = Str.regexp "\\([a-zA-Z0-9$]+\\)\\.\\([a-zA-Z0-9<>$]+\\)(.*)"
-
-  let extract_class_name_from_initstring (init : Method.t) : string =
-    let initstring = Method.to_string init in
-    try
-      assert (Str.string_match initstring_regex initstring 0) ;
-      Str.matched_group 1 initstring
-    with Assert_failure _ -> failwithf "extract_class_name_from_initstring: %s" initstring ()
-
-
-  let extract_method_name_from_initstring (initstring : Method.t) : string =
-    let initstring = Method.to_string initstring in
-    try
-      assert (Str.string_match initstring_regex initstring 0) ;
-      Str.matched_group 2 initstring
-    with Assert_failure _ -> failwithf "extract_method_name_from_initstring: %s" initstring ()
-
-
-  let extract_rtntype_from_method (method_ : Method.t) : string =
-    let methstring = Method.to_string method_ in
-    if String.is_substring ~substring:"<init>" methstring then "" (* nothing, bro! *)
-    else extract_rtntype_from_normalstring method_
-
-
-  let extract_class_name_from_method (method_ : Method.t) : string =
-    let methstring = Method.to_string method_ in
-    if String.is_substring ~substring:"<init>" methstring then
-      extract_class_name_from_initstring method_
-    else extract_class_name_from_normalstring method_
-
-
-  let extract_method_name_from_method (method_ : Method.t) : string =
-    let methstring = Method.to_string method_ in
-    if String.is_substring ~substring:"<init>" methstring then
-      extract_method_name_from_initstring method_
-    else extract_method_name_from_normalstring method_
-
-
   let find_unique_identifier_of_method (method_ : Method.t) : string =
-    let methstring = Method.to_string method_ in
-    let method_classname =
-      if is_initializer method_ then extract_class_name_from_initstring method_
-      else extract_class_name_from_normalstring method_
-    and method_method_name = extract_method_name_from_method method_ in
+    let method_classname = get_class_name method_
+    and method_method_name = get_method_name method_ in
     List.find_exn
       ~f:(fun unique_id ->
         String.is_substring
@@ -130,7 +34,7 @@ module SingleFeature = struct
   let this_project_package_name : string =
     let skip_methods = Deserializer.deserialize_skip_func ()
     and udf_methods = Deserializer.deserialize_method_txt () in
-    UniqueID.extract_package_name_from_id @@ List.hd_exn udf_methods
+    UniqueID.get_package_name @@ List.hd_exn udf_methods
 
 
   let is_this_project_class_initializer (method_ : Method.t) : bool =
@@ -150,7 +54,7 @@ module SingleFeature = struct
     else
       try
         let this_method_id = find_unique_identifier_of_method method_ in
-        let methstring_package = UniqueID.extract_package_name_from_id this_method_id in
+        let methstring_package = UniqueID.get_package_name this_method_id in
         String.equal methstring_package this_project_package_name
       with _ -> (* It's very likely an interface method *)
                 true
@@ -169,8 +73,7 @@ module SingleFeature = struct
     let skip_func_lines = Deserializer.deserialize_skip_func () in
     List.exists
       ~f:(fun line ->
-        let classname = extract_class_name_from_initstring method_
-        and methodname = extract_method_name_from_initstring method_ in
+        let classname = get_class_name method_ and methodname = get_method_name method_ in
         String.is_substring ~substring:(F.asprintf "%s.%s" classname methodname) line
         && String.is_prefix ~prefix:"java." line )
       skip_func_lines
@@ -183,7 +86,7 @@ module SingleFeature = struct
     else
       try
         let this_method_id = find_unique_identifier_of_method method_ in
-        let methstring_package = UniqueID.extract_package_name_from_id this_method_id in
+        let methstring_package = UniqueID.get_package_name this_method_id in
         String.is_prefix ~prefix:"java." methstring_package
       with _ -> (* It's very likely an interface method *)
                 true
@@ -198,7 +101,6 @@ module SingleFeature = struct
 
   let returnval_not_used_in_caller (method_ : Method.t) : bool =
     (* NOTE use partial application on the first two params to type-check *)
-    let methstring = Method.to_string method_ in
     let sexp_loaded = Sexp.parse @@ In_channel.read_all "void_calls.lisp" in
     match sexp_loaded with
     | Done (res, _) ->
@@ -206,14 +108,13 @@ module SingleFeature = struct
           type t = G.LiteralVertex.t list [@@deriving sexp]
         end in
         let void_call_methods = List.map ~f:fst (LVList.t_of_sexp res) in
-        List.mem ~equal:Method.equal void_call_methods (Method.of_string methstring)
+        List.mem ~equal:Method.equal void_call_methods method_
     | Cont _ ->
         failwith "sexp parsing error"
 
 
   let is_library_code (method_ : Method.t) : bool =
-    let classname = extract_class_name_from_method method_
-    and methname = extract_method_name_from_method method_ in
+    let classname = get_class_name method_ and methname = get_method_name method_ in
     let classname_methname = F.asprintf "%s.%s" classname methname in
     List.exists
       ~f:(fun line -> String.is_substring ~substring:classname_methname line)
@@ -221,9 +122,9 @@ module SingleFeature = struct
 
 
   let all_features : t list =
-    [ (fun m -> String (extract_rtntype_from_method m))
-    ; (fun m -> String (extract_class_name_from_method m))
-    ; (fun m -> String (extract_method_name_from_method m))
+    [ (fun m -> String (get_return_type m))
+    ; (fun m -> String (get_class_name m))
+    ; (fun m -> String (get_method_name m))
     ; (fun m -> Bool (is_framework_method m))
     ; (fun m -> Bool (is_library_code m))
     ; (fun m -> Bool (returnval_not_used_in_caller m))
@@ -240,20 +141,18 @@ module PairwiseFeature = struct
 
   let belong_to_same_class ((method1, method2) : Method.t * Method.t) : bool =
     (not @@ (is_this_project_method method1 || is_this_project_method method2))
-    && String.equal
-         (extract_class_name_from_method method1)
-         (extract_class_name_from_method method2)
+    && String.equal (get_class_name method1) (get_class_name method2)
 
 
   let belong_to_same_package ((method1, method2) : Method.t * Method.t) : bool =
     (not @@ (is_this_project_method method1 || is_this_project_method method2))
     && String.equal
-         (UniqueID.extract_package_name_from_id (find_unique_identifier_of_method method1))
-         (UniqueID.extract_package_name_from_id (find_unique_identifier_of_method method2))
+         (UniqueID.get_package_name (find_unique_identifier_of_method method1))
+         (UniqueID.get_package_name (find_unique_identifier_of_method method2))
 
 
   let return_type_is_another's_class ((method1, method2) : Method.t * Method.t) : bool =
-    String.equal (extract_rtntype_from_method method1) (extract_class_name_from_method method2)
+    String.equal (get_return_type method1) (get_return_type method2)
 
 
   let is_both_java_builtin ((method1, method2) : Method.t * Method.t) : bool =
