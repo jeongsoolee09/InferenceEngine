@@ -11,6 +11,7 @@ open NodeWiseFeatures
 open Yojson.Basic
 open GraphMaker
 open DirectoryManager
+open Chain
 module Json = Yojson.Basic
 
 exception End
@@ -32,8 +33,8 @@ let trunk_finder ~(start : G.LiteralVertex.t) ~(end_ : G.LiteralVertex.t) (graph
   let all_trunks = identify_trunks graph in
   List.filter
     ~f:(fun trunk ->
-      Vertex.equal (G.LiteralVertex.to_vertex start graph) (List.hd_exn trunk)
-      && Vertex.equal (G.LiteralVertex.to_vertex end_ graph) (List.last_exn trunk) )
+      Vertex.equal (G.LiteralVertex.to_vertex start graph.graph) (List.hd_exn trunk)
+      && Vertex.equal (G.LiteralVertex.to_vertex end_ graph.graph) (List.last_exn trunk) )
     all_trunks
 
 
@@ -273,15 +274,15 @@ module Notebook39 = struct
   (* how do we make a closure to memoize the output? *)
 
   let f =
-    let x = ref "dummy" in
+    let cache = ref "dummy" in
     fun y ->
-      if not @@ String.equal !x "dummy" then !x
+      if not @@ String.equal !cache "dummy" then !cache
       else (
         for i = 0 to 1000000000 do
           ()
         done ;
         let out = "done!" in
-        x := "done!" ;
+        cache := "done!" ;
         out )
 
 
@@ -316,4 +317,197 @@ module Notebook40 = struct
   (* get_compilation_unit_subdirs works nicely *)
 
   let _ = End
+end
+
+module Notebook41 = struct
+  (* 1. get_compilation_unit_subdirs를 project_root에 대해 실행
+     2. Chain.json을 읽어서 알아낸 Chain들 중, Chain을 compilation_unit_subdir에 대해 파티션
+     3. 각 파티션들에 대해, 파라미터화된 get_all_vertices를 적용 -> 각 compilation unit에 대한 vertices
+     4. edge_list_of_chain_slice_list를 각 파티션들에 대해 적용 -> 각 compilation unit에 대한 edges *)
+
+  let root_dir = "/Users/jslee/Taint-Analysis/Code/benchmarks/realworld/sagan"
+
+  let compilation_unit_subdir_classnames_no_test =
+    get_compilation_unit_subdirs root_dir
+    >>| (fun subdir -> walk_for_extension subdir ".java")
+    >>| List.filter ~f:(not << String.is_substring ~substring:"/test/")
+    (* leave only the *.java *)
+    >>| List.map ~f:(fun absdir -> List.last_exn @@ String.split ~on:'/' absdir)
+    (* leave only the classname *)
+    >>| List.map ~f:(fun filename -> List.hd_exn @@ String.split ~on:'.' filename)
+
+
+  (* wrapping above into a function, we get: *)
+
+  let classnames_by_compilation_unit_no_test (root_dir : string) : string list list =
+    get_compilation_unit_subdirs root_dir
+    >>| (fun subdir -> walk_for_extension subdir ".java")
+    >>| List.filter ~f:(not << String.is_substring ~substring:"/test/")
+    (* leave only the *.java *)
+    >>| List.map ~f:(fun absdir -> List.last_exn @@ String.split ~on:'/' absdir)
+    (* leave only the classname *)
+    >>| List.map ~f:(fun filename -> List.hd_exn @@ String.split ~on:'.' filename)
+
+
+  (* now we prototype the above "collect_chains_belonging_to_compilation_unit". *)
+
+  let renderer_classname_list = List.hd_exn @@ classnames_by_compilation_unit_no_test root_dir
+
+  let all_chains = all_chains_of_json json
+
+  let renderer_chains =
+    List.filter
+      ~f:(fun chain ->
+        List.for_all
+          ~f:(fun chain_slice ->
+            let current_method = ChainSlice.get_current_method chain_slice in
+            if
+              Method.is_frontend current_method
+              || NodeWiseFeatures.SingleFeature.is_library_code (Method.of_string current_method)
+            then true
+            else
+              (* UNSURE Uh... will this introduce a dependency cycle..?? *)
+              let current_method_classname =
+                NodeWiseFeatures.SingleFeature.extract_class_name_from_method
+                  (Method.of_string current_method)
+              in
+              List.mem ~equal:String.equal renderer_classname_list current_method_classname )
+          chain )
+      all_chains
+
+
+  let collect_chains_belonging_to_compilation_unit all_chains classname_list =
+    List.filter
+      ~f:(fun chain ->
+        List.exists
+          ~f:(fun chain_slice ->
+            let current_method = ChainSlice.get_current_method chain_slice in
+            if
+              Method.is_frontend current_method
+              || NodeWiseFeatures.SingleFeature.is_library_code (Method.of_string current_method)
+            then false
+            else
+              (* UNSURE Uh... will this introduce a dependency cycle..?? *)
+              let current_method_classname =
+                NodeWiseFeatures.SingleFeature.extract_class_name_from_method
+                  (Method.of_string current_method)
+              in
+              List.mem ~equal:String.equal classname_list current_method_classname )
+          chain )
+      all_chains
+
+
+  let partition_chains_by_classname_list (classname_lists : string list list)
+      (all_chains : ChainSlice.t list list) : ChainSlice.t list list list =
+    classname_lists >>| collect_chains_belonging_to_compilation_unit all_chains
+
+
+  let _ =
+    partition_chains_by_classname_list (classnames_by_compilation_unit_no_test root_dir) all_chains
+
+
+  (* let _ = collect_chains_belonging_to_compilation_unit all_chains renderer_classname_list *)
+
+  (* it works, but it takes too long. We need a more efficient solution. *)
+
+  let _ = End
+end
+
+module Notebook42 = struct
+  (* we switch for_all to exists, with true to false. *)
+
+  let collect_chains_belonging_to_compilation_unit all_chains classname_list =
+    List.filter
+      ~f:(fun chain ->
+        List.exists
+          ~f:(fun chain_slice ->
+            let current_method = ChainSlice.get_current_method chain_slice in
+            if
+              Method.is_frontend current_method
+              || NodeWiseFeatures.SingleFeature.is_library_code (Method.of_string current_method)
+            then false
+            else
+              (* UNSURE Uh... will this introduce a dependency cycle..?? *)
+              let current_method_classname =
+                NodeWiseFeatures.SingleFeature.extract_class_name_from_method
+                  (Method.of_string current_method)
+              in
+              List.mem ~equal:String.equal classname_list current_method_classname )
+          chain )
+      all_chains
+
+
+  let partition_chains_by_classname_list (classname_lists : string list list)
+      (all_chains : ChainSlice.t list list) : ChainSlice.t list list list =
+    classname_lists >>| collect_chains_belonging_to_compilation_unit all_chains
+
+
+  let classnames_by_compilation_unit_no_test (root_dir : string) : string list list =
+    get_compilation_unit_subdirs root_dir
+    >>| (fun subdir -> walk_for_extension subdir ".java")
+    >>| List.filter ~f:(not << String.is_substring ~substring:"/test/")
+    (* leave only the *.java *)
+    >>| List.map ~f:(fun absdir -> List.last_exn @@ String.split ~on:'/' absdir)
+    (* leave only the classname *)
+    >>| List.map ~f:(fun filename -> List.hd_exn @@ String.split ~on:'.' filename)
+
+
+  let root_dir = "/Users/jslee/Taint-Analysis/Code/benchmarks/realworld/sagan"
+
+  let renderer_classname_list = List.hd_exn @@ classnames_by_compilation_unit_no_test root_dir
+
+  let all_chains = all_chains_of_json json
+
+  let _ = collect_chains_belonging_to_compilation_unit all_chains renderer_classname_list
+
+  (* still takes a lot. *)
+
+  let _ = End
+end
+
+module Notebook43 = struct
+  (* then, we only look at the header of each wrapped_chain. *)
+
+  let all_wrapped_chains = Chain.wrapped_chain_list_of_raw_json json
+
+  let sample_wrapped_chain = List.hd_exn all_wrapped_chains
+
+  let sample_defining_method = Util.member "defining_method" sample_wrapped_chain
+
+  let kernel current_method classname_list =
+    if
+      Method.is_frontend current_method
+      || NodeWiseFeatures.SingleFeature.is_library_code (Method.of_string current_method)
+    then false
+    else
+      (* UNSURE Uh... will this introduce a dependency cycle..?? *)
+      let current_method_classname =
+        NodeWiseFeatures.SingleFeature.extract_class_name_from_method
+          (Method.of_string current_method)
+      in
+      List.mem ~equal:String.equal classname_list current_method_classname
+
+
+  let collect_chains_belonging_to_compilation_unit json classname_list =
+    let all_wrapped_chains = Chain.wrapped_chain_list_of_raw_json json in
+    let* wrapped_chain = all_wrapped_chains in
+    let sample_defining_method =
+      Util.to_string @@ Util.member "defining_method" sample_wrapped_chain
+    in
+    if kernel sample_defining_method classname_list then
+      return @@ chain_slice_list_of_wrapped_chain wrapped_chain
+    else []
+
+  let root_dir = "/Users/jslee/Taint-Analysis/Code/benchmarks/realworld/sagan"
+
+  let renderer_classname_list = List.hd_exn @@ classnames_by_compilation_unit_no_test root_dir
+
+  let _ = collect_chains_belonging_to_compilation_unit json renderer_classname_list
+
+  (* still takes a lot. *)
+
+  let _ = End
+end
+
+module Notebook44 = struct
 end
