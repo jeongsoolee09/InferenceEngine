@@ -213,8 +213,7 @@ module Notebook37 = struct
     NodeWiseSimilarityMap.filter
       (fun (m1, m2) _ ->
         let open NodeWiseFeatures.SingleFeature in
-        let m1_classname = extract_class_name_from_method m1
-        and m2_classname = extract_class_name_from_method m2 in
+        let m1_classname = Method.get_class_name m1 and m2_classname = Method.get_class_name m2 in
         not
           ( List.mem test_java_classnames m1_classname ~equal:String.equal
           || List.mem test_java_classnames m2_classname ~equal:String.equal ) )
@@ -368,8 +367,7 @@ module Notebook41 = struct
             else
               (* UNSURE Uh... will this introduce a dependency cycle..?? *)
               let current_method_classname =
-                NodeWiseFeatures.SingleFeature.extract_class_name_from_method
-                  (Method.of_string current_method)
+                Method.get_class_name (Method.of_string current_method)
               in
               List.mem ~equal:String.equal renderer_classname_list current_method_classname )
           chain )
@@ -389,8 +387,7 @@ module Notebook41 = struct
             else
               (* UNSURE Uh... will this introduce a dependency cycle..?? *)
               let current_method_classname =
-                NodeWiseFeatures.SingleFeature.extract_class_name_from_method
-                  (Method.of_string current_method)
+                Method.get_class_name (Method.of_string current_method)
               in
               List.mem ~equal:String.equal classname_list current_method_classname )
           chain )
@@ -429,8 +426,7 @@ module Notebook42 = struct
             else
               (* UNSURE Uh... will this introduce a dependency cycle..?? *)
               let current_method_classname =
-                NodeWiseFeatures.SingleFeature.extract_class_name_from_method
-                  (Method.of_string current_method)
+                Method.get_class_name (Method.of_string current_method)
               in
               List.mem ~equal:String.equal classname_list current_method_classname )
           chain )
@@ -481,10 +477,7 @@ module Notebook43 = struct
     then false
     else
       (* UNSURE Uh... will this introduce a dependency cycle..?? *)
-      let current_method_classname =
-        NodeWiseFeatures.SingleFeature.extract_class_name_from_method
-          (Method.of_string current_method)
-      in
+      let current_method_classname = Method.get_class_name (Method.of_string current_method) in
       List.mem ~equal:String.equal classname_list current_method_classname
 
 
@@ -498,11 +491,12 @@ module Notebook43 = struct
       return @@ chain_slice_list_of_wrapped_chain wrapped_chain
     else []
 
+
   let root_dir = "/Users/jslee/Taint-Analysis/Code/benchmarks/realworld/sagan"
 
   let renderer_classname_list = List.hd_exn @@ classnames_by_compilation_unit_no_test root_dir
 
-  let _ = collect_chains_belonging_to_compilation_unit json renderer_classname_list
+  (* let _ = collect_chains_belonging_to_compilation_unit json renderer_classname_list *)
 
   (* still takes a lot. *)
 
@@ -510,4 +504,22 @@ module Notebook43 = struct
 end
 
 module Notebook44 = struct
+  (* meh, we then split the graph directly. *)
+  let df_graph =
+    match graph_already_serialized "df_edges" with
+    | None ->
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
+
+
+  (* let's write the logic that splits the graph. *)
+
+  let root_dir = "/Users/jslee/Taint-Analysis/Code/benchmarks/realworld/sagan"
+
+  let renderer_classname_list = List.hd_exn @@ classnames_by_compilation_unit_no_test root_dir
+
+  let _ = End
 end
