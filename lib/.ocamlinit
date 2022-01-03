@@ -1,70 +1,75 @@
 let root =
-  let rec search path = match Sys.file_exists (path ^ "/.ocamlinit") with
-    | false -> search (Filename.dirname path)
-    | true -> path
-  in search (Sys.getcwd ())
-in Sys.chdir root;;
+  let rec search path =
+    match Sys.file_exists (path ^ "/.ocamlinit") with
+    | false ->
+        search (Filename.dirname path)
+    | true ->
+        path
+  in
+  search (Sys.getcwd ())
+in
+Sys.chdir root
+;;
 
-#use "topfind";;
-#require "core";;
-#require "ocamlgraph";;
-#require "yojson";;
+#use "topfind"
+
+#require "core"
+
+#require "ocamlgraph"
+
+#require "yojson"
+
 (* #directory "_build";; *)
 
-module List = Core_kernel.List;;
-module Option = Core_kernel.Option;;
-module In_channel = Core_kernel.In_channel;;
-module Out_channel = Core_kernel.Out_channel;;
-module String = Core_kernel.String;;
-module Int = Core_kernel.Int;;
-module Float = Core_kernel.Float;;
-module Array = Core_kernel.Array;;
-
-open InferenceEngineLib;;
-
-open GraphRepr;;
-open ListMonad;;
-open InfixOperators;;
-open ContextualFeatures;;
-open GraphMaker;;
-open SimilarityHandler;;
-open Loop;;
-open RulesOfInference;;
-open NodeWiseFeatures;;
-open Yojson.Basic;;
-open GraphMaker;;
-open DirectoryManager;;
-
+module List = Core_kernel.List
+module Option = Core_kernel.Option
+module In_channel = Core_kernel.In_channel
+module Out_channel = Core_kernel.Out_channel
+module String = Core_kernel.String
+module Int = Core_kernel.Int
+module Float = Core_kernel.Float
+module Array = Core_kernel.Array
+open InferenceEngineLib
+open GraphRepr
+open ListMonad
+open InfixOperators
+open ContextualFeatures
+open GraphMaker
+open SimilarityHandler
+open Loop
+open RulesOfInference
+open NodeWiseFeatures
+open Yojson.Basic
+open GraphMaker
+open DirectoryManager
+open Chain
 module Json = Yojson.Basic
-type json = Json.t
 
-let json = Deserializer.deserialize_json ()
+let fst3 (a, b, c) = a
 
-let fst3 (a, b, c) = a;;
+let snd3 (a, b, c) = b
 
-let snd3 (a, b, c) = b;;
-
-let trd3 (a, b, c) = c;;
+let trd3 (a, b, c) = c
 
 type json = Json.t
 
 let json = Deserializer.deserialize_json ()
 
-let graph = GraphMaker.init_graph json ~debug:false
+(* let graph = GraphMaker.init_graph json ~debug:false *)
 
-let received_responses = []
+(* let received_responses = [] *)
 
-let nodewise_featuremap = NodeWiseFeatures.init_feature_map graph
+(* let nodewise_featuremap = NodeWiseFeatures.init_feature_map graph *)
 
-let demo () = loop graph received_responses nodewise_featuremap 1
+(* let demo () = loop graph received_responses nodewise_featuremap 1 *)
 
-let trunk_finder ~(start : G.LiteralVertex.t) ~(end_ : G.LiteralVertex.t) (graph : G.t) : trunk list
-    =
-          let all_trunks = identify_trunks graph in
-            List.filter
-                ~f:(fun trunk ->
-      Vertex.equal (G.LiteralVertex.to_vertex start graph.graph) (List.hd_exn trunk)
-            && Vertex.equal (G.LiteralVertex.to_vertex end_ graph.graph) (List.last_exn trunk) )
-                    all_trunks
+(* let trunk_finder ~(start : G.LiteralVertex.t) ~(end_ : G.LiteralVertex.t) (graph : G.t) : trunk list
+     =
+           let all_trunks = identify_trunks graph in
+             List.filter
+                 ~f:(fun trunk ->
+       Vertex.equal (G.LiteralVertex.to_vertex start graph.graph) (List.hd_exn trunk)
+             && Vertex.equal (G.LiteralVertex.to_vertex end_ graph.graph) (List.last_exn trunk) )
+                     all_trunks *)
 
-let vis () = Visualizer.visualize_snapshot graph ~autoopen:true ~micro:false
+(* let vis () = Visualizer.visualize_snapshot graph ~autoopen:true ~micro:false *)
