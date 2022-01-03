@@ -7,6 +7,10 @@ type kind = UDF of {comp_unit: string; methname: string} | API of {methname: str
 
 type t = NormalMethod of kind | Initializer of kind [@@deriving compare, equal, sexp]
 
+let dummy_kind : kind = UDF {comp_unit= ""; methname= "Dummy Dummy.dummy()"}
+
+let dummy = NormalMethod dummy_kind
+
 let is_frontend (string : String.t) : bool =
   String.is_substring ~substring:"$Lambda$" string
   || String.is_substring ~substring:"lambda$" string
@@ -193,5 +197,3 @@ let find_unique_identifier_of_method (methname : String.t) : string =
 
 
 let is_initializer = function Initializer _ -> true | _ -> false
-
-let dummy = of_string "Dummy Dummy.dummy()"
