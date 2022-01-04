@@ -43,6 +43,7 @@ open Yojson.Basic
 open GraphMaker
 open DirectoryManager
 open Chain
+open Method
 module Json = Yojson.Basic
 
 let fst3 (a, b, c) = a
