@@ -12,7 +12,10 @@ module NodeWiseFeatureMap = struct
 
   (** Make a default map. *)
   let init (graph : G.t) : t =
-    List.fold (G.all_non_frontend_methods_of_graph graph) ~f:(fun acc meth -> add meth [Int 0] acc) ~init:empty
+    List.fold
+      (G.all_non_frontend_methods_of_graph graph)
+      ~f:(fun acc meth -> add meth [Int 0] acc)
+      ~init:empty
 
 
   let strong_update (map : t) (meth_ : Method.t) (new_ : feature list) =

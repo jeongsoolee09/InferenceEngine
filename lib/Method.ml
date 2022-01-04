@@ -148,7 +148,9 @@ let string_list_to_string stringlist =
 
 let comp_unit_of_methname (methname : String.t) : String.t =
   let root_dir = Deserializer.deserialize_config () in
-  let abs_dirs_and_classnames = DirectoryManager.Classnames.classnames_by_compilation_unit root_dir in
+  let abs_dirs_and_classnames =
+    DirectoryManager.Classnames.classnames_by_compilation_unit root_dir
+  in
   let out =
     List.find
       ~f:(fun (abs_dir, classnames) ->

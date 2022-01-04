@@ -28,13 +28,17 @@ module TrunkFeatures = struct
       match Int.compare trunk1_length trunk2_length with
       | -1 ->
           (* trunk1 is shorter: prepend some fillers *)
-          let fillers = List.init ~f:(fun _ -> Method.of_string "filler") (trunk2_length - trunk1_length) in
+          let fillers =
+            List.init ~f:(fun _ -> Method.of_string "filler") (trunk2_length - trunk1_length)
+          in
           (fillers @ trunk1_only_methods, trunk2_only_methods)
       | 0 ->
           (trunk1_only_methods, trunk2_only_methods)
       | 1 ->
           (* trunk2 is shorter: prepend some fillers *)
-          let fillers = List.init ~f:(fun _ -> Method.of_string "filler") (trunk1_length - trunk2_length) in
+          let fillers =
+            List.init ~f:(fun _ -> Method.of_string "filler") (trunk1_length - trunk2_length)
+          in
           (trunk1_only_methods, fillers @ trunk2_only_methods)
       | _ ->
           failwith "this is impossible"
@@ -53,13 +57,17 @@ module TrunkFeatures = struct
       match Int.compare trunk1_length trunk2_length with
       | -1 ->
           (* trunk1 is shorter: append some fillers *)
-          let fillers = List.init ~f:(fun _ -> Method.of_string "filler") (trunk2_length - trunk1_length) in
+          let fillers =
+            List.init ~f:(fun _ -> Method.of_string "filler") (trunk2_length - trunk1_length)
+          in
           (trunk1_only_methods @ fillers, trunk2_only_methods)
       | 0 ->
           (trunk1_only_methods, trunk2_only_methods)
       | 1 ->
           (* trunk2 is shorter: append some fillers *)
-          let fillers = List.init ~f:(fun _ -> Method.of_string "filler") (trunk1_length - trunk2_length) in
+          let fillers =
+            List.init ~f:(fun _ -> Method.of_string "filler") (trunk1_length - trunk2_length)
+          in
           (trunk1_only_methods, trunk2_only_methods @ fillers)
       | _ ->
           failwith "this is impossible"
