@@ -42,7 +42,10 @@
   ;; (print f"globbed = {globbed}")
   (setv files-and-contents (read-files globbed))
   ;; (print f"files-and-contents = {(list files-and-contents)}")
-  (remove-duplicate-file files-and-contents))
+  (for [file (dedup-file files-and-contents)]
+    (print file))
+  ;; (remove-duplicate-file files-and-contents)
+  )
 
 
 ;; (defmain []
