@@ -30,25 +30,24 @@ module VertexMaker = struct
   module VertexSet = Set.Make (Vertex)
 
   let get_all_vertices (raw_json : json) : G.V.t list =
+    let test_classnames =
+      DirectoryManager.Classnames.get_test_classnames (Deserializer.deserialize_config ())
+    in
     let vertices_with_dup =
-      ChainSliceManager.wrapped_chain_list_of_raw_json raw_json
-      >>= ChainSliceManager.chain_slice_list_of_wrapped_chain
+      wrapped_chain_list_of_raw_json raw_json
+      >>= chain_slice_list_of_wrapped_chain
       |> List.filter ~f:(fun slice ->
-             (not @@ ChainSlice.is_dead slice) && (not @@ ChainSlice.is_deadbycycle slice) )
+             let current_method = ChainSlice.get_current_method slice in
+             if Method.is_frontend current_method then false
+             else
+               not
+               @@ List.mem ~equal:String.equal test_classnames
+                    (Method.get_class_name_of_methname current_method)
+               && (not @@ ChainSlice.is_dead slice)
+               && (not @@ ChainSlice.is_deadbycycle slice) )
       >>| vertex_of_chain_slice
     in
-    (* remove duplicates by switching to and from a set *)
-    let out = vertices_with_dup |> VertexSet.of_list |> VertexSet.elements in
-    out
-
-
-  let deserialize_all_important_methods () =
-    Deserializer.deserialize_method_txt ()
-    |> List.filter ~f:(fun method_str ->
-           (not @@ String.is_substring method_str ~substring:"lambda")
-           && (not @@ String.is_substring method_str ~substring:"Lambda")
-           && (not @@ String.is_substring method_str ~substring:"<init>")
-           && (not @@ String.is_substring method_str ~substring:"<clinit>") )
+    vertices_with_dup |> VertexSet.of_list |> VertexSet.elements
 end
 
 module ChainRefiners = struct
@@ -161,8 +160,8 @@ module EdgeMaker = struct
 
   let get_all_edges_and_frontend_defines (raw_json : json) =
     let edge_list_and_frontend_define_vertex_opt_list =
-      ChainSliceManager.wrapped_chain_list_of_raw_json raw_json
-      >>| ChainSliceManager.chain_slice_list_of_wrapped_chain >>= edge_list_of_chain_slice_list
+      wrapped_chain_list_of_raw_json raw_json
+      >>| chain_slice_list_of_wrapped_chain >>= edge_list_of_chain_slice_list
     in
     ( edge_list_and_frontend_define_vertex_opt_list >>= fst
     , edge_list_and_frontend_define_vertex_opt_list >>= snd )
@@ -189,14 +188,6 @@ let batch_add_edge (raw_json : json) (graph : G.t) =
   edge_added
 
 
-(* let remove_bogus (graph : G.t) = *)
-(*   let boguses = *)
-(*     G.fold_vertex *)
-(*       (fun ((meth, _, _) as vertex) acc -> if String.is_empty meth then vertex :: acc else acc) *)
-(*       graph [] *)
-(*   in *)
-(*   List.fold ~f:(fun acc bogus -> G.remove_vertex acc bogus) ~init:graph boguses *)
-
 (** Function for debugging by exporting Ocamlgraph to Graphviz Dot *)
 let graph_to_dot (graph : G.t) ?(filename = "initial_graph.dot") : unit =
   let out_channel = Out_channel.create filename in
@@ -205,8 +196,33 @@ let graph_to_dot (graph : G.t) ?(filename = "initial_graph.dot") : unit =
   Out_channel.close out_channel
 
 
-let graph_already_serialized (suffix : string) : string option =
+let graph_already_serialized (suffix : String.t) : String.t option =
   Array.find (Sys.readdir ".") ~f:(fun str -> String.is_substring str ~substring:suffix)
+
+
+exception ThisIsImpossible
+
+exception NotIndependent
+
+let get_subgraph_for_comp_unit (df_graph : G.t) (comp_unit : String.t) : G.t =
+  let all_df_edges = G.fold_edges_e List.cons df_graph [] in
+  let relevant_edges =
+    List.filter all_df_edges ~f:(fun (v1, _, v2) ->
+        let m1 = Vertex.get_method v1 and m2 = Vertex.get_method v2 in
+        match (Method.get_kind m1, Method.get_kind m2) with
+        | UDF {methname= s1}, UDF {methname= s2} ->
+            if String.equal s1 comp_unit && String.equal s2 comp_unit then true
+            else raise NotIndependent
+        | UDF {methname}, API _ ->
+            if String.equal methname comp_unit then true else false
+        | API _, UDF {methname} ->
+            if String.equal methname comp_unit then true else false
+        | API _, API _ ->
+            raise ThisIsImpossible )
+  in
+  List.fold relevant_edges
+    ~f:(fun current_graph edge -> G.add_edge_e current_graph edge)
+    ~init:G.empty
 
 
 let init_graph (json : json) ~(debug : bool) : G.t =

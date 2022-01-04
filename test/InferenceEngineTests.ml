@@ -12,6 +12,7 @@ open Yojson.Basic
 open GraphMaker
 open DirectoryManager
 open Chain
+open Method
 module Json = Yojson.Basic
 
 exception End
@@ -269,33 +270,6 @@ module Notebook38 = struct
   let _ = End
 end
 
-module Notebook39 = struct
-  (* how do we make a closure to memoize the output? *)
-
-  let f =
-    let cache = ref "dummy" in
-    fun y ->
-      if not @@ String.equal !cache "dummy" then !cache
-      else (
-        for i = 0 to 1000000000 do
-          ()
-        done ;
-        let out = "done!" in
-        cache := "done!" ;
-        out )
-
-
-  (* --> This is how we memoize the $hit bro! *)
-
-  let _ = Hashtbl.hash graph
-
-  let new_snapshot = demo ()
-
-  let _ = Hashtbl.hash graph <> Hashtbl.hash new_snapshot
-
-  let _ = End
-end
-
 module Notebook40 = struct
   let root_dir = "/Users/jslee/Taint-Analysis/Code/benchmarks/realworld/sagan"
 
@@ -494,7 +468,7 @@ module Notebook43 = struct
 
   let root_dir = "/Users/jslee/Taint-Analysis/Code/benchmarks/realworld/sagan"
 
-  let renderer_classname_list = List.hd_exn @@ classnames_by_compilation_unit_no_test root_dir
+  (* let renderer_classname_list = List.hd_exn @@ classnames_by_compilation_unit_no_test root_dir *)
 
   (* let _ = collect_chains_belonging_to_compilation_unit json renderer_classname_list *)
 
@@ -519,7 +493,112 @@ module Notebook44 = struct
 
   let root_dir = "/Users/jslee/Taint-Analysis/Code/benchmarks/realworld/sagan"
 
-  let renderer_classname_list = List.hd_exn @@ classnames_by_compilation_unit_no_test root_dir
+  (* let renderer_classname_list = List.hd_exn @@ classnames_by_compilation_unit_no_test root_dir *)
+
+  let all_df_edges = G.fold_edges_e List.cons df_graph []
+
+  exception ThisIsImpossible
+
+  exception NotIndependent
+
+  let renderer_graph =
+    let relevant_edges =
+      List.filter all_df_edges ~f:(fun (v1, _, v2) ->
+          let m1 = Vertex.get_method v1 and m2 = Vertex.get_method v2 in
+          match (Method.get_kind m1, Method.get_kind m2) with
+          | UDF {methname= s1}, UDF {methname= s2} ->
+              if String.equal s1 "renderer" && String.equal s2 "renderer" then true
+              else raise NotIndependent
+          | UDF {methname}, API _ ->
+              if String.equal methname "renderer" then true else false
+          | API _, UDF {methname} ->
+              if String.equal methname "renderer" then true else false
+          | API _, API _ ->
+              raise ThisIsImpossible )
+    in
+    List.fold relevant_edges
+      ~f:(fun current_graph edge -> G.add_edge_e current_graph edge)
+      ~init:G.empty
+
+
+  (* whoa I just killed Utop *)
+
+  let _ = End
+end
+
+(*   (Failure "Could not find comp unit for void BadgeSvg$Path.setDraw(String)")   *)
+
+module Notebook45 = struct
+  let sample = "void BadgeSvg$Path.setDraw(String)"
+
+  let _ = assert (Str.string_match NormalString.normalstring_regex sample 0)
+
+  let _ =
+    print_endline @@ Str.matched_group 1 sample ;
+    print_endline @@ Str.matched_group 2 sample ;
+    print_endline @@ Str.matched_group 3 sample
+
+
+  let sample2 = "LinkRenderer$Rendering MarkdownToHtmlSerializer.createAnchorLink(String)"
+
+  let _ = assert (Str.string_match NormalString.normalstring_regex sample2 0)
+
+  let _ =
+    print_endline @@ Str.matched_group 1 sample2 ;
+    print_endline @@ Str.matched_group 2 sample2 ;
+    print_endline @@ Str.matched_group 3 sample2
+
+
+  let _ = Classnames.classnames_by_compilation_unit (Deserializer.deserialize_config ())
+
+  let _ = Method.comp_unit_of_methname sample2
+
+  (* Oops. This is emitting the error! *)
+
+  let root_dir = Deserializer.deserialize_config ()
+
+  let abs_dirs_and_classnames = Classnames.classnames_by_compilation_unit root_dir
+
+  let methname = sample2
+
+  let out =
+    List.find
+      ~f:(fun (abs_dir, classnames) ->
+        let class_name = get_class_name_of_methname methname in
+        List.mem classnames class_name ~equal:String.equal )
+      abs_dirs_and_classnames
+
+
+  let _ =
+    match out with
+    | None ->
+        failwithf "Could not find comp unit for %s" methname ()
+    | Some (abs_dir, _) ->
+        List.last_exn @@ String.split ~on:'/' abs_dir
+
+
+  let _ = walk_for_extension (root_dir ^ "sagan-renderer/") ".java"
+
+  (* 허미.... 이런 게 있네;; LinkRenderer$Rendering LinkRenderer$Rendering.withAttribute(String,String) 은 API인데
+     skip_func에 없네;;; *)
+
+  (* 이런 경우는 그냥 API로 넘겨버리자. *)
+
+  let model = "Model Model.addAttribute(String,Object)"
+
+  let _ = Method.is_udf_code_methname model
+
+  let _ = End
+end
+
+(* we should check if we can find comp_units for every udf_methods. *)
+
+module Notebook46 = struct
+  let sample = "CacheManager CloudFoundryCacheConfig.redisCacheManager(RedisConnectionFactory,ObjectMapper,SiteProperties)"
+
+  let _ = Method.is_udf_code_methname sample
+
+  (* 으아아악 젠장 뭐가 문젠지 알겠다ㅏㅏㅏ *)
 
   let _ = End
 end

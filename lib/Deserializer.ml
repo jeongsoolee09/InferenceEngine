@@ -37,7 +37,12 @@ let deserialize_method_txt =
     if List.is_empty !cache then (
       let out =
         In_channel.read_lines (project_root ^ "Methods.txt")
-        |> List.filter ~f:(not << String.is_empty)
+        |> List.filter ~f:(fun method_str ->
+               (not @@ String.is_substring method_str ~substring:"lambda")
+               && (not @@ String.is_substring method_str ~substring:"Lambda")
+               && (not @@ String.is_substring method_str ~substring:"<init>")
+               && (not @@ String.is_substring method_str ~substring:"<clinit>")
+               && (not @@ String.is_empty method_str) )
       in
       cache := out ;
       out )

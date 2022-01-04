@@ -35,6 +35,27 @@ module ChainSlice = struct
         F.asprintf "Temp (%s, %s)" curr loc
 
 
+  let get_current_method (chain_slice : t) : string =
+    match chain_slice with
+    | DefineSlice (current_method, _, _, _)
+    | CallSlice (current_method, _, _, _)
+    | VoidCallSlice (current_method, _, _, _)
+    | RedefineSlice (current_method, _, _)
+    | DeadSlice current_method
+    | DeadByCycleSlice current_method
+    | Temp (current_method, _) ->
+        current_method
+
+
+  let get_callee (chain_slice : t) : string =
+    match chain_slice with
+    | DefineSlice (_, _, _, callee) | CallSlice (_, callee, _, _) | VoidCallSlice (_, callee, _, _)
+      ->
+        callee
+    | otherwise ->
+        raise @@ Invalid_argument (to_string otherwise)
+
+
   let list_to_string (slices : t list) : string =
     let contents = List.fold ~f:(fun acc slice -> acc ^ to_string slice ^ ", ") slices ~init:"" in
     "[ " ^ contents ^ " ]"
@@ -52,7 +73,7 @@ module ChainSlice = struct
 
   let is_deadbycycle slice = match slice with DeadByCycleSlice _ -> true | _ -> false
 
-  let chain_slice_of_json_assoc (json_assoc : json) : t =
+  let of_json_assoc (json_assoc : json) : t =
     match json_assoc with
     | `Assoc alist -> (
       match List.Assoc.find_exn alist "status" ~equal:String.equal with
@@ -115,13 +136,22 @@ module ChainSlice = struct
         failwith "Type Error1"
 end
 
-module ChainSliceManager = struct
-  let wrapped_chain_list_of_raw_json : json -> json list = Util.to_list
+type t = ChainSlice.t list [@@deriving equal]
 
-  let chain_slice_list_of_wrapped_chain (json : json) : ChainSlice.t list =
-    match Util.member "chain" json with
-    | `List json_list ->
-        json_list >>| ChainSlice.chain_slice_of_json_assoc
-    | _ ->
-        failwith "Type Error2"
-end
+let wrapped_chain_list_of_raw_json : json -> json list = Util.to_list
+
+let chain_slice_list_of_wrapped_chain (json : json) : t =
+  match Util.member "chain" json with
+  | `List json_list ->
+      json_list >>| ChainSlice.of_json_assoc
+  | _ ->
+      failwith "Type Error2"
+
+
+let all_chains_of_json (json : json) : t list =
+  let cache = ref [] in
+  if List.is_empty !cache then (
+    let out = json |> wrapped_chain_list_of_raw_json >>| chain_slice_list_of_wrapped_chain in
+    cache := out ;
+    out )
+  else !cache
