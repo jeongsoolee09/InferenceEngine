@@ -1,5 +1,5 @@
-root_dir=/Users/jslee/Dropbox/InferenceEngine/
-bin_dir=/Users/jslee/Dropbox/InferenceEngine/_build/default/bin/
+root_dir=$PWD
+bin_dir=$PWD/_build/default/bin/
 
 cd $root_dir
 dune build
