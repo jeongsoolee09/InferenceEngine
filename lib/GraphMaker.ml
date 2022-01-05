@@ -4,7 +4,6 @@ open ListMonad
 open InfixOperators
 open SimilarityHandler
 open Chain
-open Domainslib
 module G = GraphRepr.G
 
 type json = Yojson.Basic.t
@@ -30,16 +29,6 @@ module VertexMaker = struct
 
   module VertexSet = Set.Make (Vertex)
 
-  let parallel_array_map pool arr end_ =
-    let new_arr =
-      try Array.init ~f:(fun _ -> Vertex.dummy) (Array.length arr) with Invalid_argument _ -> [||]
-    in
-    let len = Array.length arr in
-    Task.parallel_for pool ~start:0 ~finish:(len - 1) ~body:(fun i ->
-        new_arr.(i) <- vertex_of_chain_slice arr.(i) ) ;
-    new_arr
-
-
   let get_all_vertices (raw_json : json) : G.V.t list =
     let test_classnames =
       DirectoryManager.Classnames.get_test_classnames (Deserializer.deserialize_config ())
@@ -56,16 +45,9 @@ module VertexMaker = struct
                     (Method.get_class_name current_method)
                && (not @@ ChainSlice.is_dead slice)
                && (not @@ ChainSlice.is_deadbycycle slice) )
-      |> fun x ->
-      print_endline "filtering done\n" ;
-      x
+      >>| vertex_of_chain_slice
     in
-    let arr = Array.of_list intermediate in
-    let pool = Task.setup_pool ~num_additional_domains:60 () in
-    let mapped = Task.run pool (fun _ -> parallel_array_map pool arr (Array.length arr)) in
-    Task.teardown_pool pool ;
-    print_endline "parallel done" ;
-    Array.to_list mapped |> VertexSet.of_list |> VertexSet.elements
+    intermediate |> VertexSet.of_list |> VertexSet.elements
 end
 
 module ChainRefiners = struct
@@ -195,12 +177,34 @@ end
 
 let batch_add_vertex (raw_json : json) (graph : G.t) =
   let out = List.fold ~f:G.add_vertex ~init:graph (VertexMaker.get_all_vertices raw_json) in
+  print_endline "adding vertex done" ;
   out
+
+
+let sequential_add_edge (graph : G.t ref) (all_edges : G.E.t list) =
+  let all_edges_arr = Array.of_list all_edges in
+  for i = 0 to List.length all_edges - 1 do
+    graph := G.add_edge_e !graph all_edges_arr.(i)
+  done
+
+
+let sequential_dedup_edge (all_edges : G.E.t array) (out : G.E.t list ref) =
+  let module EdgeSet = Caml.Set.Make (G.E) in
+  out := all_edges |> Array.to_list |> EdgeSet.of_list |> EdgeSet.elements
 
 
 let batch_add_edge (raw_json : json) (graph : G.t) =
   let all_edges, all_void_calls = EdgeMaker.get_all_edges_and_frontend_defines raw_json in
-  let edge_added = List.fold ~f:(fun acc edge -> G.add_edge_e acc edge) ~init:graph all_edges in
+  let acc = ref graph in
+  let all_edges_arr = Array.of_list all_edges in
+  let deduped = ref [] in
+  (* ================================================== *)
+  sequential_dedup_edge all_edges_arr deduped ;
+  print_endline "deduping edge done." ;
+  sequential_add_edge acc !deduped ;
+  print_endline "adding edge done." ;
+  let edge_added = !acc in
+  (* ================================================== *)
   let out_channel = Out_channel.create "void_calls.lisp" in
   Sexp.output out_channel (Sexp.List (List.map ~f:G.LiteralVertex.sexp_of_t all_void_calls)) ;
   Out_channel.close out_channel ;

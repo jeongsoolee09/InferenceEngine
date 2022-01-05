@@ -175,6 +175,10 @@ module G = struct
   module V = BiDiGraph.V
   module E = BiDiGraph.E
 
+  let edge_equal ((v11, l1, v12) : E.t) ((v21, l2, v22) : E.t) : bool =
+    V.equal v11 v21 && EdgeLabel.equal l1 l2 && V.equal v12 v22
+
+
   let is_directed = BiDiGraph.is_directed
 
   let is_empty g = BiDiGraph.is_empty g.graph
