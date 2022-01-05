@@ -4,6 +4,7 @@ open ListMonad
 open InfixOperators
 open SimilarityHandler
 open Chain
+open Domainslib
 module G = GraphRepr.G
 
 type json = Yojson.Basic.t
@@ -29,11 +30,21 @@ module VertexMaker = struct
 
   module VertexSet = Set.Make (Vertex)
 
+  let parallel_array_map pool arr end_ =
+    let new_arr =
+      try Array.init ~f:(fun _ -> Vertex.dummy) (Array.length arr) with Invalid_argument _ -> [||]
+    in
+    let len = Array.length arr in
+    Task.parallel_for pool ~start:0 ~finish:(len - 1) ~body:(fun i ->
+        new_arr.(i) <- vertex_of_chain_slice arr.(i) ) ;
+    new_arr
+
+
   let get_all_vertices (raw_json : json) : G.V.t list =
     let test_classnames =
       DirectoryManager.Classnames.get_test_classnames (Deserializer.deserialize_config ())
     in
-    let vertices_with_dup =
+    let intermediate =
       wrapped_chain_list_of_raw_json raw_json
       >>= chain_slice_list_of_wrapped_chain
       |> List.filter ~f:(fun slice ->
@@ -42,12 +53,19 @@ module VertexMaker = struct
              else
                not
                @@ List.mem ~equal:String.equal test_classnames
-                    (Method.get_class_name_of_methname current_method)
+                    (Method.get_class_name current_method)
                && (not @@ ChainSlice.is_dead slice)
                && (not @@ ChainSlice.is_deadbycycle slice) )
-      >>| vertex_of_chain_slice
+      |> fun x ->
+      print_endline "filtering done\n" ;
+      x
     in
-    vertices_with_dup |> VertexSet.of_list |> VertexSet.elements
+    let arr = Array.of_list intermediate in
+    let pool = Task.setup_pool ~num_additional_domains:60 () in
+    let mapped = Task.run pool (fun _ -> parallel_array_map pool arr (Array.length arr)) in
+    Task.teardown_pool pool ;
+    print_endline "parallel done" ;
+    Array.to_list mapped |> VertexSet.of_list |> VertexSet.elements
 end
 
 module ChainRefiners = struct
@@ -176,7 +194,8 @@ module EdgeMaker = struct
 end
 
 let batch_add_vertex (raw_json : json) (graph : G.t) =
-  List.fold ~f:G.add_vertex ~init:graph (VertexMaker.get_all_vertices raw_json)
+  let out = List.fold ~f:G.add_vertex ~init:graph (VertexMaker.get_all_vertices raw_json) in
+  out
 
 
 let batch_add_edge (raw_json : json) (graph : G.t) =
@@ -200,36 +219,7 @@ let graph_already_serialized (suffix : String.t) : String.t option =
   Array.find (Sys.readdir ".") ~f:(fun str -> String.is_substring str ~substring:suffix)
 
 
-exception ThisIsImpossible
-
-exception NotIndependent
-
-let get_subgraph_for_comp_unit (df_graph : G.t) (comp_unit : String.t) : G.t =
-  let all_df_edges = G.fold_edges_e List.cons df_graph [] in
-  let relevant_edges =
-    List.filter all_df_edges ~f:(fun (v1, _, v2) ->
-        let m1 = Vertex.get_method v1 and m2 = Vertex.get_method v2 in
-        match (Method.get_kind m1, Method.get_kind m2) with
-        | UDF {methname= s1}, UDF {methname= s2} ->
-            if String.equal s1 comp_unit && String.equal s2 comp_unit then true
-            else raise NotIndependent
-        | UDF {methname}, API _ ->
-            if String.equal methname comp_unit then true else false
-        | API _, UDF {methname} ->
-            if String.equal methname comp_unit then true else false
-        | API _, API _ ->
-            raise ThisIsImpossible )
-  in
-  List.fold relevant_edges
-    ~f:(fun current_graph edge -> G.add_edge_e current_graph edge)
-    ~init:G.empty
-
-
 let init_graph (json : json) ~(debug : bool) : G.t =
-  (* let out = *)
-  (*   G.empty |> batch_add_vertex json |> batch_add_edge json *)
-  (*   |> EstablishSimEdges.make_nodewise_sim_edge |> EstablishSimEdges.make_contextual_sim_edge *)
-  (*   |> remove_bogus *)
   let df_edges_added =
     match graph_already_serialized "df_edges" with
     | None ->
@@ -250,9 +240,6 @@ let init_graph (json : json) ~(debug : bool) : G.t =
         Deserializer.deserialize_graph filename
   in
   print_endline "\nNS edges established.\n" ;
-  let out =
-    EstablishSimEdges.make_contextual_sim_edge nodewise_sim_edges_added
-    (* |> remove_bogus *)
-  in
+  let out = EstablishSimEdges.make_contextual_sim_edge nodewise_sim_edges_added in
   if debug then graph_to_dot out ~filename:(make_now_string 9 ^ ".dot") ;
   out
