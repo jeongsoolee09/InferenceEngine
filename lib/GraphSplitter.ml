@@ -3,8 +3,6 @@ open InfixOperators
 open GraphRepr
 module Hashtbl = Caml.Hashtbl
 
-exception TODO
-
 module CompUnit = struct
   type t = Known of string | Unknown [@@deriving equal]
 end
@@ -33,8 +31,8 @@ let create_comp_unit_lookup_table (all_methods : Method.t list) : (Method.t, Com
   out
 
 
-let split_graph_by_single_comp_unit (df_graph : G.t) (comp_unit_name : String.t)
-    (lookup_table : (Method.t, CompUnit.t) Hashtbl.t) : G.t =
+let split_graph_by_single_comp_unit (df_graph : G.t)
+    (lookup_table : (Method.t, CompUnit.t) Hashtbl.t) (comp_unit_name : String.t) : G.t =
   let all_vertices = G.all_non_frontend_vertices_of_graph df_graph
   and all_methods = G.all_methods_of_graph df_graph
   and all_edges = G.fold_edges_e List.cons df_graph [] in
@@ -71,4 +69,4 @@ let split_graph_by_comp_unit (graph : G.t) : G.t list =
     DirectoryManager.get_compilation_unit_subdirs (Deserializer.deserialize_config ())
   in
   let lookup_table = create_comp_unit_lookup_table (G.all_methods_of_graph graph) in
-  List.map all_comp_units ~f:(fun comp_unit -> raise TODO)
+  all_comp_units >>| split_graph_by_single_comp_unit graph lookup_table
