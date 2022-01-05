@@ -116,24 +116,6 @@ let get_method_name (method_ : t) : string =
   else NormalString.get_method_name method_
 
 
-let get_comp_unit (method_ : t) : String.t =
-  let root_dir = Deserializer.deserialize_config () in
-  let abs_dirs_and_classnames =
-    DirectoryManager.Classnames.classnames_by_compilation_unit root_dir
-  in
-  let out =
-    List.find
-      ~f:(fun (abs_dir, classnames) ->
-        List.mem classnames (get_class_name method_) ~equal:String.equal )
-      abs_dirs_and_classnames
-  in
-  match out with
-  | None ->
-      failwithf "Could not find comp unit for %s" method_ ()
-  | Some (abs_dir, _) ->
-      List.last_exn @@ String.split ~on:'/' abs_dir
-
-
 let is_api (method_ : t) : bool =
   try
     let classname = get_class_name method_ and methodname = get_method_name method_ in
