@@ -145,6 +145,8 @@ module Notebook47 = struct
   (* this was the bottleneck, and we memoized it!! *)
   let abs_dirs_and_classnames = DirectoryManager.Classnames.classnames_by_compilation_unit root_dir
 
+  let _ = List.length abs_dirs_and_classnames
+
   let out =
     List.find
       ~f:(fun (abs_dir, classnames) ->
@@ -154,7 +156,49 @@ module Notebook47 = struct
 
   let _ = get_comp_unit method_
 
-  let _ = End
-
   (* Memoization Rocks!!!!!!!!!!!! *)
+
+  let all_vertices = G.all_vertices_of_graph df_edges_added
+
+  let _ = List.length all_vertices
+
+  let renderer_graph = List.nth_exn splitted 0
+
+  let renderer_vertices = G.all_vertices_of_graph renderer_graph
+
+  let _ = List.length renderer_vertices
+
+  let site_graph = List.nth_exn splitted 1
+
+  let site_vertices = G.all_vertices_of_graph site_graph
+
+  let _ = List.mem (site_vertices >>| Vertex.get_method) method_ ~equal:String.equal (* OK *)
+
+  let _ = List.length site_vertices
+
+  let _ =
+    List.iter all_vertices ~f:(fun vertex ->
+        let is_in_renderer = List.mem ~equal:Vertex.equal renderer_vertices vertex
+        and is_in_site = List.mem ~equal:Vertex.equal site_vertices vertex in
+        if not (is_in_renderer || is_in_site) then print_endline (Vertex.get_method vertex) )
+
+
+  (* GuideType GuideType.fromName(String) *)
+  (* GuideType GuideType.fromRepositoryName(String) *)
+  (* LocalDate ZonedDateTime.toLocalDate() *)
+  (* Predicate GuideType.callsite_sagan.renderer.guides.GuideType$Lambda$_3_7(String) *)
+  (* Predicate GuideType.callsite_sagan.renderer.guides.GuideType$Lambda$_4_7(String) *)
+  (* Predicate GuideType.callsite_sagan.site.renderer.GuideType$Lambda$_3_7(String) *)
+  (* String GuideType.stripPrefix(String) *)
+  (* String GuideType.stripPrefix(String) *)
+  (* String String.replaceFirst(String,String) *)
+  (* boolean LocalDate.isAfter(ChronoLocalDate) *)
+  (* boolean LocalDate.isBefore(ChronoLocalDate) *)
+  (* boolean Period.lambda$toCalendarFilter$0(VEvent) *)
+  (* void BadgeSvg$GraphicElement.setText(String) *)
+  (* void BadgeSvg$GraphicElement.setText(String) *)
+  (* void ConfigurableEnvironment.addActiveProfile(String) *)
+  (* void RedisAccessor.setConnectionFactory(RedisConnectionFactory) *)
+
+  let _ = End
 end

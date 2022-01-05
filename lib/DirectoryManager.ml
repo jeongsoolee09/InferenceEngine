@@ -92,18 +92,23 @@ end
 
 module Classnames = struct
   let classnames_by_compilation_unit =
-    let cache = ref [] in
+    let cache = Hashtbl.create 777 in
     fun (root_dir : string) : (string * string list) list ->
-      if List.is_empty !cache then (
-        let absdirs = get_compilation_unit_absdirs root_dir in
-        let* absdir = absdirs in
-        let classnames_in_this_absdir =
-          walk_for_extension absdir ".java" >>= ClassnameScraper.scrape_classes_in_single_file
-        in
-        let out = return @@ (absdir, classnames_in_this_absdir) in
-        cache := out ;
-        out )
-      else !cache
+      match Hashtbl.find_opt cache root_dir with
+      | None ->
+          let absdirs = get_compilation_unit_absdirs root_dir in
+          let out =
+            absdirs
+            >>| fun absdir ->
+            let classnames_in_this_absdir =
+              walk_for_extension absdir ".java" >>= ClassnameScraper.scrape_classes_in_single_file
+            in
+            (absdir, classnames_in_this_absdir)
+          in
+          Hashtbl.add cache root_dir out ;
+          out
+      | Some res ->
+          res
 
 
   let get_test_classnames (root_dir : string) =
