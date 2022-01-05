@@ -1,6 +1,7 @@
 open ListMonad
 open InfixOperators
 module F = Format
+module Hashtbl = Caml.Hashtbl
 
 let is_directory (abs_dir : string) : bool =
   match Sys.is_directory abs_dir with `Yes -> true | _ -> false
@@ -68,10 +69,20 @@ module ClassnameScraper = struct
     inner @@ String.split ~on:' ' class_decl
 
 
-  let scrape_classes_in_single_file (file_absdir : string) : string list =
-    let file_line_by_line = In_channel.read_lines file_absdir in
-    let class_decl_lines = List.filter file_line_by_line ~f:is_class_decl in
-    class_decl_lines >>| extract_classname_from_class_decl
+  let scrape_classes_in_single_file =
+    let cache = Caml.Hashtbl.create 777 in
+    fun (file_absdir : string) : string list ->
+      match Hashtbl.find_opt cache file_absdir with
+      | None ->
+          let out =
+            let file_line_by_line = In_channel.read_lines file_absdir in
+            let class_decl_lines = List.filter file_line_by_line ~f:is_class_decl in
+            class_decl_lines >>| extract_classname_from_class_decl
+          in
+          Hashtbl.add cache file_absdir out ;
+          out
+      | Some res ->
+          res
 
 
   let scrape_classes_in_directory (root_dir : string) : string list =
@@ -80,13 +91,19 @@ module ClassnameScraper = struct
 end
 
 module Classnames = struct
-  let classnames_by_compilation_unit (root_dir : string) : (string * string list) list =
-    let absdirs = get_compilation_unit_absdirs root_dir in
-    let* absdir = absdirs in
-    let classnames_in_this_absdir =
-      walk_for_extension absdir ".java" >>= ClassnameScraper.scrape_classes_in_single_file
-    in
-    return @@ (absdir, classnames_in_this_absdir)
+  let classnames_by_compilation_unit =
+    let cache = ref [] in
+    fun (root_dir : string) : (string * string list) list ->
+      if List.is_empty !cache then (
+        let absdirs = get_compilation_unit_absdirs root_dir in
+        let* absdir = absdirs in
+        let classnames_in_this_absdir =
+          walk_for_extension absdir ".java" >>= ClassnameScraper.scrape_classes_in_single_file
+        in
+        let out = return @@ (absdir, classnames_in_this_absdir) in
+        cache := out ;
+        out )
+      else !cache
 
 
   let get_test_classnames (root_dir : string) =

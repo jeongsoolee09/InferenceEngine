@@ -7,22 +7,32 @@ module CompUnit = struct
   type t = Known of string | Unknown [@@deriving equal]
 end
 
-let get_comp_unit (method_ : Method.t) : CompUnit.t =
-  let root_dir = Deserializer.deserialize_config () in
-  let abs_dirs_and_classnames =
-    DirectoryManager.Classnames.classnames_by_compilation_unit root_dir
-  in
-  let out =
-    List.find
-      ~f:(fun (abs_dir, classnames) ->
-        List.mem classnames (Method.get_class_name method_) ~equal:String.equal )
-      abs_dirs_and_classnames
-  in
-  match out with
-  | None ->
-      Unknown
-  | Some (abs_dir, _) ->
-      Known (List.last_exn @@ String.split ~on:'/' abs_dir)
+let get_comp_unit =
+  let cache = Hashtbl.create 777 in
+  fun (method_ : Method.t) : CompUnit.t ->
+    match Hashtbl.find_opt cache method_ with
+    | None ->
+        let (out : CompUnit.t) =
+          let root_dir = Deserializer.deserialize_config () in
+          let abs_dirs_and_classnames =
+            DirectoryManager.Classnames.classnames_by_compilation_unit root_dir
+          in
+          let out =
+            List.find
+              ~f:(fun (abs_dir, classnames) ->
+                List.mem classnames (Method.get_class_name method_) ~equal:String.equal )
+              abs_dirs_and_classnames
+          in
+          match out with
+          | None ->
+              Unknown
+          | Some (abs_dir, _) ->
+              Known (List.last_exn @@ String.split ~on:'/' abs_dir)
+        in
+        Hashtbl.add cache method_ out ;
+        out
+    | Some res ->
+        res
 
 
 let create_comp_unit_lookup_table (all_methods : Method.t list) : (Method.t, CompUnit.t) Hashtbl.t =
@@ -33,6 +43,7 @@ let create_comp_unit_lookup_table (all_methods : Method.t list) : (Method.t, Com
 
 let split_graph_by_single_comp_unit (df_graph : G.t)
     (lookup_table : (Method.t, CompUnit.t) Hashtbl.t) (comp_unit_name : String.t) : G.t =
+  print_endline @@ F.asprintf "splitting for %s..." comp_unit_name ;
   let all_vertices = G.all_non_frontend_vertices_of_graph df_graph
   and all_methods = G.all_methods_of_graph df_graph
   and all_edges = G.fold_edges_e List.cons df_graph [] in

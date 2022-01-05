@@ -13,6 +13,7 @@ open GraphMaker
 open DirectoryManager
 open Chain
 open Method
+open GraphSplitter
 module Json = Yojson.Basic
 
 exception End
@@ -37,6 +38,7 @@ let trunk_finder ~(start : G.LiteralVertex.t) ~(end_ : G.LiteralVertex.t) (graph
       Vertex.equal (G.LiteralVertex.to_vertex start graph.graph) (List.hd_exn trunk)
       && Vertex.equal (G.LiteralVertex.to_vertex end_ graph.graph) (List.last_exn trunk) )
     all_trunks
+
 
 (*   (Failure "Could not find comp unit for void BadgeSvg$Path.setDraw(String)")   *)
 
@@ -106,11 +108,53 @@ end
 (* we should check if we can find comp_units for every udf_methods. *)
 
 module Notebook46 = struct
-  let sample = "CacheManager CloudFoundryCacheConfig.redisCacheManager(RedisConnectionFactory,ObjectMapper,SiteProperties)"
+  let sample =
+    "CacheManager \
+     CloudFoundryCacheConfig.redisCacheManager(RedisConnectionFactory,ObjectMapper,SiteProperties)"
+
 
   let _ = Method.is_udf sample
 
   (* 으아아악 젠장 뭐가 문젠지 알겠다ㅏㅏㅏ *)
 
   let _ = End
+end
+
+module Notebook47 = struct
+  let df_edges_added =
+    match graph_already_serialized "df_edges" with
+    | None ->
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
+
+
+  let splitted = split_graph_by_comp_unit df_edges_added
+
+  let _ = create_comp_unit_lookup_table (G.all_methods_of_graph df_edges_added)
+
+  let method_ =
+    "CacheManager \
+     CloudFoundryCacheConfig.redisCacheManager(RedisConnectionFactory,ObjectMapper,SiteProperties)"
+
+
+  let root_dir = Deserializer.deserialize_config ()
+
+  (* this was the bottleneck, and we memoized it!! *)
+  let abs_dirs_and_classnames = DirectoryManager.Classnames.classnames_by_compilation_unit root_dir
+
+  let out =
+    List.find
+      ~f:(fun (abs_dir, classnames) ->
+        List.mem classnames (Method.get_class_name method_) ~equal:String.equal )
+      abs_dirs_and_classnames
+
+
+  let _ = get_comp_unit method_
+
+  let _ = End
+
+  (* Memoization Rocks!!!!!!!!!!!! *)
 end

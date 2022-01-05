@@ -107,7 +107,8 @@ let get_return_type (method_ : t) : string =
 
 
 let get_class_name (method_ : t) : string =
-  if is_initializer method_ then InitString.get_class_name method_
+  if String.is_prefix method_ ~prefix:"__" then ""
+  else if is_initializer method_ then InitString.get_class_name method_
   else NormalString.get_class_name method_
 
 
