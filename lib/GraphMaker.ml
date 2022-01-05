@@ -220,7 +220,8 @@ let graph_to_dot (graph : G.t) ?(filename = "initial_graph.dot") : unit =
 
 
 let graph_already_serialized (suffix : String.t) : String.t option =
-  Array.find (Sys.readdir ".") ~f:(fun str -> String.is_substring str ~substring:suffix)
+  Array.find (Sys.readdir ".") ~f:(fun str ->
+      (not @@ String.is_prefix str ~prefix:".") && String.is_substring str ~substring:suffix )
 
 
 let init_graph (json : json) ~(debug : bool) : G.t =
