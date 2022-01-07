@@ -4,9 +4,9 @@ module F = Format
 
 exception TODO
 
-type single_annot = {name: string; params: (string * string) list}
+type single_annot = {name: string; params: (string * string) list} [@@deriving equal]
 
-type t = single_annot list
+type t = single_annot list [@@deriving equal]
 
 let get_name (single_annot : single_annot) : string = single_annot.name
 
@@ -81,3 +81,17 @@ let to_string (annot_list : t) : string =
 let of_string (string : string) : t = string |> capture_angled_brackets >>| single_annot_of_string
 
 (* REMEMBER: WE DON'T NEED TEST CLASSES/METHODS!!! *)
+
+let get_annots (method_ : Method.t) : t =
+  let annot_str_alist = Deserializer.deserialize_annots () in
+  let this_method_annot =
+    List.Assoc.find_exn
+      ~equal:(fun this method_unique_id ->
+        String.equal (Method.find_unique_identifier this) method_unique_id )
+      annot_str_alist method_
+  in
+  of_string this_method_annot
+
+
+let has_same_annotation (method1 : Method.t) (method2 : Method.t) : bool =
+  equal (get_annots method1) (get_annots method2)
