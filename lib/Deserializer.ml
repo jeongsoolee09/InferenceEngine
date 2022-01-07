@@ -83,3 +83,16 @@ let deserialize_callgraph =
       cache := out ;
       out )
     else !cache
+
+
+let deserialize_annots =
+  let cache = ref [] in
+  fun () : (string * string) list ->
+    if List.is_empty !cache then (
+      let out =
+        let fd = In_channel.create "Annotations.json" in
+        Json.from_channel fd |> Util.to_assoc >>| fun (string, json) -> (string, Util.to_string json)
+      in
+      cache := out ;
+      out )
+    else !cache
