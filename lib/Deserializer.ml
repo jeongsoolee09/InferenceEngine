@@ -61,6 +61,7 @@ let deserialize_json =
         let marshal_in_chan = In_channel.create (find_serialized_yojson ()) in
         let from_marshal = Marshal.from_channel marshal_in_chan in
         In_channel.close marshal_in_chan ;
+        cache := from_marshal ;
         from_marshal )
     else !cache
 
