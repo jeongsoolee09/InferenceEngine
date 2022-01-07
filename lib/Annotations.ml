@@ -12,9 +12,6 @@ let get_name (single_annot : single_annot) : string = single_annot.name
 
 let get_param (single_annot : single_annot) = single_annot.params
 
-(* let to_string (single_annot : single_annot) : string = *)
-(*   F.asprintf "%s: %s" single_annot.name single_annot.params *)
-
 let capture_angled_brackets (string : string) =
   String.fold
     ~f:(fun (is_capturing, smol_acc, big_acc) char ->
@@ -63,4 +60,24 @@ let single_annot_of_string : string -> single_annot =
   split_single_annot_string >> single_annot_of_splitted_string
 
 
+let string_of_single_annot (single_annot : single_annot) : string =
+  let acc =
+    List.fold
+      ~f:(fun acc (param, paramval) -> F.asprintf "%s=%s," param paramval)
+      ~init:(single_annot.name ^ "(") single_annot.params
+  in
+  acc ^ ")"
+
+
+let to_string (annot_list : t) : string =
+  let acc =
+    List.fold
+      ~f:(fun acc annot -> acc ^ F.asprintf "%s," (string_of_single_annot annot))
+      ~init:"" annot_list
+  in
+  "[" ^ acc ^ "]"
+
+
 let of_string (string : string) : t = string |> capture_angled_brackets >>| single_annot_of_string
+
+(* REMEMBER: WE DON'T NEED TEST CLASSES/METHODS!!! *)
