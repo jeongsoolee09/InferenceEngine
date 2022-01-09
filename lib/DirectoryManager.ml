@@ -111,10 +111,20 @@ module Classnames = struct
           res
 
 
-  let get_test_classnames (root_dir : string) =
-    walk_for_extension root_dir ".java"
-    |> List.filter ~f:(String.is_substring ~substring:"/test/")
-    >>| extract_filename_without_extension_and_dirs
+  let get_test_classnames =
+    let cache = Hashtbl.create 777 in
+    fun (root_dir : string) : string list ->
+      match Hashtbl.find_opt cache root_dir with
+      | None ->
+          let out =
+            walk_for_extension root_dir ".java"
+            |> List.filter ~f:(String.is_substring ~substring:"/test/")
+            >>| extract_filename_without_extension_and_dirs
+          in
+          Hashtbl.add cache root_dir out ;
+          out
+      | Some res ->
+          res
 
 
   let get_comp_unit_classnames (root_dir : string) (comp_unit : string) =
