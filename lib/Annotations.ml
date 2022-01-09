@@ -4,6 +4,8 @@ module F = Format
 
 exception TODO
 
+module Hashtbl = Caml.Hashtbl
+
 type single_annot = {name: string; params: (string * string) list} [@@deriving equal]
 
 type t = single_annot list [@@deriving equal]
@@ -12,36 +14,22 @@ let get_name (single_annot : single_annot) : string = single_annot.name
 
 let get_param (single_annot : single_annot) = single_annot.params
 
-let capture_angled_brackets (string : string) =
-  String.fold
-    ~f:(fun (is_capturing, smol_acc, big_acc) char ->
-      if is_capturing then
-        if Char.equal char '>' then (false, [], (char :: smol_acc) :: big_acc)
-        else (is_capturing, char :: smol_acc, big_acc)
-      else if Char.equal char '<' then (true, char :: smol_acc, big_acc)
-      else (is_capturing, smol_acc, big_acc) )
-    ~init:(String.is_prefix ~prefix:"<" string, [], [])
-    string
-  |> trd3 >>| List.rev >>| String.of_char_list |> List.rev
+let capture_nonempty_angled_brackets (string : string) =
+  let regex = Re2.create_exn "([^()<>\s]+(\([^()<>]*\))?)" in
+  Re2.find_all_exn regex string
 
 
 let split_single_annot_string (string : string) : string list =
-  let regexp = Str.regexp "<\\([^<^(^)^>]+\\)\\(([^(^)]+)\\)*)?>" in
-  assert (Str.string_match regexp string 0) ;
-  let acc = ref [] in
-  List.iteri
-    ~f:(fun index _ -> try acc := Str.matched_group index string :: !acc with _ -> ())
-    [0; 1; 2] ;
-  List.tl_exn @@ List.rev @@ !acc
+  let regex = Re2.create_exn "([^()<>\s]+(\([^()<>]*\))?)" in
+  Re2.find_all_exn regex string
 
 
 let split_up_input_sig (input_sig : string) : (string * string) list =
-  String.split ~on:',' input_sig
-  >>| fun split ->
-  let split_on_equal = String.split ~on:'=' split in
-  let filter char = Char.equal '(' char || Char.equal ')' char || Char.equal ' ' char in
-  ( String.strip ~drop:filter @@ List.nth_exn split_on_equal 0
-  , String.strip ~drop:filter @@ List.nth_exn split_on_equal 1 )
+  let regex = Re2.create_exn "([a-z]+=\\\".+\\\")" in
+  let split_on_comma = Re2.find_all_exn regex input_sig in
+  split_on_comma
+  >>| fun str ->
+  (List.nth_exn (String.split ~on:'=' str) 0, List.nth_exn (String.split ~on:'=' str) 1)
 
 
 let single_annot_of_splitted_string (string_list : string list) : single_annot =
@@ -78,20 +66,33 @@ let to_string (annot_list : t) : string =
   "[" ^ acc ^ "]"
 
 
-let of_string (string : string) : t = string |> capture_angled_brackets >>| single_annot_of_string
+let of_string (string : string) : t =
+  string |> capture_nonempty_angled_brackets >>| single_annot_of_string
+
 
 (* REMEMBER: WE DON'T NEED TEST CLASSES/METHODS!!! *)
 
-let get_annots (method_ : Method.t) : t =
-  let annot_str_alist = Deserializer.deserialize_annots () in
-  let this_method_annot =
-    List.Assoc.find_exn
-      ~equal:(fun this method_unique_id ->
-        String.equal (Method.find_unique_identifier this) method_unique_id )
-      annot_str_alist method_
-  in
-  of_string this_method_annot
+let make_annot_lookup_table =
+  let cache = ref (Hashtbl.create 777) in
+  fun () ->
+    match Hashtbl.length !cache with
+    | 0 ->
+        let out = Hashtbl.create 777 in
+        List.iter
+          ~f:(fun (methname, annot_str) ->
+            if not @@ Method.is_testcode methname then (
+              print_endline "==================================================" ;
+              print_endline methname ;
+              print_endline annot_str ;
+              Hashtbl.add out methname (of_string annot_str) ) )
+          (Deserializer.deserialize_annots ()) ;
+        cache := out ;
+        out
+    | _ ->
+        !cache
 
 
-let has_same_annotation (method1 : Method.t) (method2 : Method.t) : bool =
-  equal (get_annots method1) (get_annots method2)
+let get_annots = Hashtbl.find (make_annot_lookup_table ())
+
+(* let has_same_annotation (method1 : Method.t) (method2 : Method.t) : bool = *)
+(*   equal (get_annots method1) (get_annots method2) *)

@@ -5,5 +5,5 @@
 (library
  (name InferenceEngineLib)
  (flags (:standard -open Core))
- (libraries utop core ocamlgraph yojson str calendar parmap)
+ (libraries utop core ocamlgraph yojson str calendar parmap re2)
  (preprocess (pps ppx_compare ppx_jane)))
