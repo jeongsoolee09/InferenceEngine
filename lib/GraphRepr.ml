@@ -805,7 +805,7 @@ let all_ns_clusters (graph : G.t) : G.V.t list list =
       memoized_result
 
 
-let recursively_find_preds (g : G.t) (vertex : G.LiteralVertex.t) ~(label : EdgeLabel.t) :
+let get_recursive_preds (g : G.t) (vertex : G.LiteralVertex.t) ~(label : EdgeLabel.t) :
     G.V.t list =
   let rec inner (current_vertex : G.V.t) (big_acc : G.V.t list) =
     let current_vertex_df_preds = G.get_preds g (G.LiteralVertex.of_vertex current_vertex) ~label in
@@ -814,6 +814,23 @@ let recursively_find_preds (g : G.t) (vertex : G.LiteralVertex.t) ~(label : Edge
           not @@ List.mem big_acc pred ~equal:Vertex.equal )
     in
     if List.is_empty current_vertex_df_preds || List.is_empty to_explore then big_acc
+    else
+      List.fold
+        ~f:(fun smol_acc vertex -> inner vertex (vertex :: smol_acc))
+        ~init:big_acc to_explore
+  in
+  inner (G.LiteralVertex.to_vertex vertex g.graph) []
+
+
+let get_recursive_succs (g : G.t) (vertex : G.LiteralVertex.t) ~(label : EdgeLabel.t) :
+    G.V.t list =
+  let rec inner (current_vertex : G.V.t) (big_acc : G.V.t list) =
+    let current_vertex_df_succs = G.get_succs g (G.LiteralVertex.of_vertex current_vertex) ~label in
+    let to_explore =
+      List.filter current_vertex_df_succs ~f:(fun succ ->
+          not @@ List.mem big_acc succ ~equal:Vertex.equal )
+    in
+    if List.is_empty current_vertex_df_succs || List.is_empty to_explore then big_acc
     else
       List.fold
         ~f:(fun smol_acc vertex -> inner vertex (vertex :: smol_acc))

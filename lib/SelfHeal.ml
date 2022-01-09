@@ -15,7 +15,7 @@ module HealMisPropagation = struct
     List.fold
       ~f:(fun big_acc sink_vertex ->
         let recursive_df_preds =
-          recursively_find_preds graph
+          get_recursive_preds graph
             (G.LiteralVertex.of_vertex sink_vertex)
             ~label:EdgeLabel.DataFlow
         in
