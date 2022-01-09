@@ -20,12 +20,13 @@ let capture_nonempty_angled_brackets (string : string) =
 
 
 let split_single_annot_string (string : string) : string list =
-  let regex = Re2.create_exn "([^()<>\s]+(\([^()<>]*\))?)" in
-  Re2.find_all_exn regex string
+  let regex = Re2.create_exn "([^()<>\s]+)(\([^()<>]*\))?" in
+  List.tl_exn (Re2.find_submatches_exn regex string |> Array.to_list |> catMaybes)
 
 
 let split_up_input_sig (input_sig : string) : (string * string) list =
-  let regex = Re2.create_exn "([a-z]+=\\\".+\\\")" in
+  print_endline input_sig ;
+  let regex = Re2.create_exn "([a-z]+=\\\".*\\\")" in
   let split_on_comma = Re2.find_all_exn regex input_sig in
   split_on_comma
   >>| fun str ->
@@ -67,10 +68,9 @@ let to_string (annot_list : t) : string =
 
 
 let of_string (string : string) : t =
-  string |> capture_nonempty_angled_brackets >>| single_annot_of_string
+  if String.equal string "no annotation" then []
+  else string |> capture_nonempty_angled_brackets >>| single_annot_of_string
 
-
-(* REMEMBER: WE DON'T NEED TEST CLASSES/METHODS!!! *)
 
 let make_annot_lookup_table =
   let cache = ref (Hashtbl.create 777) in
@@ -80,17 +80,14 @@ let make_annot_lookup_table =
         let out = Hashtbl.create 777 in
         List.iter
           ~f:(fun (methname, annot_str) ->
-            if not @@ Method.is_testcode methname then (
-              print_endline "==================================================" ;
-              print_endline methname ;
-              print_endline annot_str ;
-              Hashtbl.add out methname (of_string annot_str) ) )
+            if not @@ Method.is_testcode methname then
+              (* we don't need test classes/methods *)
+              Hashtbl.add out methname (of_string annot_str) )
           (Deserializer.deserialize_annots ()) ;
         cache := out ;
         out
     | _ ->
         !cache
-
 
 let get_annots = Hashtbl.find (make_annot_lookup_table ())
 

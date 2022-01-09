@@ -14,6 +14,7 @@ open DirectoryManager
 open Chain
 open Method
 open GraphSplitter
+open Annotations
 module Json = Yojson.Basic
 
 exception End
@@ -199,6 +200,125 @@ module Notebook47 = struct
   (* void BadgeSvg$GraphicElement.setText(String) *)
   (* void ConfigurableEnvironment.addActiveProfile(String) *)
   (* void RedisAccessor.setConnectionFactory(RedisConnectionFactory) *)
+
+  let _ = End
+end
+
+module Comment = struct
+  exception End
+
+  let sample = "Model Model.addAttribute(String,Object)"
+
+  let get_annots (method_ : Method.t) : t =
+    let annot_str_alist = Deserializer.deserialize_annots () in
+    let this_method_annot =
+      List.Assoc.find_exn
+        ~equal:(fun this method_unique_id ->
+          String.equal (Method.find_unique_identifier this) method_unique_id )
+        annot_str_alist method_
+    in
+    of_string this_method_annot
+
+
+  (* let x = Annotations.get_annots (Method.of_string sample) *)
+
+  (* oh no this is taking too long *)
+
+  let method_ = "Model Model.addAttribute(String,Object)"
+
+  let annot_str_alist = Deserializer.deserialize_annots ()
+
+  let this_method_annot =
+    List.Assoc.find_exn
+      ~equal:(fun this method_unique_id ->
+        String.equal (Method.find_unique_identifier this) method_unique_id )
+      annot_str_alist method_
+
+
+  (* Hey, we need to make the above into a Hashtbl.t to make an O(1) lookup. *)
+
+  let _ = of_string this_method_annot
+
+  (* oooh, library codes don't have annots, which is obvious *)
+
+  let sample2 = "ProjectAdminController.<init>(ProjectMetadataService,PostContentRenderer)"
+
+  (* let x = Annotations.get_annots sample2 *)
+
+  let this_method_annot = List.Assoc.find_exn ~equal:Method.equal annot_str_alist sample2
+
+  let _ = End
+end
+
+module Notebook48 = struct
+  let sample =
+    "<_org.springframework.web.bind.annotation.RequestMapping(value=\"/{username}\", \
+     method=\".GET, .HEAD\")> (<_org.springframework.web.bind.annotation.PathVariable> <>)"
+
+
+  let _ = capture_nonempty_angled_brackets sample
+
+  let string_list = split_single_annot_string sample
+
+  let _ =
+    match string_list with
+    | [] ->
+        failwith "Invalid input string list (is empty)"
+    | [name] ->
+        {name; params= []}
+    | [name; input_sig] ->
+        {name; params= split_up_input_sig input_sig}
+    | _ ->
+        failwith "Invalid input string list (is too long)"
+
+
+  let input_sig = "(value=\"/{username}\", method=\".GET, .HEAD\")"
+
+  let split_on_comma = String.split ~on:',' input_sig
+
+  let _ =
+    split_on_comma
+    >>| fun split ->
+    let split_on_equal = String.split ~on:'=' split in
+    let filter char = Char.equal '(' char || Char.equal ')' char || Char.equal ' ' char in
+    ( String.strip ~drop:filter @@ List.nth_exn split_on_equal 0
+    , String.strip ~drop:filter @@ List.nth_exn split_on_equal 1 )
+
+
+  let regex = Re2.create_exn "([^()<> ]+(\([^()<>]*\))?)"
+
+  let sample =
+    "<_org.springframework.web.bind.annotation.GetMapping(value=\"/{topical}/images/{image:[a-zA-Z0-9._-]+}\")> \
+     (<_org.springframework.web.bind.annotation.PathVariable> \
+     <_org.springframework.web.bind.annotation.PathVariable>)"
+
+
+  let _ = Re2.find_all_exn regex sample
+
+  let sample =
+    "_org.springframework.web.bind.annotation.GetMapping(value=\"/{topical}/images/{image:[a-zA-Z0-9._-]+}\")"
+
+
+  let _ = Re2.find_all_exn regex sample
+
+  let sample =
+    "<_org.springframework.context.annotation.Bean(name=\"uih, viewRenderingHelper\") \
+     _org.springframework.context.annotation.Scope(value=\"request\")> ()"
+
+
+  let angled_brackets = capture_nonempty_angled_brackets sample
+
+  let angled_bracket = List.hd_exn angled_brackets
+
+  let split = split_single_annot_string angled_bracket
+
+  let _ = of_string sample
+
+  let sample = "<_com.fasterxml.jackson.annotation.JsonIgnore> ()"
+
+  let brackets = capture_nonempty_angled_brackets sample
+
+  let _ = split_single_annot_string (List.hd_exn brackets)
 
   let _ = End
 end
