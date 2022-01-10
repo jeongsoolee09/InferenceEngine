@@ -322,3 +322,17 @@ module Notebook48 = struct
 
   let _ = End
 end
+
+module Notebook49 = struct
+  let test_dist : ProbQuadruple.t = {src= 0.4; sin= 0.2; san= 0.2; non= 0.2}
+
+  let _ = DistManipulator.bump test_dist [Source] ~inc_delta:0.3 ~dec_delta:0.1
+
+  let _ = DistManipulator.bump test_dist [Source; Sink] ~inc_delta:0.3 ~dec_delta:0.1
+
+  let _ = DistManipulator.bump test_dist [] ~inc_delta:0. ~dec_delta:0.1
+
+  (* DistManipulator.dump is working well!! *)
+
+  let _ = End
+end

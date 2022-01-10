@@ -50,12 +50,7 @@ module HealMisPropagation = struct
     List.fold all_init_vertices_with_no_immediate_lib_code
       ~f:(fun acc init_vertex ->
         let init_vertex_dist = trd3 init_vertex in
-        let new_dist =
-          { ProbQuadruple.src= (*main_vertex_dist.src -.*) 0.1
-          ; ProbQuadruple.sin= (*main_vertex_dist.sin -.*) 0.1
-          ; ProbQuadruple.san= (*main_vertex_dist.san -.*) 0.1
-          ; ProbQuadruple.non= (*main_vertex_dist.non +.*) 1. }
-        in
+        let new_dist = DistManipulator.overwrite ~src:0.1 ~sin:0.1 ~san:0.1 ~non:1. in
         G.strong_update_dist init_vertex new_dist acc )
       ~init:graph
 
@@ -67,7 +62,7 @@ module HealMisPropagation = struct
           if not @@ String.is_substring ~substring:"main(" (Vertex.to_string vertex) then acc
           else
             let open NodeWiseFeatures.SingleFeature in
-            let vertex_method_id = find_unique_identifier_of_method (Vertex.get_method vertex) in
+            let vertex_method_id = Method.find_unique_identifier (Vertex.get_method vertex) in
             let vertex_method_package = Method.UniqueID.get_package_name vertex_method_id in
             if
               String.equal vertex_method_package
@@ -79,12 +74,7 @@ module HealMisPropagation = struct
     List.fold this_project_main_vertices
       ~f:(fun acc main_vertex ->
         let main_vertex_dist = trd3 main_vertex in
-        let new_dist =
-          { ProbQuadruple.src= (*main_vertex_dist.src -.*) 0.1
-          ; ProbQuadruple.sin= (*main_vertex_dist.sin -.*) 0.1
-          ; ProbQuadruple.san= (*main_vertex_dist.san -.*) 0.1
-          ; ProbQuadruple.non= (*main_vertex_dist.non +.*) 1. }
-        in
+        let new_dist = DistManipulator.overwrite ~src:0.1 ~sin:0.1 ~san:0.1 ~non:1. in
         G.strong_update_dist main_vertex new_dist acc )
       ~init:graph
 

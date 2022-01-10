@@ -20,7 +20,7 @@ let make_now_string (gmt_diff : int) : string =
 
 
 module TaintLabel = struct
-  type t = Source | Sink | Sanitizer | None | Indeterminate [@@deriving equal]
+  type t = Source | Sink | Sanitizer | None | Indeterminate [@@deriving equal, compare]
 
   let to_string (label : t) : string =
     match label with
@@ -440,7 +440,7 @@ module G = struct
   type trunk = Trunk.t
 
   let serialize_to_bin ?(suffix = "") (graph : t) : unit =
-    let out_chan = Out_channel.create (make_now_string 9 ^ suffix ^ ".bin") in
+    let out_chan = Out_channel.create (make_now_string 9 ^ "_" ^ suffix ^ ".bin") in
     Out_channel.set_binary_mode out_chan true ;
     Marshal.to_channel out_chan graph [] ;
     Out_channel.close out_chan
@@ -597,18 +597,6 @@ module G = struct
       graph []
 
 
-  module GUndirected = Graph.Persistent.Graph.Concrete (Vertex)
-
-  let to_undirected (graph : t) : GUndirected.t =
-    let vertices = fold_vertex List.cons graph [] in
-    let edges = fold_edges (fun v1 v2 acc -> (v1, v2) :: acc) graph [] in
-    GUndirected.empty
-    |> (fun graph ->
-         List.fold ~f:(fun acc vertex -> GUndirected.add_vertex acc vertex) ~init:graph vertices )
-    |> fun graph ->
-    List.fold ~f:(fun acc (v1, v2) -> GUndirected.add_edge acc v1 v2) ~init:graph edges
-
-
   let leave_only_df_edges (graph : t) : t =
     fold_edges_e
       (fun ((_, label, _) as edge) acc ->
@@ -650,6 +638,8 @@ module G = struct
     |> List.filter ~f:(not << String.is_substring ~substring:"lambda$" << Method.to_string)
     |> List.filter ~f:(not << String.is_prefix ~prefix:"__" << Method.to_string)
 
+
+  let all_edges_of_graph (graph : t) : E.t list = fold_edges_e List.cons graph []
 
   let is_bidirectional_vertex (vertex : LiteralVertex.t) (graph : t) ~(label : EdgeLabel.t) : bool =
     let vertex_succs = get_succs graph vertex ~label in
@@ -805,8 +795,7 @@ let all_ns_clusters (graph : G.t) : G.V.t list list =
       memoized_result
 
 
-let get_recursive_preds (g : G.t) (vertex : G.LiteralVertex.t) ~(label : EdgeLabel.t) :
-    G.V.t list =
+let get_recursive_preds (g : G.t) (vertex : G.LiteralVertex.t) ~(label : EdgeLabel.t) : G.V.t list =
   let rec inner (current_vertex : G.V.t) (big_acc : G.V.t list) =
     let current_vertex_df_preds = G.get_preds g (G.LiteralVertex.of_vertex current_vertex) ~label in
     let to_explore =
@@ -822,8 +811,7 @@ let get_recursive_preds (g : G.t) (vertex : G.LiteralVertex.t) ~(label : EdgeLab
   inner (G.LiteralVertex.to_vertex vertex g.graph) []
 
 
-let get_recursive_succs (g : G.t) (vertex : G.LiteralVertex.t) ~(label : EdgeLabel.t) :
-    G.V.t list =
+let get_recursive_succs (g : G.t) (vertex : G.LiteralVertex.t) ~(label : EdgeLabel.t) : G.V.t list =
   let rec inner (current_vertex : G.V.t) (big_acc : G.V.t list) =
     let current_vertex_df_succs = G.get_succs g (G.LiteralVertex.of_vertex current_vertex) ~label in
     let to_explore =

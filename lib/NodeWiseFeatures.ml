@@ -13,24 +13,6 @@ module SingleFeature = struct
 
   type t = Method.t -> feature
 
-  (** Pattern that captures (1) package name, (2) class name, and (3) method name from a unique
-      identifier. *)
-  let id_regex = Str.regexp "\\(.*\\)\\.?\\([A-Z][a-zA-Z$0-9]+\\)\\.\\([a-zA-Z<>$0-9]+\\)(.*)"
-
-  (* unique_identifiers are strings of the format {package}.{classname}.{method_name}:{return_type_with_package}
-     they are obtained from Procname.pp_unique_id. *)
-
-  let find_unique_identifier_of_method (method_ : Method.t) : string =
-    let method_classname = get_class_name method_
-    and method_method_name = get_method_name method_ in
-    List.find_exn
-      ~f:(fun unique_id ->
-        String.is_substring
-          ~substring:(Format.asprintf "%s.%s" method_classname method_method_name)
-          unique_id )
-      (Deserializer.deserialize_method_txt () @ Deserializer.deserialize_skip_func ())
-
-
   let this_project_package_name : string =
     let skip_methods = Deserializer.deserialize_skip_func ()
     and udf_methods = Deserializer.deserialize_method_txt () in
@@ -53,7 +35,7 @@ module SingleFeature = struct
       is_this_project_class_initializer method_
     else
       try
-        let this_method_id = find_unique_identifier_of_method method_ in
+        let this_method_id = find_unique_identifier method_ in
         let methstring_package = UniqueID.get_package_name this_method_id in
         String.equal methstring_package this_project_package_name
       with _ -> (* It's very likely an interface method *)
@@ -67,9 +49,6 @@ module SingleFeature = struct
 
 
   let is_java_builtin_class_initializer (method_ : Method.t) : bool =
-    (* first, we read all the skip_func file, *)
-    (* find the initializers in it, *)
-    (* and see if the methstring is a substring in at least one of them. *)
     let skip_func_lines = Deserializer.deserialize_skip_func () in
     List.exists
       ~f:(fun line ->
@@ -85,7 +64,7 @@ module SingleFeature = struct
       is_java_builtin_class_initializer method_
     else
       try
-        let this_method_id = find_unique_identifier_of_method method_ in
+        let this_method_id = find_unique_identifier method_ in
         let methstring_package = UniqueID.get_package_name this_method_id in
         String.is_prefix ~prefix:"java." methstring_package
       with _ -> (* It's very likely an interface method *)
@@ -100,7 +79,6 @@ module SingleFeature = struct
 
 
   let returnval_not_used_in_caller (method_ : Method.t) : bool =
-    (* NOTE use partial application on the first two params to type-check *)
     let sexp_loaded = Sexp.parse @@ In_channel.read_all "void_calls.lisp" in
     match sexp_loaded with
     | Done (res, _) ->
@@ -147,8 +125,8 @@ module PairwiseFeature = struct
   let belong_to_same_package ((method1, method2) : Method.t * Method.t) : bool =
     (not @@ (is_this_project_method method1 || is_this_project_method method2))
     && String.equal
-         (UniqueID.get_package_name (find_unique_identifier_of_method method1))
-         (UniqueID.get_package_name (find_unique_identifier_of_method method2))
+         (UniqueID.get_package_name (find_unique_identifier method1))
+         (UniqueID.get_package_name (find_unique_identifier method2))
 
 
   let return_type_is_another's_class ((method1, method2) : Method.t * Method.t) : bool =

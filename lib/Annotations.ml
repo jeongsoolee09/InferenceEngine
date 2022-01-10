@@ -10,6 +10,8 @@ type single_annot = {name: string; params: (string * string) list} [@@deriving e
 
 type t = single_annot list [@@deriving equal]
 
+let empty : t = []
+
 let get_name (single_annot : single_annot) : string = single_annot.name
 
 let get_param (single_annot : single_annot) = single_annot.params
@@ -25,7 +27,6 @@ let split_single_annot_string (string : string) : string list =
 
 
 let split_up_input_sig (input_sig : string) : (string * string) list =
-  print_endline input_sig ;
   let regex = Re2.create_exn "([a-z]+=\\\".*\\\")" in
   let split_on_comma = Re2.find_all_exn regex input_sig in
   split_on_comma
@@ -68,7 +69,7 @@ let to_string (annot_list : t) : string =
 
 
 let of_string (string : string) : t =
-  if String.equal string "no annotation" then []
+  if String.equal string "no annotation" then empty
   else string |> capture_nonempty_angled_brackets >>| single_annot_of_string
 
 

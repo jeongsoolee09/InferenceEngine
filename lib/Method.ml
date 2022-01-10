@@ -15,6 +15,9 @@ let is_frontend (method_ : t) : bool =
 let is_initializer (method_ : t) : bool = String.is_substring ~substring:"<init>" method_
 
 module UniqueID = struct
+  (* unique_identifiers are strings of the format {package}.{classname}.{method_name}:{return_type_with_package}
+     they are obtained from Procname.pp_unique_id. *)
+
   let id_regex = Str.regexp "\\(.*\\)\\.?\\([A-Z][a-zA-Z$0-9]+\\)\\.\\([a-zA-Z<>$0-9]+\\)(.*)"
 
   let get_package_name (unique_identifier : string) : string =
@@ -135,6 +138,12 @@ let is_udf (method_ : t) : bool =
       ~f:(fun line -> String.is_substring ~substring:classname_methodname line)
       (Deserializer.deserialize_method_txt ())
   with _ -> false
+
+
+let is_testcode (method_ : t) : bool =
+  List.mem ~equal:String.equal
+    (DirectoryManager.Classnames.get_test_classnames (Deserializer.deserialize_config ()))
+    (get_class_name method_)
 
 
 let is_corner_case (method_ : t) : bool = (not @@ is_api method_) && (not @@ is_udf method_)
