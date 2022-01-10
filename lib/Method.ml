@@ -156,3 +156,20 @@ let find_unique_identifier (method_ : t) : string =
         ~substring:(Format.asprintf "%s.%s" method_classname method_name)
         unique_id )
     (Deserializer.deserialize_method_txt () @ Deserializer.deserialize_skip_func ())
+
+
+let get_package_name (method_ : t) : string =
+  try
+    let unique_id = find_unique_identifier method_ in
+    UniqueID.get_package_name unique_id
+  with Not_found_s _ ->
+    (* find from the list of scraped packages *)
+    let imports_in_directory =
+      DirectoryManager.PackageScraper.scrape_imports_in_directory
+        (Deserializer.deserialize_config ())
+    in
+    let method_classname = get_class_name method_ in
+    match List.find ~f:(fun str ->
+        String.equal (List.last_exn (String.split ~on:'.' str)) method_classname) imports_in_directory with
+    | None -> failwithf "could not get package name for %s\n" method_ ()
+    | Some res -> DirectoryManager.PackageScraper.extract_package_from_import_stmt res

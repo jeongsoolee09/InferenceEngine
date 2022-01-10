@@ -139,12 +139,16 @@ module PackageScraper = struct
   let is_import_stmt = Re2.matches regex
 
   let extract_package_from_import_stmt (import_stmt : string) : string =
-    Option.value_exn (Re2.find_submatches_exn regex import_stmt |> Array.last)
+    String.split ~on:' ' import_stmt |> List.last_exn |> String.rstrip ~drop:(Char.equal ';')
+    (* print_endline @@ F.asprintf "import_stmt = %s" import_stmt; *)
+    (* Option.value_exn (Re2.find_submatches_exn regex import_stmt |> Array.last) *)
 
 
-  let scrape_packages_in_single_file =
+  let scrape_imports_in_single_file =
     let cache = Hashtbl.create 777 in
     fun (file_absdir : string) : string list ->
+      print_endline "====================";
+      print_endline file_absdir;
       match Hashtbl.find_opt cache file_absdir with
       | None ->
           let out =
@@ -158,7 +162,17 @@ module PackageScraper = struct
           res
 
 
-  let scrape_packages_in_directory (root_dir : string) : string list =
-    let java_files = walk_for_extension root_dir ".java" in
-    java_files >>= scrape_packages_in_single_file
+  let scrape_imports_in_directory =
+    let cache = Hashtbl.create 777 in
+    fun (root_dir : string) : string list ->
+      match Hashtbl.find_opt cache root_dir with
+      | None ->
+          let out =
+            let java_files = walk_for_extension root_dir ".java" in
+            java_files >>= scrape_imports_in_single_file
+          in
+          Hashtbl.add cache root_dir out ;
+          out
+      | Some res ->
+          res
 end

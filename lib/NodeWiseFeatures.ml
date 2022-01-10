@@ -126,8 +126,8 @@ module PairwiseFeature = struct
   let belong_to_same_package ((method1, method2) : Method.t * Method.t) : bool =
     (not @@ (is_this_project_method method1 || is_this_project_method method2))
     && String.equal
-         (UniqueID.get_package_name (find_unique_identifier method1))
-         (UniqueID.get_package_name (find_unique_identifier method2))
+         (Method.get_package_name method1)
+         (Method.get_package_name method2)
 
 
   let return_type_is_another's_class ((method1, method2) : Method.t * Method.t) : bool =
