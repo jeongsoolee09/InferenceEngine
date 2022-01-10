@@ -1,12 +1,14 @@
 open InfixOperators
 open ListMonad
 open GraphRepr
+open DistManipulator
 
 exception TODO
 
 exception NotImplemented
 
 module Random = Core_kernel.Random
+module LV = G.LiteralVertex
 
 module Question = struct
   type t = AskingForLabel of Method.t | AskingForConfirmation of (Method.t * TaintLabel.t)
@@ -115,7 +117,7 @@ module PropagationRules = struct
 
   type t = {rule: rule; label: string}
 
-  let is_internal_udf_vertex (vertex : G.LiteralVertex.t) (graph : G.t) =
+  let is_internal_udf_vertex (vertex : LV.t) (graph : G.t) =
     let data_flows_in =
       Int.( >= ) (List.length @@ G.get_preds graph vertex ~label:EdgeLabel.DataFlow) 1
     and data_flows_out =
@@ -144,8 +146,7 @@ module PropagationRules = struct
     in
     let df_succs =
       new_fact_method_vertices
-      >>= fun vertex ->
-      G.get_succs graph (G.LiteralVertex.of_vertex vertex) ~label:EdgeLabel.DataFlow
+      >>= fun vertex -> G.get_succs graph (LV.of_vertex vertex) ~label:EdgeLabel.DataFlow
     in
     assert (Int.( >= ) (List.length df_succs) 1) ;
     Out_channel.output_string Out_channel.stdout "internal_udf_vertex_is_none chosen" ;
@@ -154,7 +155,7 @@ module PropagationRules = struct
       List.fold
         ~f:(fun acc succ ->
           let succ_meth, succ_loc, succ_dist = succ in
-          if not @@ is_internal_udf_vertex (G.LiteralVertex.of_vertex succ) graph then acc
+          if not @@ is_internal_udf_vertex (LV.of_vertex succ) graph then acc
           else
             let new_dist =
               { ProbQuadruple.src= succ_dist.src -. 0.4
@@ -166,7 +167,7 @@ module PropagationRules = struct
             (*   Out_channel.fprintf Out_channel.stdout *)
             (*     "%s propagated its info to %s (internal_vertex_none), its dist is now %s\n" *)
             (*     new_fact_method *)
-            (*     (G.LiteralVertex.to_string (G.LiteralVertex.of_vertex succ)) *)
+            (*     (LV.to_string (LV.of_vertex succ)) *)
             (*     (ProbQuadruple.to_string new_dist) ; *)
             G.strong_update_dist succ new_dist acc )
         ~init:graph df_succs
@@ -188,11 +189,10 @@ module PropagationRules = struct
     let contextual_succs =
       new_fact_method_vertices
       >>= fun vertex ->
-      G.get_succs graph (G.LiteralVertex.of_vertex vertex) ~label:EdgeLabel.ContextualSimilarity
+      G.get_succs graph (LV.of_vertex vertex) ~label:EdgeLabel.ContextualSimilarity
     in
     assert (Int.( >= ) (List.length contextual_succs) 1) ;
-    Out_channel.output_string Out_channel.stdout "contextual_similarity_rule chosen" ;
-    Out_channel.newline Out_channel.stdout ;
+    print_endline "contextual_similarity_rule chosen" ;
     (* Out_channel.print_endline *)
     (* @@ F.asprintf "contextual_succs: %s" (Vertex.vertex_list_to_string contextual_succs) ; *)
     let propagated =
@@ -209,7 +209,7 @@ module PropagationRules = struct
                 false
             | Some containing_cluster ->
                 List.exists containing_cluster ~f:(fun vertex ->
-                    G.is_df_internal (G.LiteralVertex.of_vertex vertex) graph )
+                    G.is_df_internal (LV.of_vertex vertex) graph )
           in
           let new_dist =
             match new_fact_label with
@@ -243,7 +243,7 @@ module PropagationRules = struct
           (* if not dry_run then *)
           (*   Out_channel.fprintf Out_channel.stdout *)
           (*     "%s propagated its info to %s (contextual), its dist is now %s\n" new_fact_method *)
-          (*     (G.LiteralVertex.to_string (G.LiteralVertex.of_vertex succ)) *)
+          (*     (LV.to_string (LV.of_vertex succ)) *)
           (*     (ProbQuadruple.to_string new_dist) ; *)
           G.strong_update_dist succ new_dist acc )
         contextual_succs ~init:graph
@@ -266,14 +266,13 @@ module PropagationRules = struct
       let raw_succs =
         new_fact_method_vertices
         >>= fun vertex ->
-        G.get_succs graph (G.LiteralVertex.of_vertex vertex) ~label:EdgeLabel.NodeWiseSimilarity
+        G.get_succs graph (LV.of_vertex vertex) ~label:EdgeLabel.NodeWiseSimilarity
       in
       let module VertexSet = Caml.Set.Make (Vertex) in
       raw_succs |> VertexSet.of_list |> VertexSet.elements
     in
     assert (Int.( >= ) (List.length similarity_succs) 1) ;
-    Out_channel.output_string Out_channel.stdout "nodewise_similarity_propagation_rule chosen" ;
-    Out_channel.newline Out_channel.stdout ;
+    print_endline "nodewise_similarity_propagation_rule chosen" ;
     (* Out_channel.print_endline *)
     (* @@ F.asprintf "nodewise_succs: %s" (Vertex.vertex_list_to_string similarity_succs) ; *)
     let propagated =
@@ -283,12 +282,12 @@ module PropagationRules = struct
           let new_dist =
             match new_fact_label with
             | Source ->
-                if G.is_df_root (G.LiteralVertex.of_vertex succ) graph then
+                if G.is_df_root (LV.of_vertex succ) graph then
                   { ProbQuadruple.src= succ_dist.src +. 0.3
                   ; sin= succ_dist.sin -. 0.1
                   ; san= succ_dist.san -. 0.1
                   ; non= succ_dist.non -. 0.1 }
-                else if G.is_df_leaf (G.LiteralVertex.of_vertex succ) graph then
+                else if G.is_df_leaf (LV.of_vertex succ) graph then
                   { ProbQuadruple.src= succ_dist.src -. 0.1
                   ; sin= succ_dist.sin +. 0.3
                   ; san= succ_dist.san -. 0.1
@@ -300,12 +299,12 @@ module PropagationRules = struct
                   ; san= succ_dist.san -. 0.1
                   ; non= succ_dist.non -. 0.1 }
             | Sink ->
-                if G.is_df_root (G.LiteralVertex.of_vertex succ) graph then
+                if G.is_df_root (LV.of_vertex succ) graph then
                   { ProbQuadruple.src= succ_dist.src +. 0.3
                   ; sin= succ_dist.sin -. 0.1
                   ; san= succ_dist.san -. 0.1
                   ; non= succ_dist.non -. 0.1 }
-                else if G.is_df_leaf (G.LiteralVertex.of_vertex succ) graph then
+                else if G.is_df_leaf (LV.of_vertex succ) graph then
                   { ProbQuadruple.src= succ_dist.src -. 0.1
                   ; sin= succ_dist.sin +. 0.3
                   ; san= succ_dist.san -. 0.1
@@ -317,12 +316,12 @@ module PropagationRules = struct
                   ; san= succ_dist.san -. 0.1
                   ; non= succ_dist.non -. 0.1 }
             | Sanitizer ->
-                if G.is_df_root (G.LiteralVertex.of_vertex succ) graph then
+                if G.is_df_root (LV.of_vertex succ) graph then
                   { ProbQuadruple.src= succ_dist.src +. 0.3
                   ; sin= succ_dist.sin -. 0.1
                   ; san= succ_dist.san -. 0.1
                   ; non= succ_dist.non -. 0.1 }
-                else if G.is_df_leaf (G.LiteralVertex.of_vertex succ) graph then
+                else if G.is_df_leaf (LV.of_vertex succ) graph then
                   { ProbQuadruple.src= succ_dist.src -. 0.1
                   ; sin= succ_dist.sin +. 0.3
                   ; san= succ_dist.san -. 0.1
@@ -334,12 +333,12 @@ module PropagationRules = struct
                   ; san= succ_dist.san +. 0.3
                   ; non= succ_dist.non -. 0.1 }
             | None ->
-                if G.is_df_root (G.LiteralVertex.of_vertex succ) graph then
+                if G.is_df_root (LV.of_vertex succ) graph then
                   { ProbQuadruple.src= succ_dist.src -. 0.3
                   ; sin= succ_dist.sin -. 0.1
                   ; san= succ_dist.san -. 0.1
                   ; non= succ_dist.non +. 0.1 }
-                else if G.is_df_leaf (G.LiteralVertex.of_vertex succ) graph then
+                else if G.is_df_leaf (LV.of_vertex succ) graph then
                   { ProbQuadruple.src= succ_dist.src -. 0.1
                   ; sin= succ_dist.sin +. 0.3
                   ; san= succ_dist.san -. 0.1
@@ -356,7 +355,7 @@ module PropagationRules = struct
           (* if not dry_run then *)
           (*   Out_channel.fprintf Out_channel.stdout *)
           (*     "%s propagated its info to %s (nodewise), its dist is now %s\n" new_fact_method *)
-          (*     (G.LiteralVertex.to_string (G.LiteralVertex.of_vertex succ)) *)
+          (*     (LV.to_string (LV.of_vertex succ)) *)
           (*     (ProbQuadruple.to_string new_dist) ; *)
           G.strong_update_dist succ new_dist acc )
         similarity_succs ~init:graph
@@ -379,7 +378,8 @@ module PropagationRules = struct
       if
         List.exists
           ~f:(fun leaf ->
-            TaintLabel.equal (ProbQuadruple.determine_label (trd3 leaf)) TaintLabel.Sink )
+            TaintLabel.equal (ProbQuadruple.determine_label (Vertex.get_dist leaf)) TaintLabel.Sink
+            )
           trunk_leaves
       then
         List.fold
@@ -390,7 +390,7 @@ module PropagationRules = struct
                 let ns_clusters_vertices = List.join @@ all_ns_clusters graph in
                 if
                   NodeWiseFeatures.SingleFeature.is_library_code vertex_meth
-                  && (not @@ G.is_df_leaf (G.LiteralVertex.of_vertex vertex) graph)
+                  && (not @@ G.is_df_leaf (LV.of_vertex vertex) graph)
                   && (not @@ Method.is_initializer vertex_meth)
                   && (not @@ List.mem ~equal:Vertex.equal ns_clusters_vertices vertex)
                 then
@@ -404,7 +404,7 @@ module PropagationRules = struct
                   (*   Out_channel.fprintf Out_channel.stdout *)
                   (*     "%s propagated its info to %s (internal_src), its dist is now %s\n" *)
                   (*     new_fact_method *)
-                  (*     (G.LiteralVertex.to_string (G.LiteralVertex.of_vertex vertex)) *)
+                  (*     (LV.to_string (LV.of_vertex vertex)) *)
                   (*     (ProbQuadruple.to_string new_dist) ; *)
                   (G.strong_update_dist vertex new_dist graph_acc, vertex :: affected)
                 else smol_acc )
@@ -416,9 +416,7 @@ module PropagationRules = struct
       (* the new knowledge should be about a leaf vertex.
          ==> if the new methods only appear at leaves in the graph, then the above holds. *)
       not
-      @@ List.for_all
-           ~f:(fun vertex -> G.is_df_leaf (G.LiteralVertex.of_vertex vertex) graph)
-           new_fact_vertices
+      @@ List.for_all ~f:(fun vertex -> G.is_df_leaf (LV.of_vertex vertex) graph) new_fact_vertices
     then (graph, []) (* Do nothing *)
     else
       let trunks_containing_vertices =
@@ -427,7 +425,7 @@ module PropagationRules = struct
       let new_fact_propagated =
         List.fold
           ~f:(fun acc new_fact_vertex ->
-            let vertex_dist = trd3 new_fact_vertex in
+            let vertex_dist = Vertex.get_dist new_fact_vertex in
             let updated_dist =
               { ProbQuadruple.src= vertex_dist.src -. 0.1
               ; sin= vertex_dist.sin +. 0.3
@@ -445,7 +443,7 @@ module PropagationRules = struct
               let ns_clusters_vertices = List.join @@ all_ns_clusters graph in
               if
                 NodeWiseFeatures.SingleFeature.is_library_code vertex_meth
-                && (not @@ G.is_df_leaf (G.LiteralVertex.of_vertex vertex) graph)
+                && (not @@ G.is_df_leaf (LV.of_vertex vertex) graph)
                 && (not @@ Method.is_initializer vertex_meth)
                 && (not @@ List.mem ~equal:Vertex.equal ns_clusters_vertices vertex)
               then (
@@ -459,7 +457,7 @@ module PropagationRules = struct
                   Out_channel.fprintf Out_channel.stdout
                     "%s propagated its info to %s (internal_src), its dist is now %s\n"
                     (Method.to_string new_fact_method)
-                    (G.LiteralVertex.to_string (G.LiteralVertex.of_vertex vertex))
+                    (LV.to_string (LV.of_vertex vertex))
                     (ProbQuadruple.to_string new_dist) ;
                 (G.strong_update_dist vertex new_dist graph_acc, vertex :: affected) )
               else smol_acc )
@@ -476,7 +474,7 @@ module PropagationRules = struct
       let this_method_vertices = G.this_method_vertices graph new_fact_method in
       List.fold this_method_vertices
         ~f:(fun (graph_acc, affected) this_method_vertex ->
-          let vertex_dist = trd3 this_method_vertex in
+          let vertex_dist = Vertex.get_dist this_method_vertex in
           let new_dist =
             { ProbQuadruple.src= vertex_dist.src -. 0.1
             ; sin= vertex_dist.sin -. 0.1
@@ -486,7 +484,7 @@ module PropagationRules = struct
           (* if not dry_run then *)
           (*   Out_channel.printf "%s propagated its info to %s (internal_src), its dist is now %s\n" *)
           (*     new_fact_method *)
-          (*     (G.LiteralVertex.to_string (G.LiteralVertex.of_vertex this_method_vertex)) *)
+          (*     (LV.to_string (LV.of_vertex this_method_vertex)) *)
           (*     (ProbQuadruple.to_string new_dist) ; *)
           ( G.strong_update_dist this_method_vertex new_dist graph_acc
           , this_method_vertex :: affected ) )
@@ -500,9 +498,107 @@ module PropagationRules = struct
   let annotation_rule : rule =
    fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ~(dry_run : bool) :
        (G.t * Vertex.t list) ->
+    (* assert that this method has an annotation. *)
+    let this_method = Response.get_method new_fact
+    and this_method_label = Response.get_label new_fact in
+    let this_method_vertices = G.this_method_vertices graph this_method
+    and this_method_annotation = Annotations.get_annots this_method in
+    let this_method_has_annotation =
+      not @@ Annotations.equal this_method_annotation Annotations.empty
+    in
+    assert this_method_has_annotation ;
+    (* assert that there is at least one predecessor with the same annotation. *)
+    let recursive_preds_with_same_annot =
+      let all_recursive_preds =
+        let* this_method_vertex = this_method_vertices in
+        get_recursive_preds graph (LV.of_vertex this_method_vertex) ~label:DataFlow
+      in
+      List.filter
+        ~f:(fun pred ->
+          let predecessor_annotation = Annotations.get_annots (Vertex.get_method pred) in
+          Annotations.equal this_method_annotation predecessor_annotation )
+        all_recursive_preds
     (* assert that there is at least one successor with the same annotation. *)
-    (* TODO *)
-    (graph, [])
+    and recursive_succs_with_same_annot =
+      let all_recursive_succs =
+        let* this_method_vertex = this_method_vertices in
+        get_recursive_succs graph (LV.of_vertex this_method_vertex) ~label:DataFlow
+      in
+      List.filter
+        ~f:(fun succ ->
+          let successor_annotation = Annotations.get_annots (Vertex.get_method succ) in
+          Annotations.equal this_method_annotation successor_annotation )
+        all_recursive_succs
+    (* assert that there is at least one successor with the same annotation. *)
+    and ns_succs_with_same_annot =
+      let all_ns_succs =
+        let* this_method_vertex = this_method_vertices in
+        get_recursive_succs graph (LV.of_vertex this_method_vertex) ~label:NodeWiseSimilarity
+      in
+      List.filter
+        ~f:(fun succ ->
+          let successor_annotation = Annotations.get_annots (Vertex.get_method succ) in
+          Annotations.equal this_method_annotation successor_annotation )
+        all_ns_succs
+    in
+    let there_is_at_least_one_recursive_pred_with_same_annot =
+      not @@ List.is_empty recursive_preds_with_same_annot
+    and there_is_at_least_one_recursive_succ_with_same_annot =
+      not @@ List.is_empty recursive_succs_with_same_annot
+    and there_is_at_least_one_ns_succ_with_same_annot =
+      not @@ List.is_empty ns_succs_with_same_annot
+    in
+    assert (
+      there_is_at_least_one_recursive_pred_with_same_annot
+      || there_is_at_least_one_recursive_succ_with_same_annot
+      || there_is_at_least_one_ns_succ_with_same_annot ) ;
+    (* First, propagate to DF recursive preds and succs *)
+    let df_propagated =
+      List.fold
+        ~f:(fun acc vertex ->
+          let vertex_dist = Vertex.get_dist vertex in
+          let new_dist =
+            match this_method_label with
+            | Source | Sink | Sanitizer ->
+                if G.is_df_root (LV.of_vertex vertex) graph then
+                  DistManipulator.bump vertex_dist [Source] ~inc_delta:1. ~dec_delta:0.9
+                else if G.is_df_leaf (LV.of_vertex vertex) graph then
+                  DistManipulator.bump vertex_dist [Sink] ~inc_delta:1. ~dec_delta:0.9
+                else vertex_dist
+            | None | Indeterminate ->
+                vertex_dist
+          in
+          G.strong_update_dist vertex new_dist acc )
+        ~init:graph
+        (recursive_preds_with_same_annot @ recursive_succs_with_same_annot)
+    in
+    (* Second, propagate to NS successors *)
+    let ns_propagated =
+      List.fold
+        ~f:(fun acc vertex ->
+          let vertex_dist = Vertex.get_dist vertex in
+          let new_dist =
+            match this_method_label with
+            | Source | Sink | Sanitizer ->
+                if G.is_df_root (LV.of_vertex vertex) graph then
+                  DistManipulator.bump vertex_dist [Source] ~inc_delta:1. ~dec_delta:0.9
+                else if G.is_df_leaf (LV.of_vertex vertex) graph then
+                  DistManipulator.bump vertex_dist [Sink] ~inc_delta:1. ~dec_delta:0.9
+                else vertex_dist
+            | None | Indeterminate ->
+                vertex_dist
+          in
+          (* if not dry_run then *)
+          (*   Out_channel.fprintf Out_channel.stdout *)
+          (*     "%s propagated its info to %s (nodewise), its dist is now %s\n" new_fact_method *)
+          (*     (LV.to_string (LV.of_vertex succ)) *)
+          (*     (ProbQuadruple.to_string new_dist) ; *)
+          G.strong_update_dist vertex new_dist acc )
+        ~init:df_propagated ns_succs_with_same_annot
+    in
+    ( ns_propagated
+    , recursive_preds_with_same_annot @ recursive_succs_with_same_annot @ ns_succs_with_same_annot
+    )
 
 
   let all_rules =
@@ -512,7 +608,8 @@ module PropagationRules = struct
     ; { rule= internal_nonbidirectional_library_node_is_a_src_if_leaf_is_sink
       ; label= "internal_nonbidirectional_library_node_is_a_src_if_leaf_is_sink" }
     ; { rule= if_method_is_none_once_then_it's_none_everywhere
-      ; label= "if_method_is_none_once_then_it's_none_everywhere" } ]
+      ; label= "if_method_is_none_once_then_it's_none_everywhere" }
+    ; {rule= annotation_rule; label= "annotation_rule"} ]
 end
 
 (* Use Random.int_incl for making a random integer. *)
@@ -539,17 +636,17 @@ module AskingRules = struct
              | Some containing_cluster ->
                  not
                  @@ List.exists containing_cluster ~f:(fun vertex ->
-                        G.is_df_internal (G.LiteralVertex.of_vertex vertex) snapshot
+                        G.is_df_internal (LV.of_vertex vertex) snapshot
                         || List.exists
-                             (recursively_find_preds snapshot
-                                (G.LiteralVertex.of_vertex vertex)
+                             (get_recursive_preds snapshot (LV.of_vertex vertex)
                                 ~label:EdgeLabel.DataFlow )
                              ~f:(fun vertex ->
                                NodeWiseFeatures.SingleFeature.is_main_method
                                  (Vertex.get_method vertex) ) ) )
     in
     let all_leaves_are_determined =
-      List.for_all all_non_sus_leaves ~f:(fun leaf -> G.Saturation.dist_is_saturated (trd3 leaf))
+      List.for_all all_non_sus_leaves ~f:(fun leaf ->
+          G.Saturation.dist_is_saturated (Vertex.get_dist leaf) )
     in
     assert (not all_leaves_are_determined) ;
     let random_leaf = Utils.random_select_elem all_non_sus_leaves in
@@ -562,7 +659,7 @@ module AskingRules = struct
     (* TODO consider featuremaps *)
     let all_roots_are_determined =
       List.for_all (G.collect_df_roots snapshot) ~f:(fun root ->
-          G.Saturation.dist_is_saturated (trd3 root) )
+          G.Saturation.dist_is_saturated (Vertex.get_dist root) )
     in
     assert (not all_roots_are_determined) ;
     let all_roots = G.collect_df_roots snapshot in
@@ -587,7 +684,7 @@ module AskingRules = struct
           snapshot []
       in
       List.for_all all_foreign_codes ~f:(fun foreign_code ->
-          G.Saturation.dist_is_saturated (trd3 foreign_code) )
+          G.Saturation.dist_is_saturated (Vertex.get_dist foreign_code) )
     in
     assert (not all_foreign_codes_are_determined) ;
     let all_foreign_package_vertices =
@@ -608,7 +705,7 @@ module AskingRules = struct
        (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) : Question.t ->
     let all_indeterminates =
       List.filter (G.all_vertices_of_graph snapshot) ~f:(fun vertex ->
-          ProbQuadruple.is_indeterminate (trd3 vertex) )
+          ProbQuadruple.is_indeterminate (Vertex.get_dist vertex) )
     in
     (* TODO: don't randomly pick one; make it consider what should be an influential indeterminate node. *)
     let random_indeterminate_vertex = Utils.random_select_elem all_indeterminates in
@@ -621,8 +718,9 @@ module AskingRules = struct
     let there_is_some_cluster_that_has_internal_src_or_sink =
       List.for_all (all_ns_clusters snapshot) ~f:(fun ns_cluster ->
           List.exists ns_cluster ~f:(fun vertex ->
-              G.is_df_internal (G.LiteralVertex.of_vertex vertex) snapshot
-              && (ProbQuadruple.is_source (trd3 vertex) || ProbQuadruple.is_sin (trd3 vertex)) ) )
+              G.is_df_internal (LV.of_vertex vertex) snapshot
+              && ( ProbQuadruple.is_source (Vertex.get_dist vertex)
+                 || ProbQuadruple.is_sin (Vertex.get_dist vertex) ) ) )
     in
     assert there_is_some_cluster_that_has_internal_src_or_sink ;
     let not_asked_clusters =
@@ -633,11 +731,12 @@ module AskingRules = struct
                    (List.map ~f:Vertex.get_method cluster)
                    (Response.get_method received_response) )
           && List.exists cluster ~f:(fun vertex ->
-                 ProbQuadruple.is_source (trd3 vertex) || ProbQuadruple.is_none (trd3 vertex) ) )
+                 ProbQuadruple.is_source (Vertex.get_dist vertex)
+                 || ProbQuadruple.is_none (Vertex.get_dist vertex) ) )
     in
     let random_cluster = Utils.random_select_elem not_asked_clusters in
     let random_vertex_in_picked_cluster = Utils.random_select_elem random_cluster in
-    if G.is_df_internal (G.LiteralVertex.of_vertex random_vertex_in_picked_cluster) snapshot then
+    if G.is_df_internal (LV.of_vertex random_vertex_in_picked_cluster) snapshot then
       Question.AskingForConfirmation
         (Vertex.get_method random_vertex_in_picked_cluster, TaintLabel.None)
     else Question.AskingForLabel (Vertex.get_method random_vertex_in_picked_cluster)
