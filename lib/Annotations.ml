@@ -6,7 +6,11 @@ exception TODO
 
 module Hashtbl = Caml.Hashtbl
 
-type single_annot = {name: string; params: (string * string) list} [@@deriving equal]
+type single_annot = {name: string; params: (string * string) list}
+
+let equal_single_annot (annot1 : single_annot) (annot2 : single_annot) : bool =
+  String.equal annot1.name annot2.name
+
 
 type t = single_annot list [@@deriving equal]
 
@@ -89,6 +93,7 @@ let make_annot_lookup_table =
         out
     | _ ->
         !cache
+
 
 let get_annots = Hashtbl.find (make_annot_lookup_table ())
 
