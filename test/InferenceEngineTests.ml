@@ -336,3 +336,70 @@ module Notebook49 = struct
 
   let _ = End
 end
+
+module Notebook50 = struct
+  let df_edges_added =
+    match graph_already_serialized "df_edges" with
+    | None ->
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
+
+
+  let splitted = split_graph_by_comp_unit df_edges_added
+
+  let all_vertices = G.all_vertices_of_graph df_edges_added
+
+  (* ============ renderer ============ *)
+  let renderer_graph = List.nth_exn splitted 0
+
+  let renderer_vertices = G.all_vertices_of_graph renderer_graph
+
+  (* ============ site ============ *)
+  let site_graph = List.nth_exn splitted 1
+
+  let site_vertices = G.all_vertices_of_graph site_graph
+
+  (* now, get all the ns edges of renderer_vertices. *)
+
+  let renderer_methods = G.all_methods_of_graph renderer_graph
+
+  let _ =
+    SimilarVertexPairExtractor.NodewisePairExtractor.update_nodewise_similarity_map renderer_methods
+
+
+  (* Exception: (Not_found_s "List.find_exn: not found")
+     --> uh... what??? *)
+
+  (* --> we need a package scraper. *)
+
+  let _ = End
+end
+
+module Notebook51 = struct
+  let regex = Re2.create_exn "import ([a-z.]+\.[A-Za-z]+);"
+
+  let is_import_stmt = Re2.matches regex
+
+  let extract_package_from_import_stmt (import_stmt : string) : string =
+    Option.value_exn (Re2.find_submatches_exn regex import_stmt |> Array.last)
+
+
+  (* TODO: memoize this shit *)
+  let scrape_packages_in_single_file file_absdir =
+    let file_line_by_line = In_channel.read_lines file_absdir in
+    let import_lines = List.filter file_line_by_line ~f:is_import_stmt in
+    import_lines >>| extract_package_from_import_stmt
+
+
+  let scrape_packages_in_directory (root_dir : string) : string list =
+    let java_files = walk_for_extension root_dir ".java" in
+    java_files >>= scrape_packages_in_single_file
+
+  let _ = extract_package_from_import_stmt "import org.springframework.context.annotation.Configuration;"
+
+  (* put this in DirectoryManager *)
+  let _ = End
+end
