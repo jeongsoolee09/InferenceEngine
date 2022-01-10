@@ -106,7 +106,8 @@ module SingleFeature = struct
     ; (fun m -> Bool (is_framework_method m))
     ; (fun m -> Bool (is_library_code m))
     ; (fun m -> Bool (returnval_not_used_in_caller m))
-    ; (fun m -> Bool (is_initializer m)) ]
+    ; (fun m -> Bool (is_initializer m))
+    ; (fun m -> Annotation (Annotations.get_annots m)) ]
 end
 
 module PairwiseFeature = struct
@@ -147,13 +148,23 @@ module PairwiseFeature = struct
     method1_is_init && method2_is_init
 
 
+  let has_same_annots ((method1, method2) : Method.t * Method.t) : bool =
+    let method1_annots = Annotations.get_annots method1
+    and method2_annots = Annotations.get_annots method2 in
+    List.exists
+      ~f:(fun method1_annot ->
+        List.mem ~equal:Annotations.equal_single_annot method2_annots method1_annot )
+      method1_annots
+
+
   let all_features =
     [ is_both_framework_code
     ; belong_to_same_class
     ; belong_to_same_package
     ; return_type_is_another's_class
     ; is_both_java_builtin
-    ; is_both_initializer ]
+    ; is_both_initializer
+    ; has_same_annots ]
 end
 
 let run_all_single_features (method_ : Method.t) : SingleFeature.feature list =

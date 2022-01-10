@@ -6,7 +6,8 @@ module NodeWiseFeatureMap = struct
   module WithMethodDomain = Caml.Map.Make (Method)
   include WithMethodDomain
 
-  type feature = Int of int | String of string | Bool of bool [@@deriving equal]
+  type feature = Int of int | String of string | Bool of bool | Annotation of Annotations.t
+  [@@deriving equal]
 
   type t = feature list WithMethodDomain.t
 

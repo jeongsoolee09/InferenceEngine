@@ -160,7 +160,8 @@ module SimilarVertexPairExtractor = struct
       ; (belong_to_same_package, 2)
       ; (return_type_is_another's_class, 3)
       ; (is_both_java_builtin, 2)
-      ; (is_both_initializer, 4) ]
+      ; (is_both_initializer, 4)
+      ; (has_same_annots, 6) ]
 
 
     (** Run all extractors for every method pair. *)
