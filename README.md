@@ -4,6 +4,6 @@
 
 ## Deps
 
-`opam install calendar ocamlgraph yojson utop core ppx_deriving`
+`opam install calendar ocamlgraph yojson utop core ppx_deriving dune re2`
 
 더 있는거같은데 잘모르겟다 무야홍
