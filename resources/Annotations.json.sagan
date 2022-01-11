@@ -1,14 +1,22 @@
 {
   "CachedRestClient.<init>()": "no annotation",
+  "ResourceSupport IndexController.index()":
+    "<_org.springframework.web.bind.annotation.GetMapping(path=\"/\", produces=\"application/hal+json\")> ()",
   "void BlogAdminControllerTests.showPostModel()": "<_org.junit.Test> ()",
   "void RedisCacheManager.setDynamic(boolean)": "no annotation",
   "ProjectPatchingService$ObjectPatcher ProjectPatchingService$ObjectPatcher.mutateIfDirty(Function,BiConsumer)":
     "no annotation",
   "void PostTests.isScheduledIfPublishDateIsInTheFuture()":
     "<_org.junit.Ignore(value=\"TODO: implement this at some point\") _org.junit.Test> ()",
+  "GuideType[] GuideType.values()": "no annotation",
+  "MediaType GithubClient.access$100()": "no annotation",
+  "void RendererProperties$Github.setToken(String)": "no annotation",
   "List ProjectMetadataService.getProjectsWithGroups()": "no annotation",
   "void PageElementsBuilder.findEndPage()": "no annotation",
+  "Predicate AsciidoctorGuideContentContributor.callsite_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_7_28()":
+    "no annotation",
   "void GuideImage.setName(String)": "no annotation",
+  "boolean MarkupController$Lambda$_4_10.test(Object)": "no annotation",
   "void PageElementsBuilder.findStartPage()": "no annotation",
   "void PostForm.setDraft(boolean)": "no annotation",
   "ProjectsController$Lambda$_3_80.<init>(Model)": "no annotation",
@@ -23,24 +31,32 @@
     "no annotation",
   "Predicate ProjectsController.callsite_sagan.projects.support.ProjectsController$Lambda$_3_33()":
     "no annotation",
+  "void AsciidoctorGuideContentContributor.lambda$findTableOfContents$4(Document,Element)":
+    "no annotation",
   "void Link.setHreflang(String)": "no annotation",
   "String Tutorial.getCloneUrl()":
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
   "void Project.setReleaseList(List)": "no annotation",
   "boolean PostView.isDraft()": "no annotation",
   "void AtomFeedView.setFeedUrl(String,Feed)": "no annotation",
+  "PrettifyVerbatimSerializer.<init>()": "no annotation",
   "boolean GettingStartedGuides$Lambda$_7_8.test(Object)": "no annotation",
   "Object GettingStartedGuideController$Lambda$_5_25.apply(Object)":
     "no annotation",
+  "MarkupController.<init>(List)": "no annotation",
   "void MemberProfileTests.lanyrdLink()": "<_org.junit.Test> ()",
   "void PaginationInfo_PaginationElementsTests.rendersFirstSixPagesOnPageThree_givenEnoughNumberOfPages()":
     "<_org.junit.Test> ()",
   "void TuckeyRewriteFilter.loadUrlRewriter(FilterConfig)": "no annotation",
   "void GettingStartedGuide.setImages(List)": "no annotation",
+  "void AsciidoctorGuideContentContributor.lambda$findTableOfContents$0(Element)":
+    "no annotation",
   "Set Tutorial.getProjects()":
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
   "ProjectPatchingService$Lambda$_2_18.<init>()": "no annotation",
   "String PostCategory.toString()": "no annotation",
+  "Consumer GuideRendererTests.callsite_sagan.renderer.guides.GuideRendererTests$Lambda$_6_70()":
+    "no annotation",
   "TeamAdminController.<init>(TeamService,TeamImporter,InMemoryUsersConnectionRepository)":
     "<_org.springframework.beans.factory.annotation.Autowired> ()",
   "String SaganRendererClient.renderMarkdown(String)": "no annotation",
@@ -59,6 +75,7 @@
   "void SignInServiceTests.isNotSpringMember()": "<_org.junit.Test> ()",
   "GuideMetadata[] SaganRendererClient.fetchTutorialGuides()":
     "no annotation",
+  "boolean AsciidoctorRenderer.canRender(MediaType)": "no annotation",
   "GeoLocationFormatter.<init>()": "no annotation",
   "Predicate BadgeController.callsite_sagan.projects.support.BadgeController$Lambda$_2_30(ProjectRelease$ReleaseStatus)":
     "no annotation",
@@ -72,6 +89,11 @@
   "int Project$Lambda$_17_19.compare(Object,Object)": "no annotation",
   "Object GettingStartedGuides$Lambda$_7_18.apply(int)": "no annotation",
   "void MemberProfile.<clinit>()": "no annotation",
+  "GuideContentResource.<init>(String,String,String)": "no annotation",
+  "RendererProperties$Guides RendererProperties.getGuides()": "no annotation",
+  "void MarkupControllerTests.renderMarkdown()": "<_org.junit.Test> ()",
+  "Consumer AsciidoctorGuideContentContributor.callsite_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_5_20()":
+    "no annotation",
   "void GithubAuthenticationSigninAdapterTests.signInSunnyDay()":
     "<_org.junit.Test> ()",
   "Optional TopicalController.access_sagan.site.guides.TopicalController$Lambda$_3_9(String,Topical)":
@@ -86,8 +108,10 @@
     "no annotation",
   "String Topical.getDescription()":
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
+  "String GuideResource.getSshUrl()": "no annotation",
   "MemberProfile TeamService.fetchMemberProfileUsername(String)":
     "no annotation",
+  "IndexController.<init>()": "no annotation",
   "Pageable PageableFactory.forFeeds()": "no annotation",
   "LearnController.<init>(BlogService,DateFactory)": "no annotation",
   "GuideHeader AbstractGuide.getHeader()": "no annotation",
@@ -101,6 +125,7 @@
   "String ProjectRelease.toString()": "no annotation",
   "String BlogController.renderListOfPosts(Page,Model,String)":
     "no annotation",
+  "void GuideImage.setEncodedContent(String)": "no annotation",
   "ThrowableAssert$ThrowingCallable EventsCalendarServiceTests.callsite_sagan.site.events.EventsCalendarServiceTests$Lambda$_8_24(EventsCalendarServiceTests)":
     "no annotation",
   "Predicate SaganRendererClient.callsite_sagan.site.renderer.SaganRendererClient$Lambda$_6_7()":
@@ -109,6 +134,10 @@
   "String Event.getSummary()": "no annotation",
   "String BlogAdminController.createPost(Principal,PostForm,BindingResult,Model)":
     "<_org.springframework.web.bind.annotation.RequestMapping(value=\"\", method=\".POST\")> (<> <_javax.validation.Valid> <> <>)",
+  "Predicate AsciidoctorGuideContentContributor.callsite_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_5_10(Document)":
+    "no annotation",
+  "boolean GuidesController.access_sagan.renderer.guides.GuidesController$Lambda$_3_29(GuideResource)":
+    "no annotation",
   "boolean BadgeController$Lambda$_3_39.test(Object)": "no annotation",
   "void ProjectPatchingService.access_sagan.projects.ProjectPatchingService$Lambda$_2_23(ProjectPatchingService,String)":
     "no annotation",
@@ -135,6 +164,8 @@
     "no annotation",
   "String Tutorial.getZipUrl()":
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
+  "void AsciidoctorGuideContentContributor.lambda$null$3(Element)":
+    "no annotation",
   "void DateTestUtils.<clinit>()": "no annotation",
   "Predicate Period.toCalendarFilter()": "no annotation",
   "String Topical.getSshUrl()":
@@ -145,14 +176,15 @@
     "<_org.springframework.beans.factory.annotation.Autowired> ()",
   "String ProjectRepository.toString()": "no annotation",
   "void SiteProperties$Events.setCalendarUri(URI)": "no annotation",
+  "void BlogAtomFeedViewTests.hasLinkToSelf()": "<_org.junit.Test> ()",
   "void BlogAtomFeedViewTests.hasLinkToAssociatedBlogList()":
     "<_org.junit.Test> ()",
-  "void BlogAtomFeedViewTests.hasLinkToSelf()": "<_org.junit.Test> ()",
   "String Project.getRenderedBootConfig()": "no annotation",
   "void MvcConfig.addViewControllers(ViewControllerRegistry)":
     "no annotation",
   "boolean SaganRendererClient.lambda$fetchTopicalGuides$4(GuideMetadata)":
     "no annotation",
+  "ImagesGuideContentContributor.<init>()": "no annotation",
   "String GuideMetadata.getGithubUrl()": "no annotation",
   "boolean SignInServiceTests$1.matches(Object)": "no annotation",
   "ProjectAdminController.<init>(ProjectMetadataService,PostContentRenderer)":
@@ -165,17 +197,24 @@
     "<_org.springframework.beans.factory.annotation.Autowired> (<> <_org.springframework.beans.factory.annotation.Value(value=\"${github.team.id}\")>)",
   "Function ProjectVersionOrderTests.callsite_sagan.projects.ProjectVersionOrderTests$Lambda$_2_9()":
     "no annotation",
+  "GuideResourceTests.<init>()": "no annotation",
   "EventsCalendarServiceTests$Lambda$_7_30.<init>(EventsCalendarServiceTests)":
     "no annotation",
   "void PostForm.setCategory(PostCategory)": "no annotation",
+  "MarkupController$Lambda$_4_10.<init>(MediaType)": "no annotation",
+  "GuideRendererTests$Lambda$_6_70.<init>()": "no annotation",
   "EventsCalendarServiceTests.<init>()": "no annotation",
+  "AsciidoctorGuideContentContributor$Lambda$_7_28.<init>()": "no annotation",
   "int ProjectRelease.hashCode()": "no annotation",
   "boolean SignInService.isSpringMember(String,GitHub)": "no annotation",
   "PostFormat[] PostFormat.values()": "no annotation",
+  "String[] GuideResource.getProjects()": "no annotation",
   "void ProjectVersionOrderTests.getProjectReleases_ordersVersionsByNumber_milestones()":
     "<_org.junit.Test> ()",
   "AtomFeedView AtomFeedController.listPublishedBroadcastPosts(Model,HttpServletResponse)":
     "<_org.springframework.web.bind.annotation.GetMapping(value=\"/blog/broadcasts.atom\")> ()",
+  "void AsciidoctorRendererTests.renderFencedCodeBlock()":
+    "<_org.junit.Test> ()",
   "void PostTests.slugReplacesSpacesWithDashes()": "<_org.junit.Test> ()",
   "void SpringToolsController.access_sagan.tools.support.SpringToolsController$Lambda$_3_10(Model,SpringToolsPlatform)":
     "no annotation",
@@ -191,6 +230,7 @@
   "void ProjectRepository.<clinit>()": "no annotation",
   "String EventsController.community(Model)":
     "<_org.springframework.web.bind.annotation.GetMapping(value=\"/community\")> ()",
+  "GuideRendererTests$Lambda$_6_59.<init>()": "no annotation",
   "Object SaganRendererClient$Lambda$_9_17.apply(int)": "no annotation",
   "Predicate Topicals.callsite_sagan.site.guides.Topicals$Lambda$_7_8(Project)":
     "no annotation",
@@ -203,6 +243,8 @@
   "String ProjectRelease.getVersionDisplayName()": "no annotation",
   "String BlogAdminController.showPost(Long,String,Model)":
     "<_org.springframework.web.bind.annotation.RequestMapping(value=\"/{postId:[0-9]+}{slug:.*}\", method=\".GET, .HEAD\")> (<_org.springframework.web.bind.annotation.PathVariable> <_org.springframework.web.bind.annotation.PathVariable> <>)",
+  "GuidesControllerTests$LinksMatcher GuidesControllerTests.hasLink(String,String,String)":
+    "no annotation",
   "GuideContent.<init>(String,String,String,String,List)":
     "<_com.fasterxml.jackson.annotation.JsonCreator> (<_com.fasterxml.jackson.annotation.JsonProperty(value=\"repositoryName\")> <_com.fasterxml.jackson.annotation.JsonProperty(value=\"tableOfContents\")> <_com.fasterxml.jackson.annotation.JsonProperty(value=\"content\")> <_com.fasterxml.jackson.annotation.JsonProperty(value=\"pushToPwsMetadata\")> <_com.fasterxml.jackson.annotation.JsonProperty(value=\"images\")>)",
   "GuideHeader[] Topicals.lambda$findByProject$2(int)": "no annotation",
@@ -214,6 +256,7 @@
     "no annotation",
   "ProjectRelease ProjectMetadataController.releaseMetadata(String,String)":
     "<_org.springframework.web.bind.annotation.RequestMapping(value=\"/{projectId}/releases/{version:.*}\", method=\".GET\")> (<_org.springframework.web.bind.annotation.PathVariable(value=\"projectId\")> <_org.springframework.web.bind.annotation.PathVariable(value=\"version\")>)",
+  "boolean MarkdownRenderer.canRender(MediaType)": "no annotation",
   "void PostViewTests.publishedPost()": "<_org.junit.Test> ()",
   "String GettingStartedGuide.getTypeLabel()": "no annotation",
   "Version.<init>(String,List,Version)": "no annotation",
@@ -231,6 +274,7 @@
   "GettingStartedGuide.<init>()": "no annotation",
   "String Tutorial.getRepositoryName()":
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
+  "String GuideContentResource.getContent()": "no annotation",
   "ProjectVersionDisplayNameTests.<init>()": "no annotation",
   "void GuideImage.setEncodedContent(String)": "no annotation",
   "boolean Project.access_sagan.projects.Project$Lambda$_13_22(Optional,ProjectRelease)":
@@ -247,6 +291,7 @@
     "no annotation",
   "String Post.getAdminSlug()":
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
+  "void PrettifyVerbatimSerializer.<clinit>()": "no annotation",
   "long PaginationInfo.getNextPageNumber()": "no annotation",
   "SecurityConfig$AdminAuthenticationConfig$1.<init>(SecurityConfig$AdminAuthenticationConfig)":
     "no annotation",
@@ -265,6 +310,7 @@
     "no annotation",
   "Date PostView.getCreatedAt()": "no annotation",
   "void Post.setRawContent(String)": "no annotation",
+  "GithubResourceNotFoundException.<init>(String,Throwable)": "no annotation",
   "void EventsCalendarServiceTests$Lambda$_7_30.call()": "no annotation",
   "String Project.getImagePath()": "no annotation",
   "Optional TutorialController.access_sagan.site.guides.TutorialController$Lambda$_3_9(String,Tutorial)":
@@ -286,11 +332,14 @@
     "<_org.junit.Test> ()",
   "ProjectRepository ProjectRepository.get(String,ProjectRelease$ReleaseStatus)":
     "no annotation",
+  "GuideRenderingException.<init>(String,Throwable)": "no annotation",
+  "GuideType$Lambda$_4_7.<init>(String)": "no annotation",
   "boolean TeamController.lambda$showTeam$0(MemberProfile)": "no annotation",
   "Page BlogService.getDraftPosts(Pageable)": "no annotation",
   "BlogController_ShowTests.<init>()": "no annotation",
   "BlogAdminControllerTests.<init>()": "no annotation",
   "GuideImage.<init>(String,String)": "no annotation",
+  "String GuideResource.getGithubUrl()": "no annotation",
   "void ProjectAdminControllerTests.editProject_presentsVersionPatternsInUris()":
     "<_org.junit.Test> ()",
   "String GuideMetadata.getDescription()": "no annotation",
@@ -309,6 +358,8 @@
     "no annotation",
   "void RewriteTests.tutorialRootShouldHaveTrailingSlash()":
     "<_org.junit.Test> ()",
+  "boolean GuideType.lambda$fromRepositoryName$1(String,GuideType)":
+    "no annotation",
   "void AtomFeedControllerTests.postsInModelForPublishedCategoryPosts()":
     "<_org.junit.Test> ()",
   "Long Post.getId()": "no annotation",
@@ -322,6 +373,7 @@
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
   "GuideHeader[] Topicals.access_sagan.site.guides.Topicals$Lambda$_7_18(int)":
     "no annotation",
+  "Object MarkupController$Lambda$_4_26.apply(Object)": "no annotation",
   "String GuideContent.getTableOfContents()": "no annotation",
   "String DefaultGuideHeader.getCiLatestUrl()":
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
@@ -329,11 +381,16 @@
     "no annotation",
   "String Post.getSlug()":
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
+  "String GuideResource.getTitle()": "no annotation",
   "String BlogAdminControllerTests.access_sagan.blog.support.BlogAdminControllerTests$Lambda$_9_21()":
     "no annotation",
   "ProjectRelease Project.removeProjectRelease(String)": "no annotation",
   "String SpringToolsDownload.getVariant()": "no annotation",
+  "GithubClient.<init>(RestTemplateBuilder,RendererProperties)":
+    "no annotation",
   "void BlogService_UpdatePostTests.setup()": "<_org.junit.Before> ()",
+  "String Repository.getDescription()": "no annotation",
+  "GuidesControllerTests.<init>()": "no annotation",
   "Pageable PageableFactory.build(int,int)": "no annotation",
   "ResponseEntity TopicalController.loadImage(String,String)":
     "<_org.springframework.web.bind.annotation.GetMapping(value=\"/{topical}/images/{image:[a-zA-Z0-9._-]+}\")> (<_org.springframework.web.bind.annotation.PathVariable> <_org.springframework.web.bind.annotation.PathVariable>)",
@@ -351,6 +408,7 @@
   "void ProjectMetadataControllerTests.addProjectRelease_replacesVersionPatterns()":
     "<_org.junit.Test> ()",
   "void ProjectTests.nonMostCurrentVersions()": "<_org.junit.Test> ()",
+  "RendererProperties$Guides.<init>()": "no annotation",
   "DateFactory.<init>()": "no annotation",
   "boolean SpringToolsAdminController.access_sagan.tools.support.SpringToolsAdminController$Lambda$_8_10(List,SpringToolsDownload)":
     "no annotation",
@@ -385,11 +443,16 @@
   "MemberProfile PostView.getAuthor()": "no annotation",
   "InMemoryUsersConnectionRepository SecurityConfig$AdminAuthenticationConfig.inMemoryUsersConnectionRepository(ConnectionFactoryRegistry)":
     "<_org.springframework.context.annotation.Bean> ()",
+  "void MarkdownRendererTests.renderRawHtml()": "<_org.junit.Test> ()",
+  "Optional GithubClient.findNextPageLink(ResponseEntity)": "no annotation",
   "String Tutorial.getTypeLabel()": "no annotation",
   "String GettingStartedGuide.getCiLatestUrl()":
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
   "MemberProfile.<init>()": "no annotation",
   "void Section.<clinit>()": "no annotation",
+  "void AsciidoctorRendererTests.renderAdmonition()": "<_org.junit.Test> ()",
+  "void GuidesControllerTests.fetchGuide()": "<_org.junit.Test> ()",
+  "String AsciidoctorRenderer.renderToHtml(String)": "no annotation",
   "void PostTests.slugStripsNonAlphanumericCharactersUsedAsDividersWithSpaces()":
     "<_org.junit.Test> ()",
   "String Project.getRepoUrl()": "no annotation",
@@ -398,6 +461,7 @@
   "Optional TopicalController.lambda$loadImage$0(String,Topical)":
     "no annotation",
   "void AtomFeedView.setAuthor(Post,Entry)": "no annotation",
+  "GuideType GuideType.fromRepositoryName(String)": "no annotation",
   "Tutorial.<init>()": "no annotation",
   "String Topical.getName()":
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
@@ -409,6 +473,10 @@
     "<_org.springframework.web.bind.annotation.RequestMapping(value=\"/{projectId}\", method=\".GET, .HEAD\")> (<_org.springframework.web.bind.annotation.PathVariable(value=\"projectId\")>)",
   "Optional Topicals.findByName(String)":
     "<_org.springframework.cache.annotation.Cacheable(value=\"cache.topical\")> ()",
+  "void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)":
+    "no annotation",
+  "ClientHttpResponse GithubClient$GithubAppTokenInterceptor.intercept(HttpRequest,byte[],ClientHttpRequestExecution)":
+    "no annotation",
   "String GettingStartedGuide.getContent()": "no annotation",
   "DefaultGuideHeader Topicals.access_sagan.site.guides.Topicals$Lambda$_5_10(GuideMetadata)":
     "no annotation",
@@ -416,6 +484,7 @@
     "no annotation",
   "void Link.setHref(String)": "no annotation",
   "PostBuilder PostBuilder.post()": "no annotation",
+  "GuideType GuideType.valueOf(String)": "no annotation",
   "void ProjectTests.isTopLevelProjectWhenItHasNoParentProject()":
     "<_org.junit.Test> ()",
   "PostFormAdapter_UpdatePostTests.<init>()": "no annotation",
@@ -423,6 +492,8 @@
   "ResponseEntity DocsWebhookController.processGuidesUpdate(String,String,String,String)":
     "<_org.springframework.web.bind.annotation.RequestMapping(value=\"guides/{repositoryName}\", method=\".POST\", consumes=\"application/json\", produces=\"application/json\")> (<_org.springframework.web.bind.annotation.RequestBody> <_org.springframework.web.bind.annotation.RequestHeader(value=\"X-Hub-Signature\")> <_org.springframework.web.bind.annotation.RequestHeader(value=\"X-GitHub-Event\")> <_org.springframework.web.bind.annotation.PathVariable>)",
   "void BlogService.updatePost(Post,PostForm)": "no annotation",
+  "Predicate MarkupController.callsite_sagan.renderer.markup.MarkupController$Lambda$_4_10(MediaType)":
+    "no annotation",
   "void MemberProfile.setJobTitle(String)": "no annotation",
   "Object SaganRendererClient$Lambda$_12_17.apply(int)": "no annotation",
   "PostCategoryFormatterTests.<init>()": "no annotation",
@@ -434,6 +505,9 @@
     "no annotation",
   "void ProjectRelease.setVersion(String)": "no annotation",
   "String Project.getRawBootConfig()": "no annotation",
+  "ClassPathResource GithubClientTests.getClassPathResource(String)":
+    "no annotation",
+  "String GuideType.toString()": "no annotation",
   "SignInServiceTests$1.<init>(SignInServiceTests)": "no annotation",
   "void SecurityContextAuthenticationFilterTests.testUnsuccessfulAuthentication()":
     "<_org.junit.Test> ()",
@@ -449,6 +523,7 @@
   "void ProjectsControllerTests.showProjectHasStackOverflowLink()":
     "<_org.junit.Test> ()",
   "boolean ProjectsController$Lambda$_3_33.test(Object)": "no annotation",
+  "void MarkdownRendererTests.renderTitleAnchors()": "<_org.junit.Test> ()",
   "ClassPathResource EventsCalendarServiceTests.getClassPathResource(String)":
     "no annotation",
   "ProjectsController$Lambda$_3_33.<init>()": "no annotation",
@@ -461,6 +536,8 @@
   "void ProjectRelease.setRefDocUrl(String)": "no annotation",
   "String SpringToolsController.listDownloads(Model)":
     "<_org.springframework.web.bind.annotation.GetMapping> ()",
+  "GuideContentResource GuideRenderer.render(GuideType,String)":
+    "no annotation",
   "String Tutorial.getSshUrl()":
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
   "void ProjectRepository.setId(String)": "no annotation",
@@ -469,12 +546,14 @@
   "Answer BlogService_ValidPostTests.callsite_sagan.site.blog.BlogService_ValidPostTests$Lambda$_5_38()":
     "no annotation",
   "PostBuilder PostBuilder.id(Long)": "no annotation",
+  "void GuidesControllerTests.fetchAllGuides()": "<_org.junit.Test> ()",
   "void BlogPostContentRendererTests.rendersCallouts()":
     "<_org.junit.Test> ()",
   "MemberProfileBuilder MemberProfileBuilder.geoLocation(GeoLocation)":
     "no annotation",
   "BlogAtomFeedViewTests.<init>()": "no annotation",
   "AbstractGuide.<init>()": "no annotation",
+  "void AsciidoctorRenderer.<clinit>()": "no annotation",
   "String GettingStartedGuide.getSshUrl()":
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
   "String DefaultGuideHeader.getGithubUrl()": "no annotation",
@@ -482,22 +561,26 @@
     "no annotation",
   "void BlogService_ValidPostTests.createsAPost()": "<_org.junit.Test> ()",
   "List TeamService.fetchActiveMembers()": "no annotation",
+  "GuideImage.<init>()": "no annotation",
   "String AbstractGuide.getTitle()":
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
   "String Post.generatePublicSlug()": "no annotation",
   "void GeoLocationFormatterTests.testParse()": "<_org.junit.Test> ()",
   "GuidesRepositoryTest.<init>()": "no annotation",
   "List Project.getChildProjectList()": "no annotation",
+  "String MarkdownRenderer.renderToHtml(String)": "no annotation",
   "List ProjectVersionOrderTests.getProjectReleases(Project)":
     "no annotation",
   "SpringToolsController$Lambda$_3_10.<init>(Model)": "no annotation",
   "boolean ProjectAdminController.access_sagan.projects.support.ProjectAdminController$Lambda$_12_164(List,ProjectSample)":
     "no annotation",
   "MvcConfig$1.<init>(MvcConfig)": "no annotation",
+  "void MarkdownRendererTests.renderFencedCodeBlock()":
+    "<_org.junit.Test> ()",
   "void RewriteTests.validateTemporaryRedirect(String,String)":
     "no annotation",
-  "String PostCategoryFormatter.print(Object,Locale)": "no annotation",
   "String PostCategoryFormatter.print(PostCategory,Locale)": "no annotation",
+  "String PostCategoryFormatter.print(Object,Locale)": "no annotation",
   "int Link.hashCode()": "no annotation",
   "boolean ProjectAdminController.lambda$save$0(ProjectSample)":
     "no annotation",
@@ -508,6 +591,7 @@
   "void ProjectMetadataService.delete(String)": "no annotation",
   "void GuidesJsonTests.serializeJson()": "<_org.junit.Test> ()",
   "GeoLocationFormatterTests.<init>()": "no annotation",
+  "boolean GuidesController$Lambda$_3_29.test(Object)": "no annotation",
   "Boolean ProjectRepository.getSnapshotsEnabled()": "no annotation",
   "void BlogController_BroadcastPostsTests.viewNameIsIndex()":
     "<_org.junit.Test> ()",
@@ -524,28 +608,36 @@
     "<_org.junit.After> ()",
   "Function Tutorials.callsite_sagan.site.guides.Tutorials$Lambda$_5_10()":
     "no annotation",
+  "GettingStartedGuide.<init>(GuideHeader,GuideContent)": "no annotation",
   "String GettingStartedGuide.getCiStatusImageUrl()":
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
-  "GettingStartedGuide.<init>(GuideHeader,GuideContent)": "no annotation",
   "CloudFoundryCacheConfig.<init>()": "no annotation",
+  "void AsciidoctorRendererTests.renderLink()": "<_org.junit.Test> ()",
+  "MarkdownRendererTests.<init>()": "no annotation",
   "int Project.getDisplayOrder()": "no annotation",
   "String Project.getStackOverflowTags()": "no annotation",
   "String GuideImage.getName()": "no annotation",
   "String Topical.getGithubUrl()":
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
   "JsonPControllerAdvice.<init>()": "no annotation",
+  "ResponseEntity GuidesController.renderGuide(String,String)":
+    "<_org.springframework.web.bind.annotation.GetMapping(value=\"/{type}/{guide}/content\")> (<_org.springframework.web.bind.annotation.PathVariable> <_org.springframework.web.bind.annotation.PathVariable>)",
   "void PaginationInfo_PaginationElementsTests.doesNotRenderEllipsesBetweenAdjacentPages()":
     "<_org.junit.Test> ()",
   "URI Event.parseLink(VEvent)": "no annotation",
   "boolean MemberProfile.hasTwitterUsername()": "no annotation",
+  "String GuideContentResource.getTableOfContents()": "no annotation",
   "Object TutorialController$Lambda$_3_9.apply(Object)": "no annotation",
+  "String Repository.getName()": "no annotation",
   "void PostForm.setContent(String)": "no annotation",
   "boolean ProjectRelease.isGeneralAvailability()": "no annotation",
   "Section[] Section.values()": "no annotation",
+  "String GithubResourceNotFoundException.getResourceName()": "no annotation",
   "GuideMetadata[] SaganRendererClient.fetchGettingStartedGuides()":
     "no annotation",
   "ProjectAdminControllerTests.<init>()": "no annotation",
   "boolean PostForm.isBroadcast()": "no annotation",
+  "void MarkdownToHtmlSerializer.visit(HeaderNode)": "no annotation",
   "void GithubAuthenticationSigninAdapterTests.signInFailureAfterRestException()":
     "<_org.junit.Test> ()",
   "void ProjectRelease.setArtifactId(String)": "no annotation",
@@ -560,6 +652,7 @@
   "TeamLocation.<init>()": "no annotation",
   "String PostView.getRenderedSummary()": "no annotation",
   "void BadgeControllerTests.badgeNotFound()": "<_org.junit.Test> ()",
+  "GuidesControllerTests$LinksMatcher.<init>(String,String)": "no annotation",
   "PostView.<init>(Post,DateFactory)": "no annotation",
   "SaganRendererClient$Lambda$_9_7.<init>()": "no annotation",
   "PostMovedException.<init>(String)": "no annotation",
@@ -570,6 +663,8 @@
   "List ProjectMetadataService.getProjectsForCategory(String)":
     "no annotation",
   "String GuideType.getName()": "no annotation",
+  "void GuideResourceTests.nullRepositoryDescription()":
+    "<_org.junit.Test> ()",
   "String Fixtures.githubRepoJson()": "no annotation",
   "void ProjectTests.orderedProjectSamples()": "<_org.junit.Test> ()",
   "void ProjectReleaseVersionTests.releaseTrainPrereleaseDetected()":
@@ -582,6 +677,7 @@
     "no annotation",
   "Set DefaultGuideHeader.getProjects()": "no annotation",
   "void ProjectRepository.setSnapshotsEnabled(Boolean)": "no annotation",
+  "GuideType$Lambda$_3_7.<init>(String)": "no annotation",
   "void ProjectAdminControllerTests.saveProject_rendersAsciidocContent()":
     "<_org.junit.Test> ()",
   "Version Version.build(String)": "no annotation",
@@ -597,6 +693,7 @@
   "String BlogAdminController.newPost(Model)":
     "<_org.springframework.web.bind.annotation.RequestMapping(value=\"/new\", method=\".GET, .HEAD\")> ()",
   "SecurityConfig.<init>()": "no annotation",
+  "String Repository.getCloneUrl()": "no annotation",
   "void BadgeControllerTests.projecWithTwoReleasesUsingSymbolicNamesFlagPicksCurrentRelease()":
     "<_org.junit.Test> ()",
   "void AtomFeedControllerTests.postsInModelForAllPublishedPosts()":
@@ -614,15 +711,23 @@
   "void GettingStartedGuides.<clinit>()": "no annotation",
   "void ProjectRelease.setCurrent(boolean)": "no annotation",
   "boolean Post.isDraft()": "no annotation",
+  "String AsciidoctorGuideContentContributor.findTableOfContents(Document)":
+    "no annotation",
   "void RedisCacheManager.setDefaultExpiration(long)": "no annotation",
   "SecurityConfig$GithubAuthenticationSigninAdapter.<init>(String,SignInService)":
     "no annotation",
+  "GithubClient$Lambda$_7_32.<init>(Pattern)": "no annotation",
   "boolean PaginationInfo.equals(Object)": "no annotation",
+  "RendererProperties$Github RendererProperties.getGithub()": "no annotation",
   "PostFormat PostFormat.valueOf(String)": "no annotation",
   "CacheManager StandaloneCacheConfig.simpleCacheManager()":
     "<_org.springframework.context.annotation.Bean> ()",
+  "AsciidoctorRendererTests.<init>()": "no annotation",
   "void BlogController_PublishedPostsTests.setUp()": "<_org.junit.Before> ()",
   "PostView PostView.of(Post,DateFactory)": "no annotation",
+  "void GuideRendererTests.access_sagan.renderer.guides.GuideRendererTests$Lambda$_6_59(GuideImage)":
+    "no annotation",
+  "GuideResourceAssembler.<init>()": "no annotation",
   "Date PostFormAdapter.createdDate(PostForm,Date)": "no annotation",
   "void RewriteTests.gsgGuidesListingRedirectsToIndex()":
     "<_org.junit.Test> ()",
@@ -641,6 +746,8 @@
   "String GettingStartedGuide.getTitle()":
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
   "String PostCategory.getDisplayName()": "no annotation",
+  "Asciidoctor AsciidoctorConfig.asciidoctor()":
+    "<_org.springframework.context.annotation.Bean> ()",
   "List TeamService.fetchHiddenMembers()": "no annotation",
   "boolean ProjectPatchingService$ObjectPatcher.isDirty(Object,Object)":
     "no annotation",
@@ -661,6 +768,8 @@
     "<_org.junit.Test> ()",
   "void PostFormAdapter_CreatePostTests.postCreatedDateDefaultsToNow()":
     "<_org.junit.Test> ()",
+  "void AsciidoctorGuideContentContributor$Lambda$_5_20.accept(Object)":
+    "no annotation",
   "String StaticPagePathFinder.relativeFilePath(String,Resource)":
     "no annotation",
   "GettingStartedGuideController$Lambda$_4_9.<init>(String)": "no annotation",
@@ -669,11 +778,15 @@
   "PostCategory Post.getCategory()": "no annotation",
   "Consumer SpringToolsController.callsite_sagan.tools.support.SpringToolsController$Lambda$_3_10(Model)":
     "no annotation",
+  "void GuideRendererTests.renderSampleGuideWithPwsMetadata()":
+    "<_org.junit.Test> ()",
   "void GeoLocationFormatterTests.setup()": "<_org.junit.Before> ()",
   "Predicate Period.callsite_sagan.site.events.Period$Lambda$_6_1(Period)":
     "no annotation",
   "void ProjectMetadataController.handle()":
     "<_org.springframework.web.bind.annotation.ExceptionHandler(value=\"\") _org.springframework.web.bind.annotation.ResponseStatus(value=\".NOT_FOUND\")> ()",
+  "boolean AsciidoctorGuideContentContributor.lambda$null$2(Document,Element)":
+    "no annotation",
   "void PostTests.isLiveIfPublishedNow()": "<_org.junit.Test> ()",
   "Date PostView.getPublishAt()": "no annotation",
   "TeamService.<init>(TeamRepository)":
@@ -681,7 +794,9 @@
   "void RewriteTests.tutorialPagesShouldAlwaysHaveTrailingSlash()":
     "<_org.junit.Test> ()",
   "Project ProjectMetadataService.save(Project)": "no annotation",
+  "GithubClient$Lambda$_7_52.<init>()": "no annotation",
   "String GuideMetadata.getName()": "no annotation",
+  "MarkupControllerTests.<init>()": "no annotation",
   "List StaticPagePathFinder.findPaths()": "no annotation",
   "void Topicals.evictListFromCache()":
     "<_org.springframework.cache.annotation.CacheEvict(value=\"cache.topicals\")> ()",
@@ -694,9 +809,9 @@
   "void EventsCalendarServiceTests.shouldParseHtmlEvent()":
     "<_org.junit.Test> ()",
   "boolean Version.isQualified()": "no annotation",
+  "SaganRendererClient$Lambda$_12_7.<init>()": "no annotation",
   "GuideContent SaganRendererClient.fetchTopicalGuideContent(String)":
     "no annotation",
-  "SaganRendererClient$Lambda$_12_7.<init>()": "no annotation",
   "Function GettingStartedGuideController.callsite_sagan.site.guides.GettingStartedGuideController$Lambda$_4_17()":
     "no annotation",
   "Event.<init>(LocalDate,LocalDate,String,URI,String)": "no annotation",
@@ -714,6 +829,10 @@
   "GuideContent SaganRendererClient.fetchTutorialGuideContent(String)":
     "no annotation",
   "void PostForm.setCreatedAt(Date)": "no annotation",
+  "void GuideRendererTests.renderAsciidoctorContent()":
+    "<_org.junit.Test> ()",
+  "Matcher GithubClient.access_sagan.renderer.github.GithubClient$Lambda$_7_32(GithubClient,CharSequence)":
+    "no annotation",
   "void Project.setRawBootConfig(String)": "no annotation",
   "void PostSummaryTests.extractNestedTagSummary()": "<_org.junit.Test> ()",
   "GeoLocation MemberProfile.getGeoLocation()": "no annotation",
@@ -749,6 +868,8 @@
   "Post BlogService.getPost(Long)": "no annotation",
   "ResponseEntity BadgeController.releaseBadge(String)":
     "<_org.springframework.web.bind.annotation.RequestMapping(value=\"/{projectId}/ga.svg, /{projectId}.svg\", method=\".GET, .HEAD\", produces=\"image/svg+xml\")> (<_org.springframework.web.bind.annotation.PathVariable(value=\"projectId\")>)",
+  "Consumer AsciidoctorGuideContentContributor.callsite_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_3_23(Document)":
+    "no annotation",
   "void BlogController_PublishedPostsForCategoryTests.<clinit>()":
     "no annotation",
   "TeamController$Lambda$_4_27.<init>()": "no annotation",
@@ -768,10 +889,14 @@
   "String GettingStartedGuide.getPushToPwsUrl()": "no annotation",
   "void BadgeControllerTests.projecWithTwoReleasesUsingSymbolicNamesWithNumbersWithoutCurrentFlagPicksMostRecentRelease()":
     "<_org.junit.Test> ()",
-  "boolean Project.equals(Object)": "no annotation",
+  "AsciidoctorGuideContentContributor$Lambda$_5_10.<init>(Document)":
+    "no annotation",
   "void Project.setRenderedBootConfig(String)": "no annotation",
+  "boolean Project.equals(Object)": "no annotation",
   "ProjectMetadataController.<init>(ProjectMetadataService,ProjectPatchingService)":
     "<_org.springframework.beans.factory.annotation.Autowired> ()",
+  "void AsciidoctorGuideContentContributor.access_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_3_23(Document,Element)":
+    "no annotation",
   "void RewriteTests.projectPageIndexIsNotRedirected()":
     "<_org.junit.Test> ()",
   "void ProjectVersionDisplayNameTests.getDisplayNameForReleaseCandidateVersion()":
@@ -782,10 +907,13 @@
   "void ProjectVersionDisplayNameTests.getDisplayNameForSnapshotRelease()":
     "<_org.junit.Test> ()",
   "URI Event.getLink()": "no annotation",
+  "AsciidoctorGuideContentContributor$Lambda$_5_20.<init>()": "no annotation",
   "String AbstractGuide.getContent()": "no annotation",
   "Project ProjectMetadataController.updateProject(String,Project)":
     "<_org.springframework.web.bind.annotation.RequestMapping(value=\"/{projectId}\", method=\".PATCH\")> (<_org.springframework.web.bind.annotation.PathVariable(value=\"projectId\")> <_org.springframework.web.bind.annotation.RequestBody>)",
   "SiteUrl.<init>()": "no annotation",
+  "PwsGuideContentContributor.<init>()": "no annotation",
+  "String GuideImage.getEncodedContent()": "no annotation",
   "BadgeControllerTests.<init>()": "no annotation",
   "Object TopicalController$Lambda$_3_17.apply(Object)": "no annotation",
   "GuideHeader[] GettingStartedGuides.lambda$findByProject$2(int)":
@@ -800,7 +928,9 @@
     "no annotation",
   "ProjectRelease$ReleaseStatus ProjectRelease.getReleaseStatus()":
     "no annotation",
+  "String GuideRenderingException.getRepositoryName()": "no annotation",
   "void MemberProfileTests.emptyGithubLink()": "<_org.junit.Test> ()",
+  "String GuideResource.getGitUrl()": "no annotation",
   "void PostCategoryFormatterTests.itConvertsUrlSlugStringsToPostCategories()":
     "<_org.junit.Test> ()",
   "String Topical.getTableOfContents()": "no annotation",
@@ -826,13 +956,15 @@
   "void SpringToolsController$Lambda$_3_10.accept(Object)": "no annotation",
   "ResourceNotFoundException.<init>(String)": "no annotation",
   "void DocsWebhookController.logPayload(Map)": "no annotation",
+  "Function GithubClient.callsite_sagan.renderer.github.GithubClient$Lambda$_7_52()":
+    "no annotation",
   "TeamServiceTests.<init>()": "no annotation",
   "String Tutorial.getPushToPwsUrl()": "no annotation",
   "void BlogController_ShowTests.singlePostInModelForOnePost()":
     "<_org.junit.Test> ()",
-  "Project.<init>(String,String,String,String,List,String)": "no annotation",
   "Project.<init>(String,String,String,String,int,List,String,String,String)":
     "no annotation",
+  "Project.<init>(String,String,String,String,List,String)": "no annotation",
   "void DefaultGuideHeaderTests.setUp()": "<_org.junit.Before> ()",
   "ProjectRepository ProjectRelease.getRepository()": "no annotation",
   "EventsController.<init>(EventsCalendarService)": "no annotation",
@@ -852,9 +984,12 @@
     "no annotation",
   "DefaultGuideHeader[] Topicals.lambda$findAll$0(int)": "no annotation",
   "String DefaultGuideHeader.getRepositoryName()": "no annotation",
+  "MarkdownToHtmlSerializer.<init>(LinkRenderer,Map)": "no annotation",
   "void ProjectReleaseVersionTests.releaseServiceReleaseTrainGaDetected()":
     "<_org.junit.Test> ()",
   "boolean Project.hasSite()": "no annotation",
+  "LinkRenderer$Rendering MarkdownToHtmlSerializer.createAnchorLink(String)":
+    "no annotation",
   "Long TeamLocation.getMemberId()": "no annotation",
   "Object Topicals$Lambda$_5_20.apply(int)": "no annotation",
   "void RewriteTests.projectPagesAreRedirected()": "<_org.junit.Test> ()",
@@ -862,8 +997,13 @@
   "String PostView.getTitle()": "no annotation",
   "void EventsCalendarServiceTests.shouldReturnManyEvents()":
     "<_org.junit.Test> ()",
+  "String Repository.getFullName()": "no annotation",
   "void EventsCalendarServiceTests$Lambda$_8_24.call()": "no annotation",
   "void PostTests.isNotLiveIfScheduledInTheFuture()": "<_org.junit.Test> ()",
+  "Consumer AsciidoctorGuideContentContributor.callsite_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_3_13()":
+    "no annotation",
+  "ClientHttpResponse GithubClient$GithubAcceptInterceptor.intercept(HttpRequest,byte[],ClientHttpRequestExecution)":
+    "no annotation",
   "void MemberProfileTests.nullLanyrdLink()": "<_org.junit.Test> ()",
   "String MemberProfile.getGithubUsername()": "no annotation",
   "PostBuilder PostBuilder.renderedSummary(String)": "no annotation",
@@ -876,6 +1016,10 @@
     "<_org.junit.Test> ()",
   "String TopicalController.viewTutorial(String,Model)":
     "<_org.springframework.web.bind.annotation.GetMapping(value=\"/{topical}\")> (<_org.springframework.web.bind.annotation.PathVariable> <>)",
+  "ResourceSupport GuideResourceAssembler.toResource(Object)":
+    "no annotation",
+  "GuideResource GuideResourceAssembler.toResource(Repository)":
+    "no annotation",
   "Link MemberProfile.getGithubLink()":
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
   "boolean ProjectRelease.isSnapshot()": "no annotation",
@@ -887,20 +1031,29 @@
   "Optional GettingStartedGuides.findByName(String)":
     "<_org.springframework.cache.annotation.Cacheable(value=\"cache.guide\")> ()",
   "void PostFormAdapter.summarize(Post)": "no annotation",
+  "void GuidesControllerTests.fetchAllGuidesFiltersUnknownTypes()":
+    "<_org.junit.Test> ()",
   "void RewriteTests.stripsWwwSubdomain()": "<_org.junit.Test> ()",
   "void ProjectVersionOrderTests.getProjectReleases_ordersVersionsByNumber_minor()":
     "<_org.junit.Test> ()",
   "IntFunction SaganRendererClient.callsite_sagan.site.renderer.SaganRendererClient$Lambda$_6_17()":
     "no annotation",
   "StandaloneMvcConfig.<init>()": "no annotation",
+  "GithubClient$GithubAppTokenInterceptor.<init>(String)": "no annotation",
   "Optional BadgeController.getRelease(Collection,Predicate)":
     "no annotation",
+  "RendererProperties.<init>()": "no annotation",
   "byte[] VersionBadgeService.createSvgBadge(Project,ProjectRelease)":
     "no annotation",
   "void Project.setRepoUrl(String)": "no annotation",
   "ConnectionFactoryRegistry SecurityConfig$AdminAuthenticationConfig.connectionFactoryRegistry()":
     "<_org.springframework.context.annotation.Bean> ()",
+  "void AsciidoctorGuideContentContributor.access_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_5_20(Element)":
+    "no annotation",
+  "MarkdownRenderer.<init>()": "no annotation",
   "void BlogController_ShowTests.setUp()": "<_org.junit.Before> ()",
+  "Repository.<init>(Long,String,String,String,String,String,String,String,List)":
+    "<_com.fasterxml.jackson.annotation.JsonCreator> (<_com.fasterxml.jackson.annotation.JsonProperty(value=\"id\")> <_com.fasterxml.jackson.annotation.JsonProperty(value=\"name\")> <_com.fasterxml.jackson.annotation.JsonProperty(value=\"full_name\")> <_com.fasterxml.jackson.annotation.JsonProperty(value=\"description\")> <_com.fasterxml.jackson.annotation.JsonProperty(value=\"html_url\")> <_com.fasterxml.jackson.annotation.JsonProperty(value=\"git_url\")> <_com.fasterxml.jackson.annotation.JsonProperty(value=\"ssh_url\")> <_com.fasterxml.jackson.annotation.JsonProperty(value=\"clone_url\")> <_com.fasterxml.jackson.annotation.JsonProperty(value=\"topics\")>)",
   "boolean Project$Lambda$_11_9.test(Object)": "no annotation",
   "StandaloneCacheConfig$Lambda$_3_58.<init>()": "no annotation",
   "void BlogAtomFeedViewTests.buildPostsWithDate(int,List)": "no annotation",
@@ -909,6 +1062,7 @@
   "Function ProjectPatchingService.callsite_sagan.projects.ProjectPatchingService$Lambda$_2_18()":
     "no annotation",
   "Project$Lambda$_18_4.<init>()": "no annotation",
+  "void GuideRendererTests.setup()": "<_org.junit.Before> ()",
   "PostCategory PostForm.getCategory()": "no annotation",
   "String ProjectsController.access_sagan.projects.support.ProjectsController$Lambda$_3_63(ProjectsController)":
     "no annotation",
@@ -920,8 +1074,10 @@
     "no annotation",
   "void SignInServiceTests.createOrUpdateMemberProfileOnLogin()":
     "<_org.junit.Test> ()",
+  "void GuideContentResource.setTableOfContents(String)": "no annotation",
   "BadgeController$Lambda$_3_7.<init>(Predicate)": "no annotation",
   "ProjectRelease.<init>()": "no annotation",
+  "MarkupController$Lambda$_4_26.<init>(String)": "no annotation",
   "void DocsWebhookControllerTests.testGuideCacheEviction()":
     "<_org.junit.Test> ()",
   "void PostTests.slugStripsNonAlphanumericCharacters()":
@@ -930,10 +1086,16 @@
   "int PaginationInfo.hashCode()": "no annotation",
   "String CloudFoundryMvcConfig.getGitCommitId()": "no annotation",
   "Period Period.of(String,int)": "no annotation",
+  "Predicate GuideType.callsite_sagan.renderer.guides.GuideType$Lambda$_4_7(String)":
+    "no annotation",
   "void PostForm.setBroadcast(boolean)": "no annotation",
   "SiteProperties$Events SiteProperties.getEvents()": "no annotation",
+  "Predicate GuidesController.callsite_sagan.renderer.guides.GuidesController$Lambda$_3_29()":
+    "no annotation",
   "SignInServiceTests.<init>()": "no annotation",
   "Date Post.getPublishAt()": "no annotation",
+  "String GuideType.getSlug()":
+    "<_com.fasterxml.jackson.annotation.JsonValue> ()",
   "ThrowableAssert$ThrowingCallable EventsCalendarServiceTests.callsite_sagan.site.events.EventsCalendarServiceTests$Lambda$_9_27(EventsCalendarService)":
     "no annotation",
   "void ProjectMetadataControllerTests.editProjectReleases_replacesVersionPatterns()":
@@ -944,6 +1106,7 @@
   "Page BlogService.getPublishedPostsByDate(int,Pageable)": "no annotation",
   "Object ProjectPatchingService$ObjectPatcher.patchedValue()":
     "no annotation",
+  "void GuidesControllerTests$LinksMatcher.match(MvcResult)": "no annotation",
   "int ProjectSample.getDisplayOrder()": "no annotation",
   "boolean PostView.showReadMore()": "no annotation",
   "GuideHeader[] Tutorials.findAll()":
@@ -955,6 +1118,9 @@
     "<_org.junit.Test> ()",
   "PostBuilder PostBuilder.title(String)": "no annotation",
   "ProjectAdminController$Lambda$_6_57.<init>()": "no annotation",
+  "boolean GuideType.access_sagan.renderer.guides.GuideType$Lambda$_3_7(String,GuideType)":
+    "no annotation",
+  "GithubClient$GithubAcceptInterceptor.<init>()": "no annotation",
   "void EventsCalendarServiceTests$Lambda$_9_27.call()": "no annotation",
   "String Link.getRel()": "no annotation",
   "void EventsCalendarServiceTests.access_sagan.site.events.EventsCalendarServiceTests$Lambda$_9_27(EventsCalendarService)":
@@ -972,6 +1138,7 @@
     "no annotation",
   "Object StandaloneCacheConfig$Lambda$_3_58.apply(Object)": "no annotation",
   "BlogController_BroadcastPostsTests.<init>()": "no annotation",
+  "void GuideRendererTests$Lambda$_6_70.accept(Object)": "no annotation",
   "String LearnController.learn(Model)":
     "<_org.springframework.web.bind.annotation.GetMapping(value=\"/learn\")> ()",
   "String DefaultGuideHeader.getCiStatusImageUrl()":
@@ -988,6 +1155,7 @@
   "String AbstractGuide.getName()":
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
   "List ProjectMetadataService.getAllGroups()": "no annotation",
+  "void GithubClientTests.downloadRepositoryInfo()": "<_org.junit.Test> ()",
   "void TeamControllerTests.includeTeamLocationsInModel()":
     "<_org.junit.Test> ()",
   "ProjectMetadataControllerTests$Lambda$_7_104.<init>()": "no annotation",
@@ -1015,13 +1183,20 @@
   "void Tutorials.evictFromCache(String)":
     "<_org.springframework.cache.annotation.CacheEvict(value=\"cache.tutorial\")> ()",
   "boolean BadgeController$Lambda$_2_30.test(Object)": "no annotation",
+  "GuideResource.<init>(Repository)": "no annotation",
   "DocsWebhookControllerTests.<init>()": "no annotation",
   "void ProjectVersionOrderTests.getProjectReleases_ordersElementsWithinAReleaseTrain()":
     "<_org.junit.Test> ()",
   "String Topical.getTypeLabel()": "no annotation",
   "Version Version.getBaseVersion()": "no annotation",
+  "boolean MarkupController.access_sagan.renderer.markup.MarkupController$Lambda$_4_10(MediaType,MarkupRenderer)":
+    "no annotation",
+  "byte[] GithubClient.downloadRepositoryAsZipball(String,String)":
+    "no annotation",
   "void ProjectMetadataControllerTests.getProject_doesNotContainVersionPlaceholders()":
     "<_org.junit.Test> ()",
+  "boolean AsciidoctorGuideContentContributor.access_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_7_28(String)":
+    "no annotation",
   "BadgeController$Lambda$_2_30.<init>(ProjectRelease$ReleaseStatus)":
     "no annotation",
   "void ProjectVersionOrderTests.getProjectReleases_ordersMultipleStylesOfMilestones()":
@@ -1032,6 +1207,8 @@
     "<_org.junit.Test> ()",
   "GettingStartedGuides.<init>(SaganRendererClient)": "no annotation",
   "ProjectSample.<init>()": "no annotation",
+  "AsciidoctorGuideContentContributor$Lambda$_3_23.<init>(Document)":
+    "no annotation",
   "void SignInServiceTests.isSpringMember()": "<_org.junit.Test> ()",
   "PostForm.<init>()": "no annotation",
   "String StaticPagePathFinder$PagePaths.getUrlPath()": "no annotation",
@@ -1047,6 +1224,7 @@
   "void BlogController_ShowTests.viewNameIsShow()": "<_org.junit.Test> ()",
   "void AtomFeedControllerTests.feedMetadataInModelForAllPublishedPosts()":
     "<_org.junit.Test> ()",
+  "String Repository.getGitUrl()": "no annotation",
   "TeamControllerTests.<init>()": "no annotation",
   "Object TeamController$Lambda$_4_37.apply(Object)": "no annotation",
   "ResourceNotFoundException.<init>(String,Throwable)": "no annotation",
@@ -1067,8 +1245,10 @@
   "Object SaganRendererClient$Lambda$_6_17.apply(int)": "no annotation",
   "IntFunction SaganRendererClient.callsite_sagan.site.renderer.SaganRendererClient$Lambda$_9_17()":
     "no annotation",
+  "void GithubClientTests.<clinit>()": "no annotation",
   "AbstractGuide$Lambda$_12_10.<init>(String)": "no annotation",
   "Long ProjectGroup.getId()": "no annotation",
+  "AsciidoctorRenderer.<init>(Asciidoctor)": "no annotation",
   "SaganRendererClient$Lambda$_6_7.<init>()": "no annotation",
   "boolean SaganRendererClient$Lambda$_9_7.test(Object)": "no annotation",
   "SecurityConfig$SecurityContextAuthenticationFilter$Lambda$_1_6.<init>()":
@@ -1082,6 +1262,8 @@
   "Function TutorialController.callsite_sagan.site.guides.TutorialController$Lambda$_3_17()":
     "no annotation",
   "GuideHeader[] Tutorials.lambda$findByProject$2(int)": "no annotation",
+  "void GithubClientTests.downloadRepositoryAsZipBall()":
+    "<_org.junit.Test> ()",
   "void AtomFeedControllerTests.<clinit>()": "no annotation",
   "GuideType$Lambda$_3_7.<init>(String)": "no annotation",
   "String Topical.getGitUrl()":
@@ -1099,6 +1281,8 @@
   "ProjectRelease$ReleaseStatus ProjectRelease$ReleaseStatus.getFromVersion(String)":
     "no annotation",
   "void ProjectRelease.setGroupId(String)": "no annotation",
+  "boolean GithubClient.access_sagan.renderer.github.GithubClient$Lambda$_7_42(GithubClient)":
+    "no annotation",
   "String SpringToolsAdminController.newPlatform(Model)":
     "<_org.springframework.web.bind.annotation.GetMapping(value=\"new\")> ()",
   "Optional Tutorials.findByName(String)":
@@ -1110,10 +1294,14 @@
   "Link.<init>(String,String)": "no annotation",
   "String Post.getTitle()": "no annotation",
   "Project ProjectVersionOrderTests.getProject(String[])": "no annotation",
+  "Predicate GuideType.callsite_sagan.renderer.guides.GuideType$Lambda$_3_7(String)":
+    "no annotation",
   "MemberProfileBuilder MemberProfileBuilder.name(String)": "no annotation",
   "String[] Version.getParts()": "no annotation",
   "void Post.setFormat(PostFormat)": "no annotation",
   "List GettingStartedGuide.getImages()": "no annotation",
+  "GithubClient$GithubAcceptInterceptor.<init>(GithubClient$1)":
+    "no annotation",
   "void ProjectVersionDisplayNameTests.getDisplayNameForReleaseTrainSnapshot()":
     "<_org.junit.Test> ()",
   "String TeamAdminController.getTeamAdminPage(Model)":
@@ -1123,14 +1311,17 @@
   "DefaultGuideHeader.<init>()": "no annotation",
   "void AtomFeedController.prepareResponse(Model,HttpServletResponse,Page,String,String)":
     "no annotation",
-  "Object PostCategoryFormatter.parse(String,Locale)": "no annotation",
+  "void GuideRendererTests.lambda$renderImages$0(GuideImage)":
+    "no annotation",
   "PostCategory PostCategoryFormatter.parse(String,Locale)": "no annotation",
+  "Object PostCategoryFormatter.parse(String,Locale)": "no annotation",
   "LocalDate Event.getFirstDay()": "no annotation",
   "void Project.setFeatured(boolean)": "no annotation",
   "void ProjectTests.setup()": "<_org.junit.Before> ()",
   "GuideMetadata[] SaganRendererClient.access_sagan.site.renderer.SaganRendererClient$Lambda$_12_17(int)":
     "no annotation",
   "int ProjectGroup.hashCode()": "no annotation",
+  "GuideType GuideType.fromSlug(String)": "no annotation",
   "String Link.toString()": "no annotation",
   "BlogAdminControllerTests$Lambda$_9_21.<init>()": "no annotation",
   "String PostView.getUpdatePath()": "no annotation",
@@ -1146,6 +1337,7 @@
   "IntFunction GettingStartedGuides.callsite_sagan.site.guides.GettingStartedGuides$Lambda$_5_20()":
     "no annotation",
   "String DefaultGuideHeader.getGitUrl()": "no annotation",
+  "boolean GuideType$Lambda$_4_7.test(Object)": "no annotation",
   "void DocsWebhookControllerTests.testGuideCacheEviction2()":
     "<_org.junit.Test> ()",
   "boolean SaganRendererClient.access_sagan.site.renderer.SaganRendererClient$Lambda$_9_7(GuideMetadata)":
@@ -1153,16 +1345,22 @@
   "List PaginationInfo.getPageElements()": "no annotation",
   "Answer ProjectMetadataControllerTests.callsite_sagan.projects.support.ProjectMetadataControllerTests$Lambda$_7_104()":
     "no annotation",
+  "String Repository.getSshUrl()": "no annotation",
   "ProjectRelease Project.getProjectRelease(String)": "no annotation",
   "void Post.addPublicSlugAlias(String)": "no annotation",
   "String ProjectRelease.getGroupId()": "no annotation",
   "Post.<init>(Long,String,String,PostCategory,PostFormat)": "no annotation",
   "Post.<init>(String,String,PostCategory,PostFormat)": "no annotation",
+  "boolean GuideType.lambda$fromSlug$0(String,GuideType)": "no annotation",
   "void PostFormAdapter.refreshPost(Post)": "no annotation",
   "SpringToolsDownload.<init>(String,String,String)": "no annotation",
   "boolean PaginationInfo.isNextVisible()": "no annotation",
+  "AsciidoctorGuideContentContributor$Lambda$_3_13.<init>()": "no annotation",
   "GuideHeader[] GettingStartedGuides.findByProject(Project)":
     "<_org.springframework.cache.annotation.Cacheable(cacheNames=\"cache.guides\", key=\"#project.id\")> ()",
+  "void AsciidoctorGuideContentContributor$Lambda$_3_23.accept(Object)":
+    "no annotation",
+  "void RendererApplication.main(String[])": "no annotation",
   "void AtomFeedControllerTests.postsInModelForPublishedBroadcastPosts()":
     "<_org.junit.Test> ()",
   "float GeoLocation.getLatitude()": "no annotation",
@@ -1178,6 +1376,7 @@
   "AbstractGuide$Lambda$_3_39.<init>(UriComponentsBuilder)": "no annotation",
   "Topicals.<init>(SaganRendererClient)":
     "<_org.springframework.beans.factory.annotation.Autowired> ()",
+  "String GuideType.getPrefix()": "no annotation",
   "Function GettingStartedGuideController.callsite_sagan.site.guides.GettingStartedGuideController$Lambda$_4_9(String)":
     "no annotation",
   "byte[] AbstractGuide.access_sagan.site.guides.AbstractGuide$Lambda$_12_25(GuideImage)":
@@ -1193,10 +1392,14 @@
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
   "TopicalController$Lambda$_3_17.<init>()": "no annotation",
   "boolean Project.isFeatured()": "no annotation",
+  "List Repository.getTopics()": "no annotation",
+  "boolean AsciidoctorGuideContentContributor$Lambda$_5_10.test(Object)":
+    "no annotation",
   "TuckeyRewriteFilter.<init>()": "no annotation",
   "boolean Project$Lambda$_13_22.test(Object)": "no annotation",
   "String BlogController.listPublishedPostsForYear(int,int,Model)":
     "<_org.springframework.web.bind.annotation.GetMapping(value=\"/{year:\\d+}\")> (<_org.springframework.web.bind.annotation.PathVariable> <_org.springframework.web.bind.annotation.RequestParam(defaultValue=\"1\", value=\"page\")> <>)",
+  "Object GithubClient$Lambda$_7_32.apply(Object)": "no annotation",
   "IntFunction Tutorials.callsite_sagan.site.guides.Tutorials$Lambda$_5_20()":
     "no annotation",
   "boolean GettingStartedGuides.lambda$findByProject$1(Project,GuideHeader)":
@@ -1217,6 +1420,8 @@
   "BiConsumer AbstractGuide.callsite_sagan.site.guides.AbstractGuide$Lambda$_3_39(UriComponentsBuilder)":
     "no annotation",
   "String SiteUrl.getAbsoluteUrl(String)": "no annotation",
+  "void GuideContentResource.setContent(String)": "no annotation",
+  "String GuideResource.getDescription()": "no annotation",
   "String GettingStartedGuide.getDescription()":
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
   "SpringToolsPlatform.<init>(String,List)": "no annotation",
@@ -1228,7 +1433,12 @@
   "String Project.getRawOverview()": "no annotation",
   "void Project.setSiteUrl(String)": "no annotation",
   "SaganApplication.<init>(Class)": "no annotation",
+  "Resources GuidesController.listGuides()":
+    "<_org.springframework.web.bind.annotation.GetMapping(value=\"/\")> ()",
+  "String GuideContentResource.getPushToPwsMetadata()": "no annotation",
   "boolean SaganRendererClient$Lambda$_6_7.test(Object)": "no annotation",
+  "boolean GuideType.access_sagan.renderer.guides.GuideType$Lambda$_4_7(String,GuideType)":
+    "no annotation",
   "ProjectReleaseBuilder ProjectReleaseBuilder.groupId(String)":
     "no annotation",
   "String TeamAdminController.editProfileForm(Principal,Model)":
@@ -1246,6 +1456,8 @@
   "Authentication SecurityConfig$SecurityContextAuthenticationFilter.attemptAuthentication(HttpServletRequest,HttpServletResponse)":
     "no annotation",
   "float GeoLocation.getLongitude()": "no annotation",
+  "void GithubClientTests.fetchRepositoriesMultiplePages()":
+    "<_org.junit.Test> ()",
   "void ProjectSample.setTitle(String)": "no annotation",
   "void BlogAdminControllerTests.dashboardShowsUsersPosts()":
     "<_org.junit.Test> ()",
@@ -1253,17 +1465,23 @@
   "void SaganRendererClient.<clinit>()": "no annotation",
   "SaganRendererClient.<init>(RestTemplateBuilder,SiteProperties)":
     "no annotation",
+  "void GuidesControllerTests.fetchUnknownGuideContent()":
+    "<_org.junit.Test> ()",
   "boolean Project.isTopLevelProject()": "no annotation",
   "void BadgeControllerTests.badgeShouldBeGenerated()":
     "<_org.junit.Test> ()",
   "GitHub TeamAdminController.getGitHub(Principal)": "no annotation",
+  "Long Repository.getId()": "no annotation",
   "Object AbstractGuide$Lambda$_2_47.apply(Object)": "no annotation",
   "DefaultGuideHeader[] Tutorials.lambda$findAll$0(int)": "no annotation",
   "void ProjectGroup.setName(String)": "no annotation",
   "SecurityConfig$RemoteUsernameConnectionSignUp.<init>()": "no annotation",
   "SaganProfiles.<init>()": "no annotation",
+  "GuideRenderer.<init>(GithubClient,RendererProperties,List)":
+    "no annotation",
   "String Topical.getCiStatusImageUrl()":
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
+  "void AsciidoctorRendererTests.setup()": "<_org.junit.Before> ()",
   "void ProjectsControllerTests.listProjectsProvidesProjectMetadata()":
     "<_org.junit.Test> ()",
   "Object Topicals$Lambda$_7_18.apply(int)": "no annotation",
@@ -1273,6 +1491,7 @@
   "String SpringToolsPlatform.toString()": "no annotation",
   "String PostForm.getContent()": "no annotation",
   "String ProjectSample.getUrl()": "no annotation",
+  "AsciidoctorGuideContentContributor.<init>(Asciidoctor)": "no annotation",
   "PostCategory PostCategory.valueOf(String)": "no annotation",
   "ResponseEntity BadgeController.snapshotBadge(String)":
     "<_org.springframework.web.bind.annotation.RequestMapping(value=\"/{projectId}/snapshot.svg\", method=\".GET, .HEAD\", produces=\"image/svg+xml\")> (<_org.springframework.web.bind.annotation.PathVariable(value=\"projectId\")>)",
@@ -1287,6 +1506,9 @@
   "SignInService SecurityConfig$ApiAuthenticationConfig.access$100(SecurityConfig$ApiAuthenticationConfig)":
     "no annotation",
   "void GeoLocationFormatter.<clinit>()": "no annotation",
+  "void AsciidoctorGuideContentContributor$Lambda$_3_13.accept(Object)":
+    "no annotation",
+  "void GithubClient.<clinit>()": "no annotation",
   "Object BlogService_ValidPostTests.access_sagan.site.blog.BlogService_ValidPostTests$Lambda$_5_38(InvocationOnMock)":
     "no annotation",
   "String SpringToolsPlatform.getId()": "no annotation",
@@ -1302,6 +1524,7 @@
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
   "String ProjectGroup.getLabel()": "no annotation",
   "List Project.getProjectSamples()": "no annotation",
+  "GuidesController$Lambda$_3_29.<init>()": "no annotation",
   "void SpringToolsDownload.setLabel(String)": "no annotation",
   "String GettingStartedGuide.getZipUrl()":
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
@@ -1319,6 +1542,7 @@
   "GettingStartedGuideController$Lambda$_4_17.<init>()": "no annotation",
   "ProjectReleaseBuilder ProjectReleaseBuilder.artifactId(String)":
     "no annotation",
+  "boolean GuideType$Lambda$_3_7.test(Object)": "no annotation",
   "RestTemplate SiteApplication.restTemplate()":
     "<_org.springframework.context.annotation.Bean> ()",
   "void PostTests.slugReplacesMultipleSpacesWithASingleDash()":
@@ -1329,6 +1553,8 @@
     "no annotation",
   "String ProjectRelease.getRefDocUrl()": "no annotation",
   "Set Project.getStackOverflowTagList()": "no annotation",
+  "Function MarkupController.callsite_sagan.renderer.markup.MarkupController$Lambda$_4_26(String)":
+    "no annotation",
   "void Project.setParentProject(Project)": "no annotation",
   "void RewriteTests.rossensWebSocketPostIsRedirectedToOldBlog()":
     "<_org.junit.Test> ()",
@@ -1339,6 +1565,7 @@
   "ProjectReleaseBuilder ProjectReleaseBuilder.current(boolean)":
     "no annotation",
   "Object TutorialController$Lambda$_3_17.apply(Object)": "no annotation",
+  "void AsciidoctorRendererTests.canConvert()": "<_org.junit.Test> ()",
   "Object BlogService_ValidPostTests$Lambda$_5_38.answer(InvocationOnMock)":
     "no annotation",
   "void BlogControllerTests.titleForBlogYearMonthDayPage()":
@@ -1355,11 +1582,13 @@
   "boolean ProjectRelease.hasRefDocUrl()": "no annotation",
   "void SecurityConfig$AdminAuthenticationConfig$1.doFilterInternal(HttpServletRequest,HttpServletResponse,FilterChain)":
     "no annotation",
+  "Object GithubClient$Lambda$_7_52.apply(Object)": "no annotation",
   "ProjectsControllerTests.<init>()": "no annotation",
   "Function TopicalController.callsite_sagan.site.guides.TopicalController$Lambda$_3_9(String)":
     "no annotation",
   "ThymeleafViewResolverCustomizer CloudFoundryMvcConfig.thymeleafViewResolverCustomizer(ThymeleafViewResolver)":
     "<_org.springframework.context.annotation.Bean> ()",
+  "void GuideType.<clinit>()": "no annotation",
   "void MemberProfile.setAvatarUrl(String)": "no annotation",
   "String Tutorial.getContent()": "no annotation",
   "PostBuilder PostBuilder.category(PostCategory)": "no annotation",
@@ -1378,8 +1607,14 @@
   "void Project.setGroups(Set)": "no annotation",
   "AuthenticationManager SecurityConfig$ApiAuthenticationConfig.githubAuthenticationManager()":
     "no annotation",
+  "GuidesControllerTests$LinksMatcher GuidesControllerTests.hasLink(String,String)":
+    "no annotation",
   "SecurityContextAuthenticationFilterTests.<init>()": "no annotation",
+  "List GuideContentResource.getImages()": "no annotation",
   "String PostView.getEditPath()": "no annotation",
+  "void GuideResourceTests.noGuideProjects()": "<_org.junit.Test> ()",
+  "GuidesController.<init>(GuideRenderer,GithubClient,RendererProperties)":
+    "no annotation",
   "EventsCalendarServiceTests$Lambda$_8_24.<init>(EventsCalendarServiceTests)":
     "no annotation",
   "Object GettingStartedGuides$Lambda$_5_10.apply(Object)": "no annotation",
@@ -1394,9 +1629,12 @@
   "void PostFormAdapter_CreatePostTests.postHasAuthor()":
     "<_org.junit.Test> ()",
   "String GuideImage.getEncodedContent()": "no annotation",
+  "boolean AsciidoctorGuideContentContributor.access_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_5_10(Document,Element)":
+    "no annotation",
   "void GettingStartedGuide.setTypeLabel(String)": "no annotation",
   "LocalDate Period.getStartDate()": "no annotation",
   "PostBuilder PostBuilder.renderedContent(String)": "no annotation",
+  "String GuideResource.getCloneUrl()": "no annotation",
   "void MemberProfileTests.emptyTwitterLink()": "<_org.junit.Test> ()",
   "GuideMetadata[] SaganRendererClient.access_sagan.site.renderer.SaganRendererClient$Lambda$_9_17(int)":
     "no annotation",
@@ -1404,10 +1642,13 @@
     "no annotation",
   "void BlogAtomFeedViewTests.hasCorrectIdForEntry()": "<_org.junit.Test> ()",
   "void SpringToolsDownload.setVariant(String)": "no annotation",
+  "GuideImage.<init>(String,String)": "no annotation",
   "void PostFormAdapter_UpdatePostTests.updatingABlogPost_doesNotChangeItsCreatedDateByDefault()":
     "<_org.junit.Test> ()",
   "void BlogControllerTests.titleForBlogYearMonthPage()":
     "<_org.junit.Test> ()",
+  "Function GithubClient.callsite_sagan.renderer.github.GithubClient$Lambda$_7_32(Pattern)":
+    "no annotation",
   "Object ProjectVersionOrderTests$Lambda$_2_9.apply(Object)":
     "no annotation",
   "void SiteProperties$Cache.setContentTimeToLive(Long)": "no annotation",
@@ -1415,8 +1656,9 @@
     "no annotation",
   "String Project.getTagLine()": "no annotation",
   "boolean PostView.isBroadcast()": "no annotation",
-  "PostBuilder PostBuilder.createdAt(String)": "no annotation",
   "PostBuilder PostBuilder.createdAt(Date)": "no annotation",
+  "PostBuilder PostBuilder.createdAt(String)": "no annotation",
+  "void MarkupControllerTests.noCompatibleRenderer()": "<_org.junit.Test> ()",
   "String Tutorial.getCiLatestUrl()":
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
   "ProjectRelease$ReleaseStatus[] ProjectRelease$ReleaseStatus.values()":
@@ -1448,6 +1690,8 @@
   "String PostContentRenderer.render(String,PostFormat)": "no annotation",
   "String MemberProfile.getVideoEmbeds()": "no annotation",
   "String Post.getRenderedContent()": "no annotation",
+  "boolean AsciidoctorGuideContentContributor.lambda$null$1(String)":
+    "no annotation",
   "String PostMovedException.getPublicSlug()": "no annotation",
   "String GettingStartedGuide.getGitUrl()":
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
@@ -1456,6 +1700,9 @@
   "ProjectTests.<init>()": "no annotation",
   "MemberProfile.<init>(Long)": "no annotation",
   "boolean Post.isBroadcast()": "no annotation",
+  "void GuideContentResource.setPushToPwsMetadata(String)": "no annotation",
+  "Predicate GithubClient.callsite_sagan.renderer.github.GithubClient$Lambda$_7_42()":
+    "no annotation",
   "void PostFormAdapter_CreatePostTests.postHasCorrectUserEnteredValues()":
     "<_org.junit.Test> ()",
   "SpringToolsPlatform.<init>(String)": "no annotation",
@@ -1464,6 +1711,7 @@
   "Project GettingStartedGuideController.lambda$viewGuide$0(String)":
     "no annotation",
   "void ProjectGroup.setLabel(String)": "no annotation",
+  "boolean GithubClient$Lambda$_7_42.test(Object)": "no annotation",
   "TeamLocation MemberProfile.getTeamLocation()":
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
   "ConcurrentMapCache StandaloneCacheConfig.access_sagan.StandaloneCacheConfig$Lambda$_3_58(String)":
@@ -1472,6 +1720,8 @@
     "no annotation",
   "boolean ProjectAdminController$Lambda$_12_164.test(Object)":
     "no annotation",
+  "void GuideRendererTests.lambda$renderImages$1(GuideImage)":
+    "no annotation",
   "void PostFormAdapter_UpdatePostTests.setup()": "<_org.junit.Before> ()",
   "ToIntFunction ProjectAdminController.callsite_sagan.projects.support.ProjectAdminController$Lambda$_6_57()":
     "no annotation",
@@ -1479,6 +1729,7 @@
     "no annotation",
   "String ProjectAdminController.newProject(Model)":
     "<_org.springframework.web.bind.annotation.RequestMapping(value=\"new\", method=\".GET\")> ()",
+  "String GuideType.stripPrefix(String)": "no annotation",
   "void DateFactory.<clinit>()": "no annotation",
   "PostNotFoundException.<init>(long)": "no annotation",
   "void SaganApplication.<clinit>()": "no annotation",
@@ -1490,9 +1741,9 @@
     "no annotation",
   "DefaultGuideHeader[] Tutorials.access_sagan.site.guides.Tutorials$Lambda$_5_20(int)":
     "no annotation",
-  "String ProjectAdminController.edit(Project,Model)": "no annotation",
   "String ProjectAdminController.edit(String,Model)":
     "<_org.springframework.web.bind.annotation.RequestMapping(value=\"{id}\", method=\".GET\")> (<_org.springframework.web.bind.annotation.PathVariable> <>)",
+  "String ProjectAdminController.edit(Project,Model)": "no annotation",
   "AuthenticationEntryPoint SecurityConfig$AdminAuthenticationConfig.authenticationEntryPoint()":
     "no annotation",
   "void PaginationInfo_PaginationElementsTests.givenOnePage_rendersCurrentElement()":
@@ -1518,14 +1769,20 @@
     "<_org.junit.Test> ()",
   "String DocsWebhookController.stripPrefix(String)": "no annotation",
   "String PostView.getFormattedPublishDate()": "no annotation",
+  "ResponseEntity GuidesController.resourceNotFound()":
+    "<_org.springframework.web.bind.annotation.ExceptionHandler(value=\"\")> ()",
   "void PostCategoryFormatter.<clinit>()": "no annotation",
   "String ProjectRelease.getVersionDisplayName(boolean)": "no annotation",
   "void MvcConfig.handleException(ResourceNotFoundException)":
     "<_org.springframework.web.bind.annotation.ExceptionHandler _org.springframework.web.bind.annotation.ResponseStatus(value=\".NOT_FOUND\")> ()",
+  "void GuidesControllerTests.fetchUnknownGuide()": "<_org.junit.Test> ()",
   "String PostForm.getTitle()": "no annotation",
   "String Project.toString()": "no annotation",
   "RewriteTests.<init>()": "no annotation",
   "List ProjectMetadataService.getProjectsWithReleases()": "no annotation",
+  "String GuideResource.getRepositoryName()": "no annotation",
+  "GithubResourceNotFoundException.<init>(String,String,Throwable)":
+    "no annotation",
   "GitHubUser[] DefaultTeamImporter.getGitHubUsers(GitHub)": "no annotation",
   "String Project.getParentId()": "no annotation",
   "void AtomFeedView.buildFeedMetadata(Map,WireFeed,HttpServletRequest)":
@@ -1543,6 +1800,9 @@
     "<_org.springframework.web.bind.annotation.DeleteMapping(value=\"{id}\")> (<_org.springframework.web.bind.annotation.PathVariable>)",
   "List AbstractGuide.getImages()": "no annotation",
   "String SiteUrl.getUrl()": "no annotation",
+  "void GuideResourceTests.deprecatedGuide()": "<_org.junit.Test> ()",
+  "void GuideRendererTests.access_sagan.renderer.guides.GuideRendererTests$Lambda$_6_70(GuideImage)":
+    "no annotation",
   "SpringToolsPlatform.<init>()": "no annotation",
   "float TeamLocation.getLatitude()": "no annotation",
   "String BlogController.showPost(String,String,String,String,Model)":
@@ -1553,8 +1813,8 @@
   "String PostFormat.getId()": "no annotation",
   "GettingStartedGuideController$Lambda$_5_25.<init>(GettingStartedGuideController)":
     "no annotation",
-  "int Event.compareTo(Event)": "no annotation",
   "int Event.compareTo(Object)": "no annotation",
+  "int Event.compareTo(Event)": "no annotation",
   "Project$Lambda$_17_19.<init>()": "no annotation",
   "void SiteProperties$Renderer.setServiceUrl(String)": "no annotation",
   "String PostContentRenderer.renderCallouts(String)": "no annotation",
@@ -1581,11 +1841,13 @@
   "void MemberProfile.setHidden(boolean)": "no annotation",
   "MvcConfig$ViewRenderingHelper.<init>()": "no annotation",
   "Long SiteProperties$Cache.getListTimeToLive()": "no annotation",
+  "GithubClient$Lambda$_7_42.<init>()": "no annotation",
   "void DefaultGuideHeaderTests.testHeaderData()": "<_org.junit.Test> ()",
   "boolean ProjectRepository.equals(Object)": "no annotation",
   "StaticPagePathFinder MvcConfig.staticPagePathFinder(ResourcePatternResolver)":
     "<_org.springframework.context.annotation.Bean> ()",
   "String SaganRendererClient.renderAsciidoc(String)": "no annotation",
+  "List GithubClient.fetchOrgRepositories(String)": "no annotation",
   "void MemberProfileTests.speakerdeckLink()": "<_org.junit.Test> ()",
   "Predicate Project.callsite_sagan.projects.Project$Lambda$_11_9()":
     "no annotation",
@@ -1605,6 +1867,9 @@
   "void ProjectReleaseVersionTests.snapshotDetectedMavenStyle()":
     "<_org.junit.Test> ()",
   "void BlogControllerTests.setUp()": "<_org.junit.Before> ()",
+  "boolean MarkupController.lambda$renderMarkup$0(MediaType,MarkupRenderer)":
+    "no annotation",
+  "String Repository.getHtmlUrl()": "no annotation",
   "Object CachedRestClient.post(RestOperations,String,Class,String)":
     "no annotation",
   "String Tutorial.getTitle()":
@@ -1638,6 +1903,8 @@
   "String ProjectRelease.getVersion()": "no annotation",
   "BiConsumer ProjectPatchingService.callsite_sagan.projects.ProjectPatchingService$Lambda$_2_10()":
     "no annotation",
+  "boolean AsciidoctorGuideContentContributor$Lambda$_7_28.test(Object)":
+    "no annotation",
   "void ProjectSample.setDisplayOrder(int)": "no annotation",
   "Optional Project.getMostCurrentRelease()": "no annotation",
   "ProjectReleaseVersionTests.<init>()": "no annotation",
@@ -1645,8 +1912,12 @@
   "SaganRendererClient$Lambda$_12_17.<init>()": "no annotation",
   "void PostViewTests.formattedPublishDateForPublishedPosts()":
     "<_org.junit.Test> ()",
+  "GuidesControllerTests$LinksMatcher.<init>(String,String,String)":
+    "no annotation",
   "String StaticPagePathFinder.buildRequestMapping(String)": "no annotation",
   "String Tutorial.getTableOfContents()": "no annotation",
+  "void AsciidoctorGuideContentContributor.access_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_3_13(Element)":
+    "no annotation",
   "void BlogAtomFeedViewTests.hasFeedTitleFromModel()":
     "<_org.junit.Test> ()",
   "IntFunction SaganRendererClient.callsite_sagan.site.renderer.SaganRendererClient$Lambda$_12_17()":
@@ -1663,11 +1934,13 @@
   "String DefaultTeamImporter.getNameForUser(String,GitHub)": "no annotation",
   "Optional GettingStartedGuideController.access_sagan.site.guides.GettingStartedGuideController$Lambda$_4_9(String,GettingStartedGuide)":
     "no annotation",
+  "void MarkdownRendererTests.renderJavaScript()": "<_org.junit.Test> ()",
   "MemberProfileBuilder MemberProfileBuilder.profile()": "no annotation",
   "void BlogController_BroadcastPostsTests.providesPaginationInfoInModel()":
     "<_org.junit.Test> ()",
   "void BlogAdminControllerTests.<clinit>()": "no annotation",
   "String Link.getHrefResolved()": "no annotation",
+  "void GuideContentResource.setName(String)": "no annotation",
   "void BlogAdminControllerTests.creatingABlogPostRecordsTheUser()":
     "<_org.junit.Test> ()",
   "String MemberProfile.getFullName()":
@@ -1682,6 +1955,7 @@
   "void BlogService_ValidPostTests.postIsPersisted()": "<_org.junit.Test> ()",
   "ProjectMetadataControllerTests.<init>()": "no annotation",
   "AtomFeedControllerTests.<init>()": "no annotation",
+  "void GuideImage.setName(String)": "no annotation",
   "PostFormat.<init>(String,int,String,String)": "no annotation",
   "ResourceUrlEncodingFilter CloudFoundryMvcConfig.resourceUrlEncodingFilter()":
     "<_org.springframework.context.annotation.Bean> ()",
@@ -1691,6 +1965,8 @@
     "<_org.junit.Test(expected=\"\")> ()",
   "void MemberProfile.setSpeakerdeckUsername(String)": "no annotation",
   "Object PostView$Lambda$_19_12.apply(Object)": "no annotation",
+  "void AsciidoctorRendererTests.renderTitleAnchors()":
+    "<_org.junit.Test> ()",
   "String GuideMetadata.getGitUrl()": "no annotation",
   "ProjectGroup.<init>(String,String)": "no annotation",
   "String PostView.getPath()": "no annotation",
@@ -1698,6 +1974,8 @@
     "no annotation",
   "Pageable PageableFactory.all()": "no annotation",
   "Predicate AbstractGuide.callsite_sagan.site.guides.AbstractGuide$Lambda$_12_10(String)":
+    "no annotation",
+  "void ImagesGuideContentContributor.contribute(GuideContentResource,File)":
     "no annotation",
   "PostViewTests.<init>()": "no annotation",
   "void BlogController_PublishedPostsTests.providesPaginationInfoInModel()":
@@ -1715,11 +1993,13 @@
   "ResponseEntity DocsWebhookController.processTopicalsUpdate(String,String,String,String)":
     "<_org.springframework.web.bind.annotation.RequestMapping(value=\"topicals/{repositoryName}\", method=\".POST\", consumes=\"application/json\", produces=\"application/json\")> (<_org.springframework.web.bind.annotation.RequestBody> <_org.springframework.web.bind.annotation.RequestHeader(value=\"X-Hub-Signature\")> <_org.springframework.web.bind.annotation.RequestHeader(value=\"X-GitHub-Event\")> <_org.springframework.web.bind.annotation.PathVariable>)",
   "void SpringToolsPlatform.setDownloads(List)": "no annotation",
-  "void Link.setRel(String)": "no annotation",
+  "void PwsGuideContentContributor.<clinit>()": "no annotation",
   "Object Link.clone()": "no annotation",
+  "void Link.setRel(String)": "no annotation",
   "List BlogService.getAllPublishedPosts()": "no annotation",
   "void BlogController_ShowTests.providesActiveCategoryInModel()":
     "<_org.junit.Test> ()",
+  "GuideContentResource.<init>()": "no annotation",
   "void RewriteTests.projectPageIndexWithSlashIsNotRedirected()":
     "<_org.junit.Test> ()",
   "void BlogController_BroadcastPostsTests.setUp()": "<_org.junit.Before> ()",
@@ -1769,6 +2049,7 @@
     "no annotation",
   "Collection RedisCacheManager.loadCaches()": "no annotation",
   "boolean GuideType$Lambda$_3_7.test(Object)": "no annotation",
+  "void GuideResourceTests.withGuideProjects()": "<_org.junit.Test> ()",
   "void DocsWebhookControllerTests.testInvalidPayload()":
     "<_org.junit.Test(expected=\"\")> ()",
   "Date PostFormAdapter.publishDate(PostForm)": "no annotation",
@@ -1791,6 +2072,7 @@
   "void Link.setLength(long)": "no annotation",
   "String Topical.getCloneUrl()":
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
+  "String GithubClient.lambda$findNextPageLink$0(Matcher)": "no annotation",
   "DefaultGuideHeader.<init>(GuideMetadata)": "no annotation",
   "ProjectRepository.<init>(String,String,String,Boolean)": "no annotation",
   "Object RedisCacheManager$Lambda$_5_19.apply(Object)": "no annotation",
@@ -1808,6 +2090,8 @@
   "StaticPagePathFinder$PagePaths.<init>(String,String)": "no annotation",
   "String BlogAdminController.refreshBlogPosts(int,int)":
     "<_org.springframework.web.bind.annotation.RequestMapping(value=\"refreshblogposts\", method=\".POST\") _org.springframework.web.bind.annotation.ResponseBody> (<_org.springframework.web.bind.annotation.RequestParam(value=\"page\", defaultValue=\"1\", required=\"false\")> <_org.springframework.web.bind.annotation.RequestParam(value=\"size\", defaultValue=\"10\", required=\"false\")>)",
+  "ResponseEntity MarkupController.lambda$renderMarkup$1(String,MarkupRenderer)":
+    "no annotation",
   "MemberProfileTests.<init>()": "no annotation",
   "void AtomFeedControllerTests.feedMetadataInModelForCategoryPosts()":
     "<_org.junit.Test> ()",
@@ -1827,13 +2111,14 @@
   "CloudFoundryMvcConfig.<init>()": "no annotation",
   "Object AbstractGuide$Lambda$_12_25.apply(Object)": "no annotation",
   "void Event.<clinit>()": "no annotation",
+  "GuideType.<init>(String,int,String,String)": "no annotation",
   "String Link.getText()": "no annotation",
   "Function AbstractGuide.callsite_sagan.site.guides.AbstractGuide$Lambda$_2_47()":
     "no annotation",
   "void BlogController_ShowTests.providesAllCategoriesInModel()":
     "<_org.junit.Test> ()",
-  "Object GeoLocationFormatter.parse(String,Locale)": "no annotation",
   "GeoLocation GeoLocationFormatter.parse(String,Locale)": "no annotation",
+  "Object GeoLocationFormatter.parse(String,Locale)": "no annotation",
   "StaticPagePathFinder.<init>(ResourcePatternResolver)": "no annotation",
   "DataSource CloudFoundryDatabaseConfig.dataSource()":
     "<_org.springframework.context.annotation.Bean> ()",
@@ -1843,15 +2128,19 @@
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
   "ProjectRelease ProjectReleaseBuilder.build()": "no annotation",
   "void Post.setPublishAt(Date)": "no annotation",
+  "GithubClientTests.<init>()": "no annotation",
   "Post.<init>()": "no annotation",
   "void Topical.setTypeLabel(String)": "no annotation",
   "void BlogService_UpdatePostTests.postIsPersisted()":
     "<_org.junit.Test> ()",
   "Topicals$Lambda$_7_8.<init>(Project)": "no annotation",
+  "void GuideRendererTests$Lambda$_6_59.accept(Object)": "no annotation",
   "String ProjectsController.listProjects(Model)":
     "<_org.springframework.web.bind.annotation.GetMapping> ()",
   "String Post.getPublicSlug()": "no annotation",
   "String TeamLocation.getName()": "no annotation",
+  "void PrettifyVerbatimSerializer.printAttribute(Printer,String,String)":
+    "no annotation",
   "MemberProfile TeamService.createOrUpdateMemberProfile(Long,String,String,String)":
     "no annotation",
   "byte[] AbstractGuide.lambda$getImageContent$3(GuideImage)":
@@ -1878,6 +2167,7 @@
   "void ProjectVersionDisplayNameTests.getDisplayNameForReleaseTrainServiceRelease()":
     "<_org.junit.Test> ()",
   "String PostFormat.toString()": "no annotation",
+  "AsciidoctorConfig.<init>()": "no annotation",
   "void PostCategoryFormatterTests.itConvertsEnumNameStringsToPostCategories()":
     "<_org.junit.Test> ()",
   "GuideType.<init>(String,int,String)": "no annotation",
@@ -1893,6 +2183,7 @@
     "<_org.springframework.web.bind.annotation.RequestMapping(value=\"/{projectId}/releases\", method=\".POST\")> (<_org.springframework.web.bind.annotation.PathVariable(value=\"projectId\")> <_org.springframework.web.bind.annotation.RequestBody>)",
   "Function StandaloneCacheConfig.callsite_sagan.StandaloneCacheConfig$Lambda$_3_58()":
     "no annotation",
+  "String GuideImage.getName()": "no annotation",
   "boolean Period.lambda$toCalendarFilter$0(VEvent)": "no annotation",
   "void TeamLocation.setLongitude(float)": "no annotation",
   "GuideImage.<init>(String,String)": "no annotation",
@@ -1901,6 +2192,7 @@
   "String GuideMetadata.getTitle()": "no annotation",
   "List Project.getNonMostCurrentReleases()": "no annotation",
   "void ProjectRelease.setApiDocUrl(String)": "no annotation",
+  "void GuideRendererTests.renderImages()": "<_org.junit.Test> ()",
   "void PostFormAdapter_CreatePostTests.postWithNullPublishDateSetsPublishAtToNow()":
     "<_org.junit.Test> ()",
   "BlogControllerTests.<init>()": "no annotation",
@@ -1916,6 +2208,8 @@
   "boolean BadgeController.access_sagan.projects.support.BadgeController$Lambda$_3_7(Predicate,ProjectRelease)":
     "no annotation",
   "Topicals$Lambda$_7_18.<init>()": "no annotation",
+  "Consumer GuideRendererTests.callsite_sagan.renderer.guides.GuideRendererTests$Lambda$_6_59()":
+    "no annotation",
   "void MemberProfileTests.nullGithubLink()": "<_org.junit.Test> ()",
   "void PostTests.slugStripsNewLineCharacters()": "<_org.junit.Test> ()",
   "Long SiteProperties$Cache.getContentTimeToLive()": "no annotation",
@@ -1929,6 +2223,8 @@
   "Tutorials$Lambda$_5_10.<init>()": "no annotation",
   "void ProjectsController.access_sagan.projects.support.ProjectsController$Lambda$_3_80(Model,String,List)":
     "no annotation",
+  "ResponseEntity MarkupController.renderMarkup(MediaType,String)":
+    "<_org.springframework.web.bind.annotation.PostMapping(path=\"/documents\", produces=\"text/html\")> (<_org.springframework.web.bind.annotation.RequestHeader(value=\"Content-Type\")> <_org.springframework.web.bind.annotation.RequestBody>)",
   "Object CachedRestClient.get(RestOperations,String,Class)":
     "<_org.springframework.cache.annotation.Cacheable(value=\"cache.network\", key=\"#url\")> ()",
   "DateTestUtils.<init>()": "no annotation",
@@ -1938,6 +2234,7 @@
   "Object Tutorials$Lambda$_5_20.apply(int)": "no annotation",
   "String Topical.getTitle()":
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
+  "String RendererProperties$Github.getToken()": "no annotation",
   "RedisCacheManager RedisCacheManager.withCache(String,RedisTemplate,long)":
     "no annotation",
   "Page BlogService.getPublishedPostsByDate(int,int,Pageable)":
@@ -1946,9 +2243,12 @@
   "void SecurityContextAuthenticationFilterTests.testSuccessfulAuthentication()":
     "<_org.junit.Test> ()",
   "Pageable PageableFactory.forDashboard(int)": "no annotation",
+  "byte[] GuideRendererTests.readAsBytes(String)": "no annotation",
+  "RendererProperties$Github.<init>()": "no annotation",
   "void EventsCalendarServiceTests.shouldFailForInvalidCalendar()":
     "<_org.junit.Test> ()",
   "String MemberProfile.getUsername()": "no annotation",
+  "String GuideResource.getName()": "no annotation",
   "void PostViewTests.scheduledPost()": "<_org.junit.Test> ()",
   "AtomFeedView AtomFeedController.listPublishedPostsForCategory(PostCategory,Model,HttpServletResponse)":
     "<_org.springframework.web.bind.annotation.GetMapping(value=\"/blog/category/{category}.atom\")> (<_org.springframework.web.bind.annotation.PathVariable> <> <>)",
@@ -1968,6 +2268,8 @@
   "void PaginationInfo_PaginationElementsTests.rendersFirstSixPagesOnPageOne_givenEnoughNumberOfPages()":
     "<_org.junit.Test> ()",
   "Object GettingStartedGuides$Lambda$_5_20.apply(int)": "no annotation",
+  "void AsciidoctorGuideContentContributor.contribute(GuideContentResource,File)":
+    "no annotation",
   "void TeamService.updateMemberProfile(String,MemberProfile)":
     "no annotation",
   "void TeamService.updateMemberProfile(MemberProfile,MemberProfile)":
@@ -2034,10 +2336,13 @@
   "void EventsCalendarServiceTests.lambda$shouldFailWithMissingCalendar$1()":
     "no annotation",
   "Project ProjectMetadataService.getProject(String)": "no annotation",
+  "Repository GithubClient.fetchOrgRepository(String,String)":
+    "no annotation",
   "String PostCategory.getUrlSlug()": "no annotation",
   "GuideHeader[] Topicals.findByProject(Project)":
     "<_org.springframework.cache.annotation.Cacheable(cacheNames=\"cache.topicals\", key=\"#project.id\")> ()",
   "void SiteProperties$Cache.setListTimeToLive(Long)": "no annotation",
+  "RendererApplication.<init>()": "no annotation",
   "void GettingStartedGuides.evictListFromCache()":
     "<_org.springframework.cache.annotation.CacheEvict(value=\"cache.guides\")> ()",
   "Predicate ProjectAdminController.callsite_sagan.projects.support.ProjectAdminController$Lambda$_12_153()":
@@ -2083,6 +2388,7 @@
   "GitHubConnectionFactory GitHubConfig.gitHubConnectionFactory()":
     "<_org.springframework.context.annotation.Bean> ()",
   "AbstractGuide.<init>(String,GuideHeader,GuideContent)": "no annotation",
+  "void GuidesControllerTests.fetchGuideContent()": "<_org.junit.Test> ()",
   "String BlogController.listPublishedPosts(Model,int)":
     "<_org.springframework.web.bind.annotation.GetMapping(value=\"\")> (<> <_org.springframework.web.bind.annotation.RequestParam(defaultValue=\"1\")>)",
   "RedirectView BlogController.handle(PostMovedException)":
@@ -2090,6 +2396,7 @@
   "SecurityConfig$SecurityContextAuthenticationFilter.<init>(String)":
     "no annotation",
   "MemberProfile MemberProfileBuilder.build()": "no annotation",
+  "void GuideContentResource.setImages(List)": "no annotation",
   "void SignInServiceTests.setup()": "<_org.junit.Before> ()",
   "void ProjectTests.currentVersion()": "<_org.junit.Test> ()",
   "ProjectReleaseBuilder ProjectReleaseBuilder.releaseStatus(ProjectRelease$ReleaseStatus)":
@@ -2105,6 +2412,7 @@
   "void ProjectsControllerTests.setUp()": "<_org.junit.Before> ()",
   "SiteProperties$Renderer.<init>()": "no annotation",
   "Tutorials$Lambda$_7_18.<init>()": "no annotation",
+  "String RendererProperties$Guides.getOrganization()": "no annotation",
   "String BlogAdminControllerTests.lambda$setup$0()": "no annotation",
   "boolean TeamController$Lambda$_4_27.test(Object)": "no annotation",
   "void Project.setCategory(String)": "no annotation",
@@ -2112,6 +2420,8 @@
   "Object ProjectsController$Lambda$_3_63.apply(Object)": "no annotation",
   "BlogPostContentRendererTests.<init>()": "no annotation",
   "void Topical.setImages(List)": "no annotation",
+  "boolean GuidesController.lambda$listGuides$0(GuideResource)":
+    "no annotation",
   "IntFunction GettingStartedGuides.callsite_sagan.site.guides.GettingStartedGuides$Lambda$_7_18()":
     "no annotation",
   "ProjectVersionOrderTests$Lambda$_3_9.<init>()": "no annotation",
@@ -2128,11 +2438,15 @@
     "no annotation",
   "GitHubConfig$GuideGitHubTemplate.<init>(String,GitHubConfig$1)":
     "no annotation",
+  "ResponseEntity GuidesController.showGuide(String,String)":
+    "<_org.springframework.web.bind.annotation.GetMapping(value=\"/{type}/{guide}\")> (<_org.springframework.web.bind.annotation.PathVariable> <_org.springframework.web.bind.annotation.PathVariable>)",
   "void ProjectVersionOrderTests.getProjectReleases_ordersReleaseTrainsByName()":
     "<_org.junit.Test> ()",
   "void ProjectRepository.setUrl(String)": "no annotation",
   "void BlogController_BroadcastPostsTests.providesAllCategoriesInModel()":
     "<_org.junit.Test> ()",
+  "String GithubClient.access_sagan.renderer.github.GithubClient$Lambda$_7_52(Matcher)":
+    "no annotation",
   "GuideMetadata.<init>(String,String,String,String,GuideType,String,String,String,String,Set)":
     "<_com.fasterxml.jackson.annotation.JsonCreator> (<_com.fasterxml.jackson.annotation.JsonProperty(value=\"name\")> <_com.fasterxml.jackson.annotation.JsonProperty(value=\"repositoryName\")> <_com.fasterxml.jackson.annotation.JsonProperty(value=\"title\")> <_com.fasterxml.jackson.annotation.JsonProperty(value=\"description\")> <_com.fasterxml.jackson.annotation.JsonProperty(value=\"type\")> <_com.fasterxml.jackson.annotation.JsonProperty(value=\"githubUrl\")> <_com.fasterxml.jackson.annotation.JsonProperty(value=\"gitUrl\")> <_com.fasterxml.jackson.annotation.JsonProperty(value=\"sshUrl\")> <_com.fasterxml.jackson.annotation.JsonProperty(value=\"cloneUrl\")> <_com.fasterxml.jackson.annotation.JsonProperty(value=\"projects\")>)",
   "byte[] VersionBadgeService.createSvgBadge(BadgeSvg,List,String,String)":
@@ -2160,6 +2474,7 @@
   "void PostFormAdapter_CreatePostTests.draftWithNullPublishDate()":
     "<_org.junit.Test> ()",
   "SpringToolsAdminController$Lambda$_8_10.<init>(List)": "no annotation",
+  "GuideRendererTests.<init>()": "no annotation",
   "TeamLocation.<init>(String,float,float,Long)": "no annotation",
   "void Post.setRenderedSummary(String)": "no annotation",
   "void BlogPostContentRendererTests.shouldRenderMarkdown()":
@@ -2168,9 +2483,11 @@
     "<_com.fasterxml.jackson.annotation.JsonIgnore> ()",
   "void VersionBadgeService.postConstruct()":
     "<_javax.annotation.PostConstruct> ()",
+  "void MarkdownRendererTests.renderLink()": "<_org.junit.Test> ()",
   "void BlogAdminControllerTests.setup()": "<_org.junit.Before> ()",
   "PostCategory[] PostCategory.values()": "no annotation",
   "UrlRewriterFilterConfig.<init>()": "no annotation",
+  "GuideType GuideResource.getType()": "no annotation",
   "void PaginationInfo_PaginationElementsTests.rendersCurrentPage()":
     "<_org.junit.Test> ()",
   "Set GuideMetadata.getProjects()": "no annotation",
@@ -2192,9 +2509,11 @@
   "Pattern ProjectRelease.access$000()": "no annotation",
   "String BlogAdminController.resummarizeAllBlogPosts()":
     "<_org.springframework.web.bind.annotation.RequestMapping(value=\"resummarize\", method=\".POST\")> ()",
-  "void MemberProfileTests.fullNameFallsBackToUsername()":
-    "<_org.junit.Test> ()",
+  "void PwsGuideContentContributor.contribute(GuideContentResource,File)":
+    "no annotation",
   "void MemberProfileTests.fullNameUsesNameIfAvailable()":
+    "<_org.junit.Test> ()",
+  "void MemberProfileTests.fullNameFallsBackToUsername()":
     "<_org.junit.Test> ()",
   "PostFormAdapter.<init>(PostContentRenderer,PostSummary,DateFactory,TeamRepository)":
     "<_org.springframework.beans.factory.annotation.Autowired> ()",
@@ -2204,6 +2523,7 @@
   "SiteProperties.<init>()": "no annotation",
   "void BlogAtomFeedViewTests.setUp()": "<_org.junit.Before> ()",
   "String GuideImage.getName()": "no annotation",
+  "String GithubClientTests.getAuthorizationHeader()": "no annotation",
   "Date DateTestUtils.getDate(String)": "no annotation",
   "String ProjectPatchingService.access_sagan.projects.ProjectPatchingService$Lambda$_2_18(ProjectPatchingService)":
     "no annotation",
@@ -2220,6 +2540,7 @@
     "<_org.junit.Test> ()",
   "String GuideContent.getContent()": "no annotation",
   "String MemberProfile.getLanyrdUsername()": "no annotation",
+  "String GuideContentResource.getName()": "no annotation",
   "void MemberProfileTests.twitterLink()": "<_org.junit.Test> ()",
   "void ProjectVersionOrderTests.getProjectReleases_ordersVersionsByNumber_otherCharacters()":
     "<_org.junit.Test> ()",
@@ -2227,6 +2548,8 @@
   "void PageElementsBuilder.addLastPage(ArrayList)": "no annotation",
   "void ProjectGroup.setId(Long)": "no annotation",
   "ThymeleafViewResolverCustomizer.<init>(ThymeleafViewResolver,String)":
+    "no annotation",
+  "ResponseEntity MarkupController.access_sagan.renderer.markup.MarkupController$Lambda$_4_26(String,MarkupRenderer)":
     "no annotation",
   "String StaticPagePathFinder$PagePaths.getFilePath()": "no annotation",
   "boolean SaganRendererClient.access_sagan.site.renderer.SaganRendererClient$Lambda$_6_7(GuideMetadata)":
@@ -2246,6 +2569,7 @@
   "String Topical.getPushToPwsUrl()": "no annotation",
   "void ProjectRepository.setName(String)": "no annotation",
   "void Tutorials.<clinit>()": "no annotation",
+  "void RendererProperties$Guides.setOrganization(String)": "no annotation",
   "PostCategory.<init>(String,int,String,String)": "no annotation",
   "String Link.getHref()": "no annotation",
   "void Post.setBroadcast(boolean)": "no annotation"

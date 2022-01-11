@@ -12,6 +12,7 @@ String Fixtures.load(String) -> String StreamUtils.copyToString(InputStream,Char
 String Fixtures.load(String) -> RuntimeException.<init>(Throwable)
 String Fixtures.load(String) -> ClassPathResource.<init>(String,Class)
 boolean SaganRendererClient.access_sagan.site.renderer.SaganRendererClient$Lambda$_6_7(GuideMetadata) -> boolean SaganRendererClient.lambda$fetchGettingStartedGuides$0(GuideMetadata)
+ResponseEntity MarkupController.access_sagan.renderer.markup.MarkupController$Lambda$_4_26(String,MarkupRenderer) -> ResponseEntity MarkupController.lambda$renderMarkup$1(String,MarkupRenderer)
 ThymeleafViewResolverCustomizer.<init>(ThymeleafViewResolver,String) -> void ThymeleafViewResolver.addStaticVariable(String,Object)
 ThymeleafViewResolverCustomizer.<init>(ThymeleafViewResolver,String) -> Object.<init>()
 void PageElementsBuilder.addLastPage(ArrayList) -> __new
@@ -41,6 +42,7 @@ PostCategory PostView.getCategory() -> PostCategory Post.getCategory()
 Predicate Project.callsite_sagan.projects.Project$Lambda$_13_22(Optional) -> __new
 Predicate Project.callsite_sagan.projects.Project$Lambda$_13_22(Optional) -> Project$Lambda$_13_22.<init>(Optional)
 boolean PostView.isScheduled() -> boolean Post.isScheduled()
+String GithubClient.access_sagan.renderer.github.GithubClient$Lambda$_7_52(Matcher) -> String GithubClient.lambda$findNextPageLink$0(Matcher)
 GitHubConfig$GuideGitHubTemplate.<init>(String,GitHubConfig$1) -> GitHubConfig$GuideGitHubTemplate.<init>(String)
 Function EventsCalendarService.callsite_sagan.site.events.EventsCalendarService$Lambda$_2_66() -> __new
 Function EventsCalendarService.callsite_sagan.site.events.EventsCalendarService$Lambda$_2_66() -> EventsCalendarService$Lambda$_2_66.<init>()
@@ -89,6 +91,7 @@ GuideHeader[] Tutorials.findByProject(Project) -> Stream Stream.filter(Predicate
 GuideHeader[] Tutorials.findByProject(Project) -> Predicate Tutorials.callsite_sagan.site.guides.Tutorials$Lambda$_7_8(Project)
 GuideHeader[] Tutorials.findByProject(Project) -> IntFunction Tutorials.callsite_sagan.site.guides.Tutorials$Lambda$_7_18()
 void GettingStartedGuides.evictListFromCache() -> void Logger.info(String)
+RendererApplication.<init>() -> Object.<init>()
 GuideHeader[] Topicals.findByProject(Project) -> __cast
 GuideHeader[] Topicals.findByProject(Project) -> Object[] Stream.toArray(IntFunction)
 GuideHeader[] Topicals.findByProject(Project) -> Stream Arrays.stream(Object[])
@@ -96,6 +99,13 @@ GuideHeader[] Topicals.findByProject(Project) -> GuideHeader[] Topicals.findAll(
 GuideHeader[] Topicals.findByProject(Project) -> Stream Stream.filter(Predicate)
 GuideHeader[] Topicals.findByProject(Project) -> Predicate Topicals.callsite_sagan.site.guides.Topicals$Lambda$_7_8(Project)
 GuideHeader[] Topicals.findByProject(Project) -> IntFunction Topicals.callsite_sagan.site.guides.Topicals$Lambda$_7_18()
+Repository GithubClient.fetchOrgRepository(String,String) -> __unwrap_exception
+Repository GithubClient.fetchOrgRepository(String,String) -> __new_array
+Repository GithubClient.fetchOrgRepository(String,String) -> __new
+Repository GithubClient.fetchOrgRepository(String,String) -> __instanceof
+Repository GithubClient.fetchOrgRepository(String,String) -> __cast
+Repository GithubClient.fetchOrgRepository(String,String) -> Object RestTemplate.getForObject(String,Class,Object[])
+Repository GithubClient.fetchOrgRepository(String,String) -> GithubResourceNotFoundException.<init>(String,String,Throwable)
 BlogService.<init>(PostRepository,PostFormAdapter,DateFactory) -> Object.<init>()
 MemberProfile TeamService.fetchMemberProfile(Long) -> MemberProfile TeamRepository.findById(Long)
 GuideIndexController.<init>(GettingStartedGuides,Tutorials,Topicals) -> Object.<init>()
@@ -142,6 +152,7 @@ AtomFeedView AtomFeedController.listPublishedPostsForCategory(PostCategory,Model
 AtomFeedView AtomFeedController.listPublishedPostsForCategory(PostCategory,Model,HttpServletResponse) -> Pageable PageableFactory.forFeeds()
 AtomFeedView AtomFeedController.listPublishedPostsForCategory(PostCategory,Model,HttpServletResponse) -> StringBuilder StringBuilder.append(String)
 AtomFeedView AtomFeedController.listPublishedPostsForCategory(PostCategory,Model,HttpServletResponse) -> StringBuilder.<init>()
+RendererProperties$Github.<init>() -> Object.<init>()
 Page BlogService.getPublishedPostsByDate(int,int,Pageable) -> Page PostRepository.findByDate(int,int,Pageable)
 RedisCacheManager RedisCacheManager.withCache(String,RedisTemplate,long) -> Long Long.valueOf(long)
 RedisCacheManager RedisCacheManager.withCache(String,RedisTemplate,long) -> Object Map.put(Object,Object)
@@ -181,6 +192,7 @@ Function StandaloneCacheConfig.callsite_sagan.StandaloneCacheConfig$Lambda$_3_58
 String ProjectAdminController.list(Model) -> List ProjectMetadataService.getProjects()
 String ProjectAdminController.list(Model) -> Model Model.addAttribute(String,Object)
 GuideType.<init>(String,int,String) -> Enum.<init>(String,int)
+AsciidoctorConfig.<init>() -> Object.<init>()
 Optional Tutorial.getImageContent(String) -> Optional AbstractGuide.getImageContent(String)
 GuideMetadata SaganRendererClient.fetchTopicalGuide(String) -> __new_array
 GuideMetadata SaganRendererClient.fetchTopicalGuide(String) -> __cast
@@ -214,10 +226,13 @@ MemberProfile TeamService.createOrUpdateMemberProfile(Long,String,String,String)
 MemberProfile TeamService.createOrUpdateMemberProfile(Long,String,String,String) -> Object TeamRepository.save(Object)
 MemberProfile TeamService.createOrUpdateMemberProfile(Long,String,String,String) -> MemberProfile TeamRepository.findByGithubId(Long)
 MemberProfile TeamService.createOrUpdateMemberProfile(Long,String,String,String) -> MemberProfile.<init>()
+void PrettifyVerbatimSerializer.printAttribute(Printer,String,String) -> Printer Printer.print(String)
+void PrettifyVerbatimSerializer.printAttribute(Printer,String,String) -> Printer Printer.print(char)
 DataSource CloudFoundryDatabaseConfig.dataSource() -> __cast
 DataSource CloudFoundryDatabaseConfig.dataSource() -> Object Cloud.getServiceConnector(String,Class,ServiceConnectorConfig)
 DataSource CloudFoundryDatabaseConfig.dataSource() -> Cloud CloudFoundryDatabaseConfig.cloud()
 StaticPagePathFinder.<init>(ResourcePatternResolver) -> Object.<init>()
+Object GeoLocationFormatter.parse(String,Locale) -> GeoLocation GeoLocationFormatter.parse(String,Locale)
 GeoLocation GeoLocationFormatter.parse(String,Locale) -> __new
 GeoLocation GeoLocationFormatter.parse(String,Locale) -> Float Float.valueOf(String)
 GeoLocation GeoLocationFormatter.parse(String,Locale) -> Matcher Pattern.matcher(CharSequence)
@@ -226,7 +241,6 @@ GeoLocation GeoLocationFormatter.parse(String,Locale) -> float Float.floatValue(
 GeoLocation GeoLocationFormatter.parse(String,Locale) -> boolean Matcher.find()
 GeoLocation GeoLocationFormatter.parse(String,Locale) -> ParseException.<init>(String,int)
 GeoLocation GeoLocationFormatter.parse(String,Locale) -> GeoLocation.<init>(float,float)
-Object GeoLocationFormatter.parse(String,Locale) -> GeoLocation GeoLocationFormatter.parse(String,Locale)
 Function AbstractGuide.callsite_sagan.site.guides.AbstractGuide$Lambda$_2_47() -> __new
 Function AbstractGuide.callsite_sagan.site.guides.AbstractGuide$Lambda$_2_47() -> AbstractGuide$Lambda$_2_47.<init>()
 Object AbstractGuide$Lambda$_12_25.apply(Object) -> __cast
@@ -319,6 +333,7 @@ boolean Project.updateProjectRelease(ProjectRelease) -> boolean List.add(Object)
 boolean Link.equals(Object) -> Class Object.getClass()
 boolean Link.equals(Object) -> boolean EqualsBean.beanEquals(Class,Object,Object)
 RedisCacheManager$Lambda$_5_19.<init>(RedisCacheManager) -> Object.<init>()
+GuideContentResource.<init>() -> ResourceSupport.<init>()
 List BlogService.getAllPublishedPosts() -> Date DateFactory.now()
 List BlogService.getAllPublishedPosts() -> List PostRepository.findByDraftFalseAndPublishAtBeforeOrderByPublishAtDesc(Date)
 ResponseEntity DocsWebhookController.processTopicalsUpdate(String,String,String,String) -> __new
@@ -332,6 +347,29 @@ ResponseEntity DocsWebhookController.processTopicalsUpdate(String,String,String,
 ResponseEntity DocsWebhookController.processTopicalsUpdate(String,String,String,String) -> StringBuilder StringBuilder.append(String)
 ResponseEntity DocsWebhookController.processTopicalsUpdate(String,String,String,String) -> StringBuilder.<init>()
 SpringToolsAdminController.<init>(SpringToolsPlatformRepository) -> Object.<init>()
+void ImagesGuideContentContributor.contribute(GuideContentResource,File) -> __unwrap_exception
+void ImagesGuideContentContributor.contribute(GuideContentResource,File) -> __new
+void ImagesGuideContentContributor.contribute(GuideContentResource,File) -> __instanceof
+void ImagesGuideContentContributor.contribute(GuideContentResource,File) -> __get_array_length
+void ImagesGuideContentContributor.contribute(GuideContentResource,File) -> String StringBuilder.toString()
+void ImagesGuideContentContributor.contribute(GuideContentResource,File) -> void GuideImage.setName(String)
+void ImagesGuideContentContributor.contribute(GuideContentResource,File) -> void GuideContentResource.setImages(List)
+void ImagesGuideContentContributor.contribute(GuideContentResource,File) -> void GuideImage.setEncodedContent(String)
+void ImagesGuideContentContributor.contribute(GuideContentResource,File) -> File[] File.listFiles()
+void ImagesGuideContentContributor.contribute(GuideContentResource,File) -> boolean File.isFile()
+void ImagesGuideContentContributor.contribute(GuideContentResource,File) -> boolean File.isDirectory()
+void ImagesGuideContentContributor.contribute(GuideContentResource,File) -> String File.getName()
+void ImagesGuideContentContributor.contribute(GuideContentResource,File) -> Base64$Encoder Base64.getEncoder()
+void ImagesGuideContentContributor.contribute(GuideContentResource,File) -> String File.getAbsolutePath()
+void ImagesGuideContentContributor.contribute(GuideContentResource,File) -> void Logger.error(String,Throwable)
+void ImagesGuideContentContributor.contribute(GuideContentResource,File) -> String Base64$Encoder.encodeToString(byte[])
+void ImagesGuideContentContributor.contribute(GuideContentResource,File) -> byte[] FileCopyUtils.copyToByteArray(File)
+void ImagesGuideContentContributor.contribute(GuideContentResource,File) -> StringBuilder StringBuilder.append(String)
+void ImagesGuideContentContributor.contribute(GuideContentResource,File) -> boolean List.add(Object)
+void ImagesGuideContentContributor.contribute(GuideContentResource,File) -> File.<init>(String)
+void ImagesGuideContentContributor.contribute(GuideContentResource,File) -> StringBuilder.<init>()
+void ImagesGuideContentContributor.contribute(GuideContentResource,File) -> GuideImage.<init>()
+void ImagesGuideContentContributor.contribute(GuideContentResource,File) -> ArrayList.<init>()
 Predicate AbstractGuide.callsite_sagan.site.guides.AbstractGuide$Lambda$_12_10(String) -> __new
 Predicate AbstractGuide.callsite_sagan.site.guides.AbstractGuide$Lambda$_12_10(String) -> AbstractGuide$Lambda$_12_10.<init>(String)
 ProjectRelease.<init>(String,ProjectRelease$ReleaseStatus,boolean,String,String,String,String) -> void ProjectRelease.setVersion(String)
@@ -356,6 +394,7 @@ ProviderSignInController SecurityConfig$AdminAuthenticationConfig.providerSignIn
 ProviderSignInController SecurityConfig$AdminAuthenticationConfig.providerSignInController(GitHubConnectionFactory,ConnectionFactoryRegistry,InMemoryUsersConnectionRepository) -> ProviderSignInController.<init>(ConnectionFactoryLocator,UsersConnectionRepository,SignInAdapter)
 ProviderSignInController SecurityConfig$AdminAuthenticationConfig.providerSignInController(GitHubConnectionFactory,ConnectionFactoryRegistry,InMemoryUsersConnectionRepository) -> SecurityConfig$RemoteUsernameConnectionSignUp.<init>()
 DefaultGuideHeader[] GettingStartedGuides.access_sagan.site.guides.GettingStartedGuides$Lambda$_5_20(int) -> DefaultGuideHeader[] GettingStartedGuides.lambda$findAll$0(int)
+void AsciidoctorGuideContentContributor.access_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_3_13(Element) -> void AsciidoctorGuideContentContributor.lambda$findTableOfContents$0(Element)
 String Tutorial.getTableOfContents() -> String AbstractGuide.getTableOfContents()
 SaganRendererClient$Lambda$_12_17.<init>() -> Object.<init>()
 Project ProjectPatchingService.patch(Project,Project) -> __cast
@@ -392,10 +431,25 @@ ObjectMapper SiteApplication.objectMapper() -> __new
 ObjectMapper SiteApplication.objectMapper() -> ObjectMapper.<init>()
 ProjectRelease$ReleaseStatus.<init>(String,int) -> Enum.<init>(String,int)
 Set GettingStartedGuide.getProjects() -> Set AbstractGuide.getProjects()
+boolean MarkupController.lambda$renderMarkup$0(MediaType,MarkupRenderer) -> boolean MarkupRenderer.canRender(MediaType)
 String Tutorial.getDescription() -> String AbstractGuide.getDescription()
 void Tutorial.setTypeLabel(String) -> void AbstractGuide.setTypeLabel(String)
 Predicate Project.callsite_sagan.projects.Project$Lambda$_11_9() -> __new
 Predicate Project.callsite_sagan.projects.Project$Lambda$_11_9() -> Project$Lambda$_11_9.<init>()
+List GithubClient.fetchOrgRepositories(String) -> __new_array
+List GithubClient.fetchOrgRepositories(String) -> __new
+List GithubClient.fetchOrgRepositories(String) -> __cast
+List GithubClient.fetchOrgRepositories(String) -> Optional Optional.of(Object)
+List GithubClient.fetchOrgRepositories(String) -> boolean Optional.isPresent()
+List GithubClient.fetchOrgRepositories(String) -> ResponseEntity RestTemplate.getForEntity(String,Class,Object[])
+List GithubClient.fetchOrgRepositories(String) -> Object HttpEntity.getBody()
+List GithubClient.fetchOrgRepositories(String) -> Object Optional.get()
+List GithubClient.fetchOrgRepositories(String) -> String String.format(String,Object[])
+List GithubClient.fetchOrgRepositories(String) -> Optional GithubClient.findNextPageLink(ResponseEntity)
+List GithubClient.fetchOrgRepositories(String) -> List Arrays.asList(Object[])
+List GithubClient.fetchOrgRepositories(String) -> boolean List.addAll(Collection)
+List GithubClient.fetchOrgRepositories(String) -> ArrayList.<init>()
+GithubClient$Lambda$_7_42.<init>() -> Object.<init>()
 MvcConfig$ViewRenderingHelper.<init>() -> __new
 MvcConfig$ViewRenderingHelper.<init>() -> UrlPathHelper.<init>()
 MvcConfig$ViewRenderingHelper.<init>() -> Object.<init>()
@@ -414,9 +468,9 @@ String GeoLocationFormatter.print(GeoLocation,Locale) -> float GeoLocation.getLa
 String GeoLocationFormatter.print(GeoLocation,Locale) -> String String.format(Locale,String,Object[])
 GuideImage.<init>() -> Object.<init>()
 String Topical.getCiLatestUrl() -> String AbstractGuide.getCiLatestUrl()
+int Event.compareTo(Event) -> int LocalDate.compareTo(ChronoLocalDate)
 int Event.compareTo(Object) -> __cast
 int Event.compareTo(Object) -> int Event.compareTo(Event)
-int Event.compareTo(Event) -> int LocalDate.compareTo(ChronoLocalDate)
 GettingStartedGuideController$Lambda$_5_25.<init>(GettingStartedGuideController) -> Object.<init>()
 String PostFormat.getId() -> String Enum.name()
 String SiteUrl.getUrl() -> __cast
@@ -489,10 +543,15 @@ TeamLocation MemberProfile.getTeamLocation() -> float GeoLocation.getLongitude()
 TeamLocation MemberProfile.getTeamLocation() -> float GeoLocation.getLatitude()
 TeamLocation MemberProfile.getTeamLocation() -> Long MemberProfile.getId()
 TeamLocation MemberProfile.getTeamLocation() -> TeamLocation.<init>(String,float,float,Long)
+boolean GithubClient$Lambda$_7_42.test(Object) -> __cast
+boolean GithubClient$Lambda$_7_42.test(Object) -> boolean GithubClient.access_sagan.renderer.github.GithubClient$Lambda$_7_42(GithubClient)
 Function TeamController.callsite_sagan.team.support.TeamController$Lambda$_4_37() -> __new
 Function TeamController.callsite_sagan.team.support.TeamController$Lambda$_4_37() -> TeamController$Lambda$_4_37.<init>()
+Predicate GithubClient.callsite_sagan.renderer.github.GithubClient$Lambda$_7_42() -> __new
+Predicate GithubClient.callsite_sagan.renderer.github.GithubClient$Lambda$_7_42() -> GithubClient$Lambda$_7_42.<init>()
 MemberProfile.<init>(Long) -> Object.<init>()
 String GettingStartedGuide.getGitUrl() -> String AbstractGuide.getGitUrl()
+boolean AsciidoctorGuideContentContributor.lambda$null$1(String) -> boolean String.startsWith(String)
 int ProjectRelease.compareTo(Object) -> __cast
 int ProjectRelease.compareTo(Object) -> int ProjectRelease.compareTo(ProjectRelease)
 int ProjectRelease.compareTo(ProjectRelease) -> __get_array_length
@@ -537,8 +596,15 @@ String Tutorial.getCiLatestUrl() -> String AbstractGuide.getCiLatestUrl()
 PostBuilder PostBuilder.createdAt(String) -> __new
 PostBuilder PostBuilder.createdAt(String) -> Date DateFormat.parse(String)
 PostBuilder PostBuilder.createdAt(String) -> SimpleDateFormat.<init>(String)
+Function GithubClient.callsite_sagan.renderer.github.GithubClient$Lambda$_7_32(Pattern) -> __new
+Function GithubClient.callsite_sagan.renderer.github.GithubClient$Lambda$_7_32(Pattern) -> GithubClient$Lambda$_7_32.<init>(Pattern)
+GuideImage.<init>(String,String) -> Object.<init>()
 void GettingStartedGuide.setTypeLabel(String) -> void AbstractGuide.setTypeLabel(String)
+boolean AsciidoctorGuideContentContributor.access_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_5_10(Document,Element) -> boolean AsciidoctorGuideContentContributor.lambda$null$2(Document,Element)
 boolean Event.isSingleDayEvent() -> boolean LocalDate.equals(Object)
+GuidesController.<init>(GuideRenderer,GithubClient,RendererProperties) -> __new
+GuidesController.<init>(GuideRenderer,GithubClient,RendererProperties) -> Object.<init>()
+GuidesController.<init>(GuideRenderer,GithubClient,RendererProperties) -> GuideResourceAssembler.<init>()
 AuthenticationManager SecurityConfig$ApiAuthenticationConfig.githubAuthenticationManager() -> __new
 AuthenticationManager SecurityConfig$ApiAuthenticationConfig.githubAuthenticationManager() -> SecurityConfig$ApiAuthenticationConfig$1.<init>(SecurityConfig$ApiAuthenticationConfig)
 List ProjectMetadataController.releaseMetadata(String) -> __new
@@ -578,6 +644,9 @@ void DefaultTeamImporter.importTeamMembers(GitHub) -> ArrayList.<init>()
 ConcurrentMapCache StandaloneCacheConfig.lambda$simpleCacheManager$0(String) -> __new
 ConcurrentMapCache StandaloneCacheConfig.lambda$simpleCacheManager$0(String) -> ConcurrentMapCache.<init>(String)
 String Tutorial.getContent() -> String AbstractGuide.getContent()
+void GuideType.<clinit>() -> __new_array
+void GuideType.<clinit>() -> __new
+void GuideType.<clinit>() -> GuideType.<init>(String,int,String,String)
 ThymeleafViewResolverCustomizer CloudFoundryMvcConfig.thymeleafViewResolverCustomizer(ThymeleafViewResolver) -> __new
 ThymeleafViewResolverCustomizer CloudFoundryMvcConfig.thymeleafViewResolverCustomizer(ThymeleafViewResolver) -> String CloudFoundryMvcConfig.getGitCommitId()
 ThymeleafViewResolverCustomizer CloudFoundryMvcConfig.thymeleafViewResolverCustomizer(ThymeleafViewResolver) -> ThymeleafViewResolverCustomizer.<init>(ThymeleafViewResolver,String)
@@ -613,16 +682,21 @@ void SecurityConfig.access$000(HeadersConfigurer) -> void SecurityConfig.configu
 boolean ProjectRelease.isNumber(String) -> boolean String.matches(String)
 String GettingStartedGuide.getZipUrl() -> String AbstractGuide.getZipUrl()
 Project GettingStartedGuideController.access_sagan.site.guides.GettingStartedGuideController$Lambda$_5_25(GettingStartedGuideController,String) -> Project GettingStartedGuideController.lambda$viewGuide$0(String)
+void GithubClient.<clinit>() -> MediaType MediaType.parseMediaType(String)
+void GithubClient.<clinit>() -> Logger LoggerFactory.getLogger(Class)
+void GithubClient.<clinit>() -> Pattern Pattern.compile(String)
 boolean Project.lambda$getNonMostCurrentReleases$0(Optional,ProjectRelease) -> Object Optional.get()
 boolean Project.lambda$getNonMostCurrentReleases$0(Optional,ProjectRelease) -> boolean ProjectRelease.equals(Object)
 void Tutorials.evictListFromCache() -> void Logger.info(String)
 boolean SaganRendererClient.access_sagan.site.renderer.SaganRendererClient$Lambda$_12_7(GuideMetadata) -> boolean SaganRendererClient.lambda$fetchTutorialGuides$2(GuideMetadata)
+AsciidoctorGuideContentContributor.<init>(Asciidoctor) -> Object.<init>()
 String SpringToolsPlatform.toString() -> __new
 String SpringToolsPlatform.toString() -> String StringBuilder.toString()
 String SpringToolsPlatform.toString() -> StringBuilder StringBuilder.append(String)
 String SpringToolsPlatform.toString() -> StringBuilder StringBuilder.append(Object)
 String SpringToolsPlatform.toString() -> StringBuilder StringBuilder.append(char)
 String SpringToolsPlatform.toString() -> StringBuilder.<init>()
+GuideRenderer.<init>(GithubClient,RendererProperties,List) -> Object.<init>()
 SaganProfiles.<init>() -> Object.<init>()
 GitHub TeamAdminController.getGitHub(Principal) -> __new
 GitHub TeamAdminController.getGitHub(Principal) -> __cast
@@ -645,6 +719,7 @@ String TeamAdminController.editProfileForm(Principal,Model) -> String Principal.
 String TeamAdminController.editProfileForm(Principal,Model) -> MemberProfile TeamService.fetchMemberProfile(Long)
 String TeamAdminController.editProfileForm(Principal,Model) -> Model Model.addAttribute(String,Object)
 String TeamAdminController.editProfileForm(Principal,Model) -> Long.<init>(String)
+boolean GuideType.access_sagan.renderer.guides.GuideType$Lambda$_4_7(String,GuideType) -> boolean GuideType.lambda$fromSlug$0(String,GuideType)
 boolean SaganRendererClient$Lambda$_6_7.test(Object) -> __cast
 boolean SaganRendererClient$Lambda$_6_7.test(Object) -> boolean SaganRendererClient.access_sagan.site.renderer.SaganRendererClient$Lambda$_6_7(GuideMetadata)
 SaganApplication.<init>(Class) -> __new_array
@@ -686,6 +761,7 @@ String GuideIndexController.viewIndex(Model) -> List Arrays.asList(Object[])
 String GuideIndexController.viewIndex(Model) -> Model Model.addAttribute(String,Object)
 String BlogAdminController.deletePost(Long) -> Post BlogService.getPost(Long)
 String BlogAdminController.deletePost(Long) -> void BlogService.deletePost(Post)
+void RendererApplication.main(String[]) -> ConfigurableApplicationContext SpringApplication.run(Class,String[])
 GuideHeader[] GettingStartedGuides.findByProject(Project) -> __cast
 GuideHeader[] GettingStartedGuides.findByProject(Project) -> Object[] Stream.toArray(IntFunction)
 GuideHeader[] GettingStartedGuides.findByProject(Project) -> Stream Arrays.stream(Object[])
@@ -694,6 +770,8 @@ GuideHeader[] GettingStartedGuides.findByProject(Project) -> Stream Stream.filte
 GuideHeader[] GettingStartedGuides.findByProject(Project) -> Predicate GettingStartedGuides.callsite_sagan.site.guides.GettingStartedGuides$Lambda$_7_8(Project)
 GuideHeader[] GettingStartedGuides.findByProject(Project) -> IntFunction GettingStartedGuides.callsite_sagan.site.guides.GettingStartedGuides$Lambda$_7_18()
 SpringToolsDownload.<init>(String,String,String) -> Object.<init>()
+boolean GuideType.lambda$fromSlug$0(String,GuideType) -> String GuideType.getSlug()
+boolean GuideType.lambda$fromSlug$0(String,GuideType) -> boolean String.equals(Object)
 ProjectRelease Project.getProjectRelease(String) -> __cast
 ProjectRelease Project.getProjectRelease(String) -> Object Iterator.next()
 ProjectRelease Project.getProjectRelease(String) -> Iterator List.iterator()
@@ -724,6 +802,13 @@ String PostView.getUpdatePath() -> String StringBuilder.toString()
 String PostView.getUpdatePath() -> String Post.getAdminSlug()
 String PostView.getUpdatePath() -> StringBuilder StringBuilder.append(String)
 String PostView.getUpdatePath() -> StringBuilder.<init>()
+GuideType GuideType.fromSlug(String) -> __cast
+GuideType GuideType.fromSlug(String) -> GuideType[] GuideType.values()
+GuideType GuideType.fromSlug(String) -> Stream Arrays.stream(Object[])
+GuideType GuideType.fromSlug(String) -> Object Optional.orElse(Object)
+GuideType GuideType.fromSlug(String) -> Optional Stream.findFirst()
+GuideType GuideType.fromSlug(String) -> Stream Stream.filter(Predicate)
+GuideType GuideType.fromSlug(String) -> Predicate GuideType.callsite_sagan.renderer.guides.GuideType$Lambda$_4_7(String)
 void AtomFeedController.prepareResponse(Model,HttpServletResponse,Page,String,String) -> __new
 void AtomFeedController.prepareResponse(Model,HttpServletResponse,Page,String,String) -> String String.trim()
 void AtomFeedController.prepareResponse(Model,HttpServletResponse,Page,String,String) -> String StringBuilder.toString()
@@ -736,6 +821,9 @@ DefaultGuideHeader.<init>() -> __new
 DefaultGuideHeader.<init>() -> Object.<init>()
 DefaultGuideHeader.<init>() -> HashSet.<init>()
 String AbstractGuide.getRepositoryName() -> String GuideHeader.getRepositoryName()
+GithubClient$GithubAcceptInterceptor.<init>(GithubClient$1) -> GithubClient$GithubAcceptInterceptor.<init>()
+Predicate GuideType.callsite_sagan.renderer.guides.GuideType$Lambda$_3_7(String) -> __new
+Predicate GuideType.callsite_sagan.renderer.guides.GuideType$Lambda$_3_7(String) -> GuideType$Lambda$_3_7.<init>(String)
 List PageElementsBuilder.build() -> __new
 List PageElementsBuilder.build() -> void PageElementsBuilder.findStartPage()
 List PageElementsBuilder.build() -> void PageElementsBuilder.findEndPage()
@@ -752,6 +840,7 @@ Optional Tutorials.findByName(String) -> Tutorial.<init>(GuideHeader,GuideConten
 String SpringToolsAdminController.newPlatform(Model) -> __new
 String SpringToolsAdminController.newPlatform(Model) -> String SpringToolsAdminController.edit(SpringToolsPlatform,Model)
 String SpringToolsAdminController.newPlatform(Model) -> SpringToolsPlatform.<init>(String)
+boolean GithubClient.access_sagan.renderer.github.GithubClient$Lambda$_7_42(GithubClient) -> boolean Matcher.matches()
 ProjectRelease$ReleaseStatus ProjectRelease$ReleaseStatus.getFromVersion(String) -> void Assert.notNull(Object,String)
 ProjectRelease$ReleaseStatus ProjectRelease$ReleaseStatus.getFromVersion(String) -> boolean Matcher.matches()
 ProjectRelease$ReleaseStatus ProjectRelease$ReleaseStatus.getFromVersion(String) -> Matcher Pattern.matcher(CharSequence)
@@ -787,6 +876,7 @@ void SecurityConfig$SigninAuthenticationConfig.configure(HttpSecurity) -> HttpSe
 void SecurityConfig$SigninAuthenticationConfig.configure(HttpSecurity) -> void SecurityConfig.access$000(HeadersConfigurer)
 Function ProjectsController.callsite_sagan.projects.support.ProjectsController$Lambda$_3_63() -> __new
 Function ProjectsController.callsite_sagan.projects.support.ProjectsController$Lambda$_3_63() -> ProjectsController$Lambda$_3_63.<init>()
+AsciidoctorGuideContentContributor$Lambda$_3_23.<init>(Document) -> Object.<init>()
 ProjectSample.<init>() -> Object.<init>()
 Object Tutorials$Lambda$_7_18.apply(int) -> GuideHeader[] Tutorials.access_sagan.site.guides.Tutorials$Lambda$_7_18(int)
 void GitHubConfig.<clinit>() -> Log LogFactory.getLog(Class)
@@ -807,16 +897,25 @@ Filter SecurityConfig$SigninAuthenticationConfig.authenticationFilter() -> Saved
 PageElementsBuilder.<init>(long,long) -> Object.<init>()
 String DefaultGuideHeader.getCiStatusImageUrl() -> __new_array
 String DefaultGuideHeader.getCiStatusImageUrl() -> String String.format(String,Object[])
+GithubClient$GithubAcceptInterceptor.<init>() -> Object.<init>()
 ProjectAdminController$Lambda$_6_57.<init>() -> Object.<init>()
 Project.<init>() -> __new
 Project.<init>() -> Object.<init>()
 Project.<init>() -> HashSet.<init>()
 Project.<init>() -> ArrayList.<init>()
 Page BlogService.getPublishedPostsByDate(int,Pageable) -> Page PostRepository.findByDate(int,Pageable)
+Predicate GuidesController.callsite_sagan.renderer.guides.GuidesController$Lambda$_3_29() -> __new
+Predicate GuidesController.callsite_sagan.renderer.guides.GuidesController$Lambda$_3_29() -> GuidesController$Lambda$_3_29.<init>()
+Predicate GuideType.callsite_sagan.renderer.guides.GuideType$Lambda$_4_7(String) -> __new
+Predicate GuideType.callsite_sagan.renderer.guides.GuideType$Lambda$_4_7(String) -> GuideType$Lambda$_4_7.<init>(String)
 ProjectRelease.<init>() -> Object.<init>()
 Function Topicals.callsite_sagan.site.guides.Topicals$Lambda$_5_10() -> __new
 Function Topicals.callsite_sagan.site.guides.Topicals$Lambda$_5_10() -> Topicals$Lambda$_5_10.<init>()
 Project$Lambda$_18_4.<init>() -> Object.<init>()
+MarkdownRenderer.<init>() -> __new
+MarkdownRenderer.<init>() -> PegDownProcessor.<init>(int)
+MarkdownRenderer.<init>() -> Object.<init>()
+void AsciidoctorGuideContentContributor.access_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_5_20(Element) -> void AsciidoctorGuideContentContributor.lambda$null$3(Element)
 ConnectionFactoryRegistry SecurityConfig$AdminAuthenticationConfig.connectionFactoryRegistry() -> __new
 ConnectionFactoryRegistry SecurityConfig$AdminAuthenticationConfig.connectionFactoryRegistry() -> ConnectionFactoryRegistry.<init>()
 byte[] VersionBadgeService.createSvgBadge(Project,ProjectRelease) -> __cast
@@ -831,6 +930,10 @@ byte[] VersionBadgeService.createSvgBadge(Project,ProjectRelease) -> ProjectRele
 byte[] VersionBadgeService.createSvgBadge(Project,ProjectRelease) -> List BadgeSvg.getPaths()
 byte[] VersionBadgeService.createSvgBadge(Project,ProjectRelease) -> String Project.getName()
 byte[] VersionBadgeService.createSvgBadge(Project,ProjectRelease) -> byte[] VersionBadgeService.createSvgBadge(BadgeSvg,List,String,String)
+RendererProperties.<init>() -> __new
+RendererProperties.<init>() -> RendererProperties$Guides.<init>()
+RendererProperties.<init>() -> RendererProperties$Github.<init>()
+RendererProperties.<init>() -> Object.<init>()
 StandaloneMvcConfig.<init>() -> MvcConfig.<init>()
 Link MemberProfile.getGithubLink() -> __new_array
 Link MemberProfile.getGithubLink() -> __new
@@ -841,6 +944,23 @@ Link MemberProfile.getGithubLink() -> String String.format(String,Object[])
 Link MemberProfile.getGithubLink() -> StringBuilder StringBuilder.append(String)
 Link MemberProfile.getGithubLink() -> Link.<init>(String,String)
 Link MemberProfile.getGithubLink() -> StringBuilder.<init>()
+GuideResource GuideResourceAssembler.toResource(Repository) -> __new_array
+GuideResource GuideResourceAssembler.toResource(Repository) -> __new
+GuideResource GuideResourceAssembler.toResource(Repository) -> __cast
+GuideResource GuideResourceAssembler.toResource(Repository) -> Link LinkBuilderSupport.withSelfRel()
+GuideResource GuideResourceAssembler.toResource(Repository) -> Link LinkBuilderSupport.withRel(String)
+GuideResource GuideResourceAssembler.toResource(Repository) -> ResponseEntity GuidesController.showGuide(String,String)
+GuideResource GuideResourceAssembler.toResource(Repository) -> ResponseEntity GuidesController.renderGuide(String,String)
+GuideResource GuideResourceAssembler.toResource(Repository) -> Object ControllerLinkBuilder.methodOn(Class,Object[])
+GuideResource GuideResourceAssembler.toResource(Repository) -> Resources GuidesController.listGuides()
+GuideResource GuideResourceAssembler.toResource(Repository) -> ControllerLinkBuilder ControllerLinkBuilder.linkTo(Object)
+GuideResource GuideResourceAssembler.toResource(Repository) -> GuideType GuideResource.getType()
+GuideResource GuideResourceAssembler.toResource(Repository) -> String GuideType.getSlug()
+GuideResource GuideResourceAssembler.toResource(Repository) -> String GuideResource.getName()
+GuideResource GuideResourceAssembler.toResource(Repository) -> void ResourceSupport.add(Link)
+GuideResource GuideResourceAssembler.toResource(Repository) -> GuideResource.<init>(Repository)
+ResourceSupport GuideResourceAssembler.toResource(Object) -> __cast
+ResourceSupport GuideResourceAssembler.toResource(Object) -> GuideResource GuideResourceAssembler.toResource(Repository)
 StandaloneCacheConfig.<init>() -> Object.<init>()
 PostNotFoundException.<init>(String) -> __new
 PostNotFoundException.<init>(String) -> String StringBuilder.toString()
@@ -848,10 +968,28 @@ PostNotFoundException.<init>(String) -> StringBuilder StringBuilder.append(Strin
 PostNotFoundException.<init>(String) -> ResourceNotFoundException.<init>(String)
 PostNotFoundException.<init>(String) -> StringBuilder.<init>()
 Optional GettingStartedGuideController.lambda$loadImage$1(String,GettingStartedGuide) -> Optional GettingStartedGuide.getImageContent(String)
+ClientHttpResponse GithubClient$GithubAcceptInterceptor.intercept(HttpRequest,byte[],ClientHttpRequestExecution) -> List Collections.singletonList(Object)
+ClientHttpResponse GithubClient$GithubAcceptInterceptor.intercept(HttpRequest,byte[],ClientHttpRequestExecution) -> void HttpHeaders.setAccept(List)
+ClientHttpResponse GithubClient$GithubAcceptInterceptor.intercept(HttpRequest,byte[],ClientHttpRequestExecution) -> HttpHeaders HttpRequest.getHeaders()
+ClientHttpResponse GithubClient$GithubAcceptInterceptor.intercept(HttpRequest,byte[],ClientHttpRequestExecution) -> ClientHttpResponse ClientHttpRequestExecution.execute(HttpRequest,byte[])
+ClientHttpResponse GithubClient$GithubAcceptInterceptor.intercept(HttpRequest,byte[],ClientHttpRequestExecution) -> MediaType GithubClient.access$100()
+Consumer AsciidoctorGuideContentContributor.callsite_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_3_13() -> __new
+Consumer AsciidoctorGuideContentContributor.callsite_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_3_13() -> AsciidoctorGuideContentContributor$Lambda$_3_13.<init>()
 String PostView.getTitle() -> String Post.getTitle()
 Pageable PageableFactory.forSearch(int) -> __new
 Pageable PageableFactory.forSearch(int) -> PageRequest.<init>(int,int)
 Object Topicals$Lambda$_5_20.apply(int) -> DefaultGuideHeader[] Topicals.access_sagan.site.guides.Topicals$Lambda$_5_20(int)
+LinkRenderer$Rendering MarkdownToHtmlSerializer.createAnchorLink(String) -> __new
+LinkRenderer$Rendering MarkdownToHtmlSerializer.createAnchorLink(String) -> LinkRenderer$Rendering LinkRenderer$Rendering.withAttribute(String,String)
+LinkRenderer$Rendering MarkdownToHtmlSerializer.createAnchorLink(String) -> String[] StringUtils.tokenizeToStringArray(String,String)
+LinkRenderer$Rendering MarkdownToHtmlSerializer.createAnchorLink(String) -> String StringBuilder.toString()
+LinkRenderer$Rendering MarkdownToHtmlSerializer.createAnchorLink(String) -> String String.toLowerCase()
+LinkRenderer$Rendering MarkdownToHtmlSerializer.createAnchorLink(String) -> String String.replaceAll(String,String)
+LinkRenderer$Rendering MarkdownToHtmlSerializer.createAnchorLink(String) -> String String.replace(CharSequence,CharSequence)
+LinkRenderer$Rendering MarkdownToHtmlSerializer.createAnchorLink(String) -> String StringUtils.arrayToDelimitedString(Object[],String)
+LinkRenderer$Rendering MarkdownToHtmlSerializer.createAnchorLink(String) -> StringBuilder StringBuilder.append(String)
+LinkRenderer$Rendering MarkdownToHtmlSerializer.createAnchorLink(String) -> LinkRenderer$Rendering.<init>(String,String)
+LinkRenderer$Rendering MarkdownToHtmlSerializer.createAnchorLink(String) -> StringBuilder.<init>()
 ProjectRelease$ReleaseStatus ProjectRelease$ReleaseStatus.valueOf(String) -> __cast
 ProjectRelease$ReleaseStatus ProjectRelease$ReleaseStatus.valueOf(String) -> Enum Enum.valueOf(Class,String)
 boolean MemberProfile.hasSpeakerdeckUsername() -> boolean StringUtils.isEmpty(Object)
@@ -904,16 +1042,20 @@ Cache RedisCacheManager.access_sagan.support.cache.RedisCacheManager$Lambda$_5_1
 SignInService.<init>(TeamService,String) -> Object.<init>()
 BadgeController.<init>(ProjectMetadataService,VersionBadgeService) -> Object.<init>()
 ProjectAdminController$Lambda$_12_164.<init>(List) -> Object.<init>()
+PwsGuideContentContributor.<init>() -> Object.<init>()
 SiteUrl.<init>() -> Object.<init>()
 boolean ProjectGroup.equals(Object) -> __cast
 boolean ProjectGroup.equals(Object) -> Class Object.getClass()
 boolean ProjectGroup.equals(Object) -> boolean String.equals(Object)
+void AsciidoctorGuideContentContributor.access_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_3_23(Document,Element) -> void AsciidoctorGuideContentContributor.lambda$findTableOfContents$4(Document,Element)
 void GettingStartedGuides.evictFromCache(String) -> void Logger.info(String,Object)
 String BlogController.listPublishedPostsForCategory(PostCategory,Model,int) -> String BlogController.renderListOfPosts(Page,Model,String)
 String BlogController.listPublishedPostsForCategory(PostCategory,Model,int) -> Page BlogService.getPublishedPosts(PostCategory,Pageable)
 String BlogController.listPublishedPostsForCategory(PostCategory,Model,int) -> String PostCategory.getDisplayName()
 String BlogController.listPublishedPostsForCategory(PostCategory,Model,int) -> Pageable PageableFactory.forLists(int)
 TeamController$Lambda$_4_27.<init>() -> Object.<init>()
+Consumer AsciidoctorGuideContentContributor.callsite_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_3_23(Document) -> __new
+Consumer AsciidoctorGuideContentContributor.callsite_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_3_23(Document) -> AsciidoctorGuideContentContributor$Lambda$_3_23.<init>(Document)
 Post BlogService.getPost(Long) -> __new
 Post BlogService.getPost(Long) -> __cast
 Post BlogService.getPost(Long) -> long Long.longValue()
@@ -977,10 +1119,22 @@ void ProjectRelease$ReleaseStatus.<clinit>() -> __new
 void ProjectRelease$ReleaseStatus.<clinit>() -> ProjectRelease$ReleaseStatus.<init>(String,int)
 PostView$Lambda$_19_12.<init>(DateFactory) -> Object.<init>()
 void Topicals.evictListFromCache() -> void Logger.info(String)
+GithubClient$Lambda$_7_52.<init>() -> Object.<init>()
 Date PostView.getPublishAt() -> Date Post.getPublishAt()
+boolean AsciidoctorGuideContentContributor.lambda$null$2(Document,Element) -> __cast
+boolean AsciidoctorGuideContentContributor.lambda$null$2(Document,Element) -> Stream Collection.stream()
+boolean AsciidoctorGuideContentContributor.lambda$null$2(Document,Element) -> Elements Element.select(String)
+boolean AsciidoctorGuideContentContributor.lambda$null$2(Document,Element) -> Element Element.parent()
+boolean AsciidoctorGuideContentContributor.lambda$null$2(Document,Element) -> Object ArrayList.get(int)
+boolean AsciidoctorGuideContentContributor.lambda$null$2(Document,Element) -> Set Element.classNames()
+boolean AsciidoctorGuideContentContributor.lambda$null$2(Document,Element) -> Predicate AsciidoctorGuideContentContributor.callsite_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_7_28()
+boolean AsciidoctorGuideContentContributor.lambda$null$2(Document,Element) -> String Node.attr(String)
+boolean AsciidoctorGuideContentContributor.lambda$null$2(Document,Element) -> boolean Stream.anyMatch(Predicate)
 Consumer SpringToolsController.callsite_sagan.tools.support.SpringToolsController$Lambda$_3_10(Model) -> __new
 Consumer SpringToolsController.callsite_sagan.tools.support.SpringToolsController$Lambda$_3_10(Model) -> SpringToolsController$Lambda$_3_10.<init>(Model)
 GettingStartedGuideController$Lambda$_4_9.<init>(String) -> Object.<init>()
+void AsciidoctorGuideContentContributor$Lambda$_5_20.accept(Object) -> __cast
+void AsciidoctorGuideContentContributor$Lambda$_5_20.accept(Object) -> void AsciidoctorGuideContentContributor.access_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_5_20(Element)
 Function RedisCacheManager.callsite_sagan.support.cache.RedisCacheManager$Lambda$_5_19(RedisCacheManager) -> __new
 Function RedisCacheManager.callsite_sagan.support.cache.RedisCacheManager$Lambda$_5_19(RedisCacheManager) -> RedisCacheManager$Lambda$_5_19.<init>(RedisCacheManager)
 boolean ProjectPatchingService$ObjectPatcher.isDirty(Object,Object) -> boolean Objects.equals(Object,Object)
@@ -990,6 +1144,7 @@ MemberProfileBuilder.<init>() -> Object.<init>()
 GuideHeader[] GettingStartedGuides.access_sagan.site.guides.GettingStartedGuides$Lambda$_7_18(int) -> GuideHeader[] GettingStartedGuides.lambda$findByProject$2(int)
 String MvcConfig$ViewRenderingHelper.navClass(String,String) -> boolean String.equals(Object)
 Date PostFormAdapter.createdDate(PostForm,Date) -> Date PostForm.getCreatedAt()
+GuideResourceAssembler.<init>() -> ResourceAssemblerSupport.<init>(Class,Class)
 CacheManager StandaloneCacheConfig.simpleCacheManager() -> __new_array
 CacheManager StandaloneCacheConfig.simpleCacheManager() -> __new
 CacheManager StandaloneCacheConfig.simpleCacheManager() -> __cast
@@ -1003,6 +1158,12 @@ CacheManager StandaloneCacheConfig.simpleCacheManager() -> List Arrays.asList(Ob
 CacheManager StandaloneCacheConfig.simpleCacheManager() -> SimpleCacheManager.<init>()
 boolean PaginationInfo.equals(Object) -> __cast
 boolean PaginationInfo.equals(Object) -> Class Object.getClass()
+String AsciidoctorGuideContentContributor.findTableOfContents(Document) -> String Elements.toString()
+String AsciidoctorGuideContentContributor.findTableOfContents(Document) -> Elements Elements.select(String)
+String AsciidoctorGuideContentContributor.findTableOfContents(Document) -> Elements Element.select(String)
+String AsciidoctorGuideContentContributor.findTableOfContents(Document) -> void ArrayList.forEach(Consumer)
+String AsciidoctorGuideContentContributor.findTableOfContents(Document) -> Consumer AsciidoctorGuideContentContributor.callsite_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_3_23(Document)
+String AsciidoctorGuideContentContributor.findTableOfContents(Document) -> Consumer AsciidoctorGuideContentContributor.callsite_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_3_13()
 void GettingStartedGuides.<clinit>() -> Logger LoggerFactory.getLogger(Class)
 String TeamController.showTeam(Model) -> Collector Collectors.toList()
 String TeamController.showTeam(Model) -> Stream Collection.stream()
@@ -1018,6 +1179,7 @@ int Project.access_sagan.projects.Project$Lambda$_17_19(Project,ProjectRelease) 
 String Tutorial.getGithubUrl() -> String AbstractGuide.getGithubUrl()
 ProjectAdminController$Lambda$_12_153.<init>() -> Object.<init>()
 SecurityConfig$ApiAuthenticationConfig.<init>() -> WebSecurityConfigurerAdapter.<init>()
+GuideType$Lambda$_3_7.<init>(String) -> Object.<init>()
 Topical.<init>(GuideHeader,GuideContent) -> AbstractGuide.<init>(String,GuideHeader,GuideContent)
 String Fixtures.githubRepoJson() -> String Fixtures.load(String)
 void ProjectsController.lambda$listProjects$0(Model,String,List) -> Model Model.addAttribute(String,Object)
@@ -1037,6 +1199,18 @@ GuideMetadata SaganRendererClient.fetchTutorialGuide(String) -> Traverson$Traver
 String SpringToolsAdminController.list(Model) -> List SpringToolsPlatformRepository.findAll()
 String SpringToolsAdminController.list(Model) -> Model Model.addAttribute(String,Object)
 AtomFeedView.<init>(SiteUrl,DateFactory) -> AbstractAtomFeedView.<init>()
+void MarkdownToHtmlSerializer.visit(HeaderNode) -> __new
+void MarkdownToHtmlSerializer.visit(HeaderNode) -> void ToHtmlSerializer.visitChildren(SuperNode)
+void MarkdownToHtmlSerializer.visit(HeaderNode) -> String StringBuilder.toString()
+void MarkdownToHtmlSerializer.visit(HeaderNode) -> void ToHtmlSerializer.printLink(LinkRenderer$Rendering)
+void MarkdownToHtmlSerializer.visit(HeaderNode) -> String ToHtmlSerializer.printChildrenToString(SuperNode)
+void MarkdownToHtmlSerializer.visit(HeaderNode) -> Printer Printer.print(String)
+void MarkdownToHtmlSerializer.visit(HeaderNode) -> Printer Printer.print(char)
+void MarkdownToHtmlSerializer.visit(HeaderNode) -> int HeaderNode.getLevel()
+void MarkdownToHtmlSerializer.visit(HeaderNode) -> LinkRenderer$Rendering MarkdownToHtmlSerializer.createAnchorLink(String)
+void MarkdownToHtmlSerializer.visit(HeaderNode) -> StringBuilder StringBuilder.append(String)
+void MarkdownToHtmlSerializer.visit(HeaderNode) -> StringBuilder StringBuilder.append(int)
+void MarkdownToHtmlSerializer.visit(HeaderNode) -> StringBuilder.<init>()
 Object TutorialController$Lambda$_3_9.apply(Object) -> __cast
 Object TutorialController$Lambda$_3_9.apply(Object) -> Optional TutorialController.access_sagan.site.guides.TutorialController$Lambda$_3_9(String,Tutorial)
 boolean MemberProfile.hasTwitterUsername() -> boolean StringUtils.isEmpty(Object)
@@ -1052,6 +1226,8 @@ ResponseEntity DocsWebhookController.processTutorialsUpdate(String,String,String
 ResponseEntity DocsWebhookController.processTutorialsUpdate(String,String,String) -> Object Map.get(Object)
 ResponseEntity DocsWebhookController.processTutorialsUpdate(String,String,String) -> void Tutorials.evictFromCache(String)
 ResponseEntity DocsWebhookController.processTutorialsUpdate(String,String,String) -> boolean String.equals(Object)
+boolean GuidesController$Lambda$_3_29.test(Object) -> __cast
+boolean GuidesController$Lambda$_3_29.test(Object) -> boolean GuidesController.access_sagan.renderer.guides.GuidesController$Lambda$_3_29(GuideResource)
 boolean ProjectAdminController.lambda$save$0(ProjectSample) -> boolean String.isEmpty()
 boolean ProjectAdminController.lambda$save$0(ProjectSample) -> String ProjectSample.getUrl()
 boolean ProjectAdminController.lambda$save$0(ProjectSample) -> String ProjectSample.getTitle()
@@ -1059,10 +1235,50 @@ int Link.hashCode() -> int EqualsBean.beanHashCode(Object)
 MvcConfig$1.<init>(MvcConfig) -> HandlerInterceptorAdapter.<init>()
 boolean ProjectAdminController.access_sagan.projects.support.ProjectAdminController$Lambda$_12_164(List,ProjectSample) -> boolean ProjectAdminController.lambda$save$1(List,ProjectSample)
 String AbstractGuide.getTitle() -> String GuideHeader.getTitle()
+GuideImage.<init>() -> Object.<init>()
 Page BlogService.getPublishedPosts(PostCategory,Pageable) -> Date DateFactory.now()
 Page BlogService.getPublishedPosts(PostCategory,Pageable) -> Page PostRepository.findByCategoryAndDraftFalseAndPublishAtBefore(PostCategory,Date,Pageable)
 String GettingStartedGuide.getSshUrl() -> String AbstractGuide.getSshUrl()
+void AsciidoctorRenderer.<clinit>() -> MediaType MediaType.parseMediaType(String)
 AbstractGuide.<init>() -> Object.<init>()
+GuideContentResource GuideRenderer.render(GuideType,String) -> __unwrap_exception
+GuideContentResource GuideRenderer.render(GuideType,String) -> __new
+GuideContentResource GuideRenderer.render(GuideType,String) -> __instanceof
+GuideContentResource GuideRenderer.render(GuideType,String) -> __cast
+GuideContentResource GuideRenderer.render(GuideType,String) -> void FileOutputStream.write(byte[])
+GuideContentResource GuideRenderer.render(GuideType,String) -> String StringBuilder.toString()
+GuideContentResource GuideRenderer.render(GuideType,String) -> void GuideContentResource.setName(String)
+GuideContentResource GuideRenderer.render(GuideType,String) -> Object Enumeration.nextElement()
+GuideContentResource GuideRenderer.render(GuideType,String) -> Object Iterator.next()
+GuideContentResource GuideRenderer.render(GuideType,String) -> boolean File.mkdir()
+GuideContentResource GuideRenderer.render(GuideType,String) -> Iterator List.iterator()
+GuideContentResource GuideRenderer.render(GuideType,String) -> boolean ZipEntry.isDirectory()
+GuideContentResource GuideRenderer.render(GuideType,String) -> boolean Iterator.hasNext()
+GuideContentResource GuideRenderer.render(GuideType,String) -> boolean Enumeration.hasMoreElements()
+GuideContentResource GuideRenderer.render(GuideType,String) -> String GuideType.getPrefix()
+GuideContentResource GuideRenderer.render(GuideType,String) -> String File.getParent()
+GuideContentResource GuideRenderer.render(GuideType,String) -> String RendererProperties$Guides.getOrganization()
+GuideContentResource GuideRenderer.render(GuideType,String) -> String ZipEntry.getName()
+GuideContentResource GuideRenderer.render(GuideType,String) -> InputStream ZipFile.getInputStream(ZipEntry)
+GuideContentResource GuideRenderer.render(GuideType,String) -> RendererProperties$Guides RendererProperties.getGuides()
+GuideContentResource GuideRenderer.render(GuideType,String) -> Enumeration ZipFile.entries()
+GuideContentResource GuideRenderer.render(GuideType,String) -> byte[] GithubClient.downloadRepositoryAsZipball(String,String)
+GuideContentResource GuideRenderer.render(GuideType,String) -> boolean FileSystemUtils.deleteRecursively(File)
+GuideContentResource GuideRenderer.render(GuideType,String) -> void File.deleteOnExit()
+GuideContentResource GuideRenderer.render(GuideType,String) -> File File.createTempFile(String,String)
+GuideContentResource GuideRenderer.render(GuideType,String) -> int StreamUtils.copy(InputStream,OutputStream)
+GuideContentResource GuideRenderer.render(GuideType,String) -> void GuideContentContributor.contribute(GuideContentResource,File)
+GuideContentResource GuideRenderer.render(GuideType,String) -> void ZipFile.close()
+GuideContentResource GuideRenderer.render(GuideType,String) -> void FileOutputStream.close()
+GuideContentResource GuideRenderer.render(GuideType,String) -> StringBuilder StringBuilder.append(String)
+GuideContentResource GuideRenderer.render(GuideType,String) -> void Throwable.addSuppressed(Throwable)
+GuideContentResource GuideRenderer.render(GuideType,String) -> IllegalStateException.<init>(String,Throwable)
+GuideContentResource GuideRenderer.render(GuideType,String) -> FileOutputStream.<init>(String)
+GuideContentResource GuideRenderer.render(GuideType,String) -> File.<init>(String)
+GuideContentResource GuideRenderer.render(GuideType,String) -> ZipFile.<init>(File)
+GuideContentResource GuideRenderer.render(GuideType,String) -> FileOutputStream.<init>(File)
+GuideContentResource GuideRenderer.render(GuideType,String) -> StringBuilder.<init>()
+GuideContentResource GuideRenderer.render(GuideType,String) -> GuideContentResource.<init>()
 String SpringToolsController.listDownloads(Model) -> void Iterable.forEach(Consumer)
 String SpringToolsController.listDownloads(Model) -> List SpringToolsPlatformRepository.findAll()
 String SpringToolsController.listDownloads(Model) -> Consumer SpringToolsController.callsite_sagan.tools.support.SpringToolsController$Lambda$_3_10(Model)
@@ -1083,6 +1299,8 @@ String BlogController.listPublishedBroadcasts(Model,int) -> Page BlogService.get
 String BlogController.listPublishedBroadcasts(Model,int) -> Pageable PageableFactory.forLists(int)
 Page BlogService.getPublishedBroadcastPosts(Pageable) -> Date DateFactory.now()
 Page BlogService.getPublishedBroadcastPosts(Pageable) -> Page PostRepository.findByBroadcastAndDraftFalseAndPublishAtBefore(boolean,Date,Pageable)
+Predicate MarkupController.callsite_sagan.renderer.markup.MarkupController$Lambda$_4_10(MediaType) -> __new
+Predicate MarkupController.callsite_sagan.renderer.markup.MarkupController$Lambda$_4_10(MediaType) -> MarkupController$Lambda$_4_10.<init>(MediaType)
 ResponseEntity DocsWebhookController.processGuidesUpdate(String,String,String,String) -> __new
 ResponseEntity DocsWebhookController.processGuidesUpdate(String,String,String,String) -> void DocsWebhookController.verifyHmacSignature(String,String)
 ResponseEntity DocsWebhookController.processGuidesUpdate(String,String,String,String) -> String StringBuilder.toString()
@@ -1096,6 +1314,28 @@ ResponseEntity DocsWebhookController.processGuidesUpdate(String,String,String,St
 DefaultGuideHeader Topicals.access_sagan.site.guides.Topicals$Lambda$_5_10(GuideMetadata) -> __new
 DefaultGuideHeader Topicals.access_sagan.site.guides.Topicals$Lambda$_5_10(GuideMetadata) -> DefaultGuideHeader.<init>(GuideMetadata)
 String GettingStartedGuide.getContent() -> String AbstractGuide.getContent()
+ClientHttpResponse GithubClient$GithubAppTokenInterceptor.intercept(HttpRequest,byte[],ClientHttpRequestExecution) -> __new
+ClientHttpResponse GithubClient$GithubAppTokenInterceptor.intercept(HttpRequest,byte[],ClientHttpRequestExecution) -> String StringBuilder.toString()
+ClientHttpResponse GithubClient$GithubAppTokenInterceptor.intercept(HttpRequest,byte[],ClientHttpRequestExecution) -> void HttpHeaders.set(String,String)
+ClientHttpResponse GithubClient$GithubAppTokenInterceptor.intercept(HttpRequest,byte[],ClientHttpRequestExecution) -> boolean StringUtils.hasText(String)
+ClientHttpResponse GithubClient$GithubAppTokenInterceptor.intercept(HttpRequest,byte[],ClientHttpRequestExecution) -> HttpHeaders HttpRequest.getHeaders()
+ClientHttpResponse GithubClient$GithubAppTokenInterceptor.intercept(HttpRequest,byte[],ClientHttpRequestExecution) -> ClientHttpResponse ClientHttpRequestExecution.execute(HttpRequest,byte[])
+ClientHttpResponse GithubClient$GithubAppTokenInterceptor.intercept(HttpRequest,byte[],ClientHttpRequestExecution) -> StringBuilder StringBuilder.append(String)
+ClientHttpResponse GithubClient$GithubAppTokenInterceptor.intercept(HttpRequest,byte[],ClientHttpRequestExecution) -> StringBuilder.<init>()
+void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer) -> __new
+void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer) -> String StringBuilder.toString()
+void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer) -> String String.substring(int)
+void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer) -> Printer Printer.println()
+void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer) -> Printer Printer.printEncoded(String)
+void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer) -> void PrettifyVerbatimSerializer.printAttribute(Printer,String,String)
+void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer) -> Printer Printer.print(String)
+void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer) -> boolean StringUtils.isEmpty(String)
+void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer) -> String VerbatimNode.getType()
+void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer) -> String TextNode.getText()
+void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer) -> String String.concat(String)
+void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer) -> char String.charAt(int)
+void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer) -> StringBuilder StringBuilder.append(String)
+void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer) -> StringBuilder.<init>()
 Project ProjectMetadataController.projectMetadata(String) -> Project ProjectMetadataService.getProject(String)
 Authentication SecurityConfig$ApiAuthenticationConfig$1.authenticate(Authentication) -> __unwrap_exception
 Authentication SecurityConfig$ApiAuthenticationConfig$1.authenticate(Authentication) -> __new
@@ -1120,6 +1360,13 @@ Authentication SecurityConfig$ApiAuthenticationConfig$1.authenticate(Authenticat
 String Topical.getName() -> String AbstractGuide.getName()
 Tutorial.<init>() -> void Tutorial.setTypeLabel(String)
 Tutorial.<init>() -> AbstractGuide.<init>()
+GuideType GuideType.fromRepositoryName(String) -> __cast
+GuideType GuideType.fromRepositoryName(String) -> GuideType[] GuideType.values()
+GuideType GuideType.fromRepositoryName(String) -> Stream Arrays.stream(Object[])
+GuideType GuideType.fromRepositoryName(String) -> Object Optional.orElse(Object)
+GuideType GuideType.fromRepositoryName(String) -> Optional Stream.findFirst()
+GuideType GuideType.fromRepositoryName(String) -> Stream Stream.filter(Predicate)
+GuideType GuideType.fromRepositoryName(String) -> Predicate GuideType.callsite_sagan.renderer.guides.GuideType$Lambda$_3_7(String)
 void AtomFeedView.setAuthor(Post,Entry) -> __new_array
 void AtomFeedView.setAuthor(Post,Entry) -> __new
 void AtomFeedView.setAuthor(Post,Entry) -> void Person.setName(String)
@@ -1133,6 +1380,17 @@ void Section.<clinit>() -> __new
 void Section.<clinit>() -> Section.<init>(String,int)
 String GettingStartedGuide.getCiLatestUrl() -> String AbstractGuide.getCiLatestUrl()
 String Tutorial.getTypeLabel() -> String AbstractGuide.getTypeLabel()
+Optional GithubClient.findNextPageLink(ResponseEntity) -> Stream Collection.stream()
+Optional GithubClient.findNextPageLink(ResponseEntity) -> Stream Stream.map(Function)
+Optional GithubClient.findNextPageLink(ResponseEntity) -> HttpHeaders HttpEntity.getHeaders()
+Optional GithubClient.findNextPageLink(ResponseEntity) -> Class Object.getClass()
+Optional GithubClient.findNextPageLink(ResponseEntity) -> List HttpHeaders.get(Object)
+Optional GithubClient.findNextPageLink(ResponseEntity) -> Optional Stream.findFirst()
+Optional GithubClient.findNextPageLink(ResponseEntity) -> Stream Stream.filter(Predicate)
+Optional GithubClient.findNextPageLink(ResponseEntity) -> Optional Optional.empty()
+Optional GithubClient.findNextPageLink(ResponseEntity) -> Function GithubClient.callsite_sagan.renderer.github.GithubClient$Lambda$_7_52()
+Optional GithubClient.findNextPageLink(ResponseEntity) -> Predicate GithubClient.callsite_sagan.renderer.github.GithubClient$Lambda$_7_42()
+Optional GithubClient.findNextPageLink(ResponseEntity) -> Function GithubClient.callsite_sagan.renderer.github.GithubClient$Lambda$_7_32(Pattern)
 InMemoryUsersConnectionRepository SecurityConfig$AdminAuthenticationConfig.inMemoryUsersConnectionRepository(ConnectionFactoryRegistry) -> __new
 InMemoryUsersConnectionRepository SecurityConfig$AdminAuthenticationConfig.inMemoryUsersConnectionRepository(ConnectionFactoryRegistry) -> InMemoryUsersConnectionRepository.<init>(ConnectionFactoryLocator)
 MemberProfile PostView.getAuthor() -> MemberProfile Post.getAuthor()
@@ -1161,6 +1419,7 @@ MvcConfig.<init>() -> WebMvcConfigurerAdapter.<init>()
 Set AbstractGuide.getProjects() -> Set GuideHeader.getProjects()
 boolean SpringToolsAdminController.access_sagan.tools.support.SpringToolsAdminController$Lambda$_8_10(List,SpringToolsDownload) -> boolean SpringToolsAdminController.lambda$save$0(List,SpringToolsDownload)
 DateFactory.<init>() -> Object.<init>()
+RendererProperties$Guides.<init>() -> Object.<init>()
 MvcConfig$ViewRenderingHelper MvcConfig.viewRenderingHelper() -> __new
 MvcConfig$ViewRenderingHelper MvcConfig.viewRenderingHelper() -> MvcConfig$ViewRenderingHelper.<init>()
 void PostFormAdapter.updatePostFromPostForm(Post,PostForm) -> void Post.setTitle(String)
@@ -1181,6 +1440,18 @@ GuideImage.<init>() -> Object.<init>()
 Pageable PageableFactory.build(int,int) -> __new_array
 Pageable PageableFactory.build(int,int) -> __new
 Pageable PageableFactory.build(int,int) -> PageRequest.<init>(int,int,Sort$Direction,String[])
+GithubClient.<init>(RestTemplateBuilder,RendererProperties) -> __new_array
+GithubClient.<init>(RestTemplateBuilder,RendererProperties) -> __new
+GithubClient.<init>(RestTemplateBuilder,RendererProperties) -> void Logger.warn(String)
+GithubClient.<init>(RestTemplateBuilder,RendererProperties) -> RestTemplateBuilder RestTemplateBuilder.rootUri(String)
+GithubClient.<init>(RestTemplateBuilder,RendererProperties) -> boolean StringUtils.hasText(String)
+GithubClient.<init>(RestTemplateBuilder,RendererProperties) -> String RendererProperties$Github.getToken()
+GithubClient.<init>(RestTemplateBuilder,RendererProperties) -> RendererProperties$Github RendererProperties.getGithub()
+GithubClient.<init>(RestTemplateBuilder,RendererProperties) -> RestTemplate RestTemplateBuilder.build()
+GithubClient.<init>(RestTemplateBuilder,RendererProperties) -> RestTemplateBuilder RestTemplateBuilder.additionalInterceptors(ClientHttpRequestInterceptor[])
+GithubClient.<init>(RestTemplateBuilder,RendererProperties) -> GithubClient$GithubAppTokenInterceptor.<init>(String)
+GithubClient.<init>(RestTemplateBuilder,RendererProperties) -> GithubClient$GithubAcceptInterceptor.<init>(GithubClient$1)
+GithubClient.<init>(RestTemplateBuilder,RendererProperties) -> Object.<init>()
 ProjectRelease Project.removeProjectRelease(String) -> __cast
 ProjectRelease Project.removeProjectRelease(String) -> int List.size()
 ProjectRelease Project.removeProjectRelease(String) -> Object List.remove(int)
@@ -1188,6 +1459,8 @@ ProjectRelease Project.removeProjectRelease(String) -> String ProjectRelease.get
 ProjectRelease Project.removeProjectRelease(String) -> List Project.getProjectReleases()
 ProjectRelease Project.removeProjectRelease(String) -> Object List.get(int)
 ProjectRelease Project.removeProjectRelease(String) -> boolean String.equals(Object)
+Object MarkupController$Lambda$_4_26.apply(Object) -> __cast
+Object MarkupController$Lambda$_4_26.apply(Object) -> ResponseEntity MarkupController.access_sagan.renderer.markup.MarkupController$Lambda$_4_26(String,MarkupRenderer)
 GuideHeader[] Topicals.access_sagan.site.guides.Topicals$Lambda$_7_18(int) -> GuideHeader[] Topicals.lambda$findByProject$2(int)
 Link MemberProfile.getSpeakerdeckLink() -> __new_array
 Link MemberProfile.getSpeakerdeckLink() -> __new
@@ -1205,6 +1478,8 @@ String ProjectGroup.toString() -> StringBuilder StringBuilder.append(String)
 String ProjectGroup.toString() -> StringBuilder StringBuilder.append(Object)
 String ProjectGroup.toString() -> StringBuilder StringBuilder.append(char)
 String ProjectGroup.toString() -> StringBuilder.<init>()
+boolean GuideType.lambda$fromRepositoryName$1(String,GuideType) -> boolean String.startsWith(String)
+boolean GuideType.lambda$fromRepositoryName$1(String,GuideType) -> String GuideType.getPrefix()
 Cache RedisCacheManager.getCache(String) -> Cache AbstractCacheManager.getCache(String)
 Cache RedisCacheManager.getCache(String) -> RedisCache RedisCacheManager.createCache(String,RedisTemplate,long)
 TutorialController$Lambda$_3_9.<init>(String) -> Object.<init>()
@@ -1292,6 +1567,7 @@ boolean SaganRendererClient.lambda$fetchGettingStartedGuides$0(GuideMetadata) ->
 Function GettingStartedGuideController.callsite_sagan.site.guides.GettingStartedGuideController$Lambda$_5_25(GettingStartedGuideController) -> __new
 Function GettingStartedGuideController.callsite_sagan.site.guides.GettingStartedGuideController$Lambda$_5_25(GettingStartedGuideController) -> GettingStartedGuideController$Lambda$_5_25.<init>(GettingStartedGuideController)
 String GettingStartedGuide.getTypeLabel() -> String AbstractGuide.getTypeLabel()
+boolean MarkdownRenderer.canRender(MediaType) -> boolean MediaType.isCompatibleWith(MediaType)
 boolean ProjectsController.access_sagan.projects.support.ProjectsController$Lambda$_3_33(ProjectsController) -> boolean Project.isFeatured()
 FilterRegistrationBean UrlRewriterFilterConfig.rewriteFilterConfig() -> __new
 FilterRegistrationBean UrlRewriterFilterConfig.rewriteFilterConfig() -> void RegistrationBean.setName(String)
@@ -1334,6 +1610,8 @@ void MvcConfig.addViewControllers(ViewControllerRegistry) -> ViewControllerRegis
 void MvcConfig.addViewControllers(ViewControllerRegistry) -> RuntimeException.<init>(String,Throwable)
 void MvcConfig.addViewControllers(ViewControllerRegistry) -> StringBuilder.<init>()
 ProjectMetadataService.<init>(ProjectMetadataRepository,ProjectGroupRepository) -> Object.<init>()
+void AsciidoctorGuideContentContributor.lambda$null$3(Element) -> void Node.remove()
+void AsciidoctorGuideContentContributor.lambda$null$3(Element) -> Element Element.parent()
 String Tutorial.getZipUrl() -> String AbstractGuide.getZipUrl()
 Predicate GettingStartedGuides.callsite_sagan.site.guides.GettingStartedGuides$Lambda$_7_8(Project) -> __new
 Predicate GettingStartedGuides.callsite_sagan.site.guides.GettingStartedGuides$Lambda$_7_8(Project) -> GettingStartedGuides$Lambda$_7_8.<init>(Project)
@@ -1367,6 +1645,9 @@ Event.<init>(VEvent) -> Object.<init>()
 void Project.setStackOverflowTags(String) -> String String.replaceAll(String,String)
 boolean BadgeController$Lambda$_3_39.test(Object) -> __cast
 boolean BadgeController$Lambda$_3_39.test(Object) -> boolean BadgeController.access_sagan.projects.support.BadgeController$Lambda$_3_39(Predicate,ProjectRelease)
+boolean GuidesController.access_sagan.renderer.guides.GuidesController$Lambda$_3_29(GuideResource) -> boolean GuidesController.lambda$listGuides$0(GuideResource)
+Predicate AsciidoctorGuideContentContributor.callsite_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_5_10(Document) -> __new
+Predicate AsciidoctorGuideContentContributor.callsite_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_5_10(Document) -> AsciidoctorGuideContentContributor$Lambda$_5_10.<init>(Document)
 String BlogAdminController.createPost(Principal,PostForm,BindingResult,Model) -> __unwrap_exception
 String BlogAdminController.createPost(Principal,PostForm,BindingResult,Model) -> __new
 String BlogAdminController.createPost(Principal,PostForm,BindingResult,Model) -> __instanceof
@@ -1411,6 +1692,7 @@ VersionBadgeService.<init>() -> BufferedImage.<init>(int,int,int)
 VersionBadgeService.<init>() -> Object.<init>()
 LearnController.<init>(BlogService,DateFactory) -> Object.<init>()
 Pageable PageableFactory.forFeeds() -> Pageable PageableFactory.build(int,int)
+IndexController.<init>() -> Object.<init>()
 MemberProfile TeamService.fetchMemberProfileUsername(String) -> MemberProfile TeamRepository.findByUsername(String)
 String Topical.getDescription() -> String AbstractGuide.getDescription()
 Optional TutorialController.lambda$loadImage$0(String,Tutorial) -> Optional Tutorial.getImageContent(String)
@@ -1422,14 +1704,19 @@ GuideImage AbstractGuide.lambda$new$0(GuideImage) -> String GuideImage.getName()
 GuideImage AbstractGuide.lambda$new$0(GuideImage) -> String GuideImage.getEncodedContent()
 GuideImage AbstractGuide.lambda$new$0(GuideImage) -> GuideImage.<init>(String,String)
 Optional TopicalController.access_sagan.site.guides.TopicalController$Lambda$_3_9(String,Topical) -> Optional TopicalController.lambda$loadImage$0(String,Topical)
+Consumer AsciidoctorGuideContentContributor.callsite_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_5_20() -> __new
+Consumer AsciidoctorGuideContentContributor.callsite_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_5_20() -> AsciidoctorGuideContentContributor$Lambda$_5_20.<init>()
 int Project$Lambda$_17_19.compare(Object,Object) -> __cast
 int Project$Lambda$_17_19.compare(Object,Object) -> int Project.access_sagan.projects.Project$Lambda$_17_19(Project,ProjectRelease)
 GeoLocationFormatter.<init>() -> Object.<init>()
+boolean AsciidoctorRenderer.canRender(MediaType) -> boolean MediaType.isCompatibleWith(MediaType)
 List ProjectMetadataService.getProjects() -> List ProjectMetadataRepository.findAll(Sort)
 TeamAdminController.<init>(TeamService,TeamImporter,InMemoryUsersConnectionRepository) -> Object.<init>()
 Set Tutorial.getProjects() -> Set AbstractGuide.getProjects()
+MarkupController.<init>(List) -> Object.<init>()
 boolean GettingStartedGuides$Lambda$_7_8.test(Object) -> __cast
 boolean GettingStartedGuides$Lambda$_7_8.test(Object) -> boolean GettingStartedGuides.access_sagan.site.guides.GettingStartedGuides$Lambda$_7_8(Project,GuideHeader)
+PrettifyVerbatimSerializer.<init>() -> Object.<init>()
 void AtomFeedView.setFeedUrl(String,Feed) -> __new_array
 void AtomFeedView.setFeedUrl(String,Feed) -> __new
 void AtomFeedView.setFeedUrl(String,Feed) -> void Link.setRel(String)
@@ -1440,11 +1727,25 @@ void AtomFeedView.setFeedUrl(String,Feed) -> List Arrays.asList(Object[])
 void AtomFeedView.setFeedUrl(String,Feed) -> Link.<init>()
 boolean PostView.isDraft() -> boolean Post.isDraft()
 ProjectsController$Lambda$_3_80.<init>(Model) -> Object.<init>()
+boolean MarkupController$Lambda$_4_10.test(Object) -> __cast
+boolean MarkupController$Lambda$_4_10.test(Object) -> boolean MarkupController.access_sagan.renderer.markup.MarkupController$Lambda$_4_10(MediaType,MarkupRenderer)
+Predicate AsciidoctorGuideContentContributor.callsite_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_7_28() -> __new
+Predicate AsciidoctorGuideContentContributor.callsite_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_7_28() -> AsciidoctorGuideContentContributor$Lambda$_7_28.<init>()
 void PageElementsBuilder.findEndPage() -> long Math.min(long,long)
 void PageElementsBuilder.findEndPage() -> long Math.max(long,long)
 ProjectPatchingService$ObjectPatcher ProjectPatchingService$ObjectPatcher.mutateIfDirty(Function,BiConsumer) -> boolean ProjectPatchingService$ObjectPatcher.isDirty(Object,Object)
 ProjectPatchingService$ObjectPatcher ProjectPatchingService$ObjectPatcher.mutateIfDirty(Function,BiConsumer) -> Object Function.apply(Object)
 ProjectPatchingService$ObjectPatcher ProjectPatchingService$ObjectPatcher.mutateIfDirty(Function,BiConsumer) -> void BiConsumer.accept(Object,Object)
+ResourceSupport IndexController.index() -> __new_array
+ResourceSupport IndexController.index() -> __new
+ResourceSupport IndexController.index() -> __cast
+ResourceSupport IndexController.index() -> Link LinkBuilderSupport.withRel(String)
+ResourceSupport IndexController.index() -> ResponseEntity MarkupController.renderMarkup(MediaType,String)
+ResourceSupport IndexController.index() -> Object ControllerLinkBuilder.methodOn(Class,Object[])
+ResourceSupport IndexController.index() -> Resources GuidesController.listGuides()
+ResourceSupport IndexController.index() -> ControllerLinkBuilder ControllerLinkBuilder.linkTo(Object)
+ResourceSupport IndexController.index() -> void ResourceSupport.add(Link)
+ResourceSupport IndexController.index() -> ResourceSupport.<init>()
 CachedRestClient.<init>() -> Object.<init>()
 void Tutorials.<clinit>() -> Logger LoggerFactory.getLogger(Class)
 String Topical.getPushToPwsUrl() -> String AbstractGuide.getPushToPwsUrl()
@@ -1463,6 +1764,21 @@ SiteProperties.<init>() -> SiteProperties$Cache.<init>()
 SiteProperties.<init>() -> Object.<init>()
 int Project.access_sagan.projects.Project$Lambda$_18_4(Project) -> int ProjectSample.getDisplayOrder()
 PostFormAdapter.<init>(PostContentRenderer,PostSummary,DateFactory,TeamRepository) -> Object.<init>()
+void PwsGuideContentContributor.contribute(GuideContentResource,File) -> __unwrap_exception
+void PwsGuideContentContributor.contribute(GuideContentResource,File) -> __set_file_attribute
+void PwsGuideContentContributor.contribute(GuideContentResource,File) -> __new
+void PwsGuideContentContributor.contribute(GuideContentResource,File) -> __instanceof
+void PwsGuideContentContributor.contribute(GuideContentResource,File) -> String StringBuilder.toString()
+void PwsGuideContentContributor.contribute(GuideContentResource,File) -> void GuideContentResource.setPushToPwsMetadata(String)
+void PwsGuideContentContributor.contribute(GuideContentResource,File) -> String GuideContentResource.getName()
+void PwsGuideContentContributor.contribute(GuideContentResource,File) -> String File.getAbsolutePath()
+void PwsGuideContentContributor.contribute(GuideContentResource,File) -> boolean File.exists()
+void PwsGuideContentContributor.contribute(GuideContentResource,File) -> String FileCopyUtils.copyToString(Reader)
+void PwsGuideContentContributor.contribute(GuideContentResource,File) -> StringBuilder StringBuilder.append(String)
+void PwsGuideContentContributor.contribute(GuideContentResource,File) -> GuideRenderingException.<init>(String,Throwable)
+void PwsGuideContentContributor.contribute(GuideContentResource,File) -> File.<init>(String)
+void PwsGuideContentContributor.contribute(GuideContentResource,File) -> FileReader.<init>(File)
+void PwsGuideContentContributor.contribute(GuideContentResource,File) -> StringBuilder.<init>()
 String BlogAdminController.resummarizeAllBlogPosts() -> void BlogService.resummarizeAllPosts()
 String Topical.getContent() -> String AbstractGuide.getContent()
 MemberNotFoundException.<init>(String) -> __new_array
@@ -1509,11 +1825,28 @@ byte[] VersionBadgeService.createSvgBadge(BadgeSvg,List,String,String) -> byte[]
 byte[] VersionBadgeService.createSvgBadge(BadgeSvg,List,String,String) -> Object List.get(int)
 byte[] VersionBadgeService.createSvgBadge(BadgeSvg,List,String,String) -> String String.format(String,Object[])
 GuideMetadata.<init>(String,String,String,String,GuideType,String,String,String,String,Set) -> Object.<init>()
+ResponseEntity GuidesController.showGuide(String,String) -> __new
+ResponseEntity GuidesController.showGuide(String,String) -> String StringBuilder.toString()
+ResponseEntity GuidesController.showGuide(String,String) -> GuideResource GuideResourceAssembler.toResource(Repository)
+ResponseEntity GuidesController.showGuide(String,String) -> ResponseEntity ResponseEntity.ok(Object)
+ResponseEntity GuidesController.showGuide(String,String) -> ResponseEntity$HeadersBuilder ResponseEntity.notFound()
+ResponseEntity GuidesController.showGuide(String,String) -> GuideType GuideResource.getType()
+ResponseEntity GuidesController.showGuide(String,String) -> String GuideType.getPrefix()
+ResponseEntity GuidesController.showGuide(String,String) -> String RendererProperties$Guides.getOrganization()
+ResponseEntity GuidesController.showGuide(String,String) -> RendererProperties$Guides RendererProperties.getGuides()
+ResponseEntity GuidesController.showGuide(String,String) -> GuideType GuideType.fromSlug(String)
+ResponseEntity GuidesController.showGuide(String,String) -> Repository GithubClient.fetchOrgRepository(String,String)
+ResponseEntity GuidesController.showGuide(String,String) -> boolean Enum.equals(Object)
+ResponseEntity GuidesController.showGuide(String,String) -> ResponseEntity ResponseEntity$HeadersBuilder.build()
+ResponseEntity GuidesController.showGuide(String,String) -> StringBuilder StringBuilder.append(String)
+ResponseEntity GuidesController.showGuide(String,String) -> StringBuilder.<init>()
 Predicate SpringToolsAdminController.callsite_sagan.tools.support.SpringToolsAdminController$Lambda$_8_10(List) -> __new
 Predicate SpringToolsAdminController.callsite_sagan.tools.support.SpringToolsAdminController$Lambda$_8_10(List) -> SpringToolsAdminController$Lambda$_8_10.<init>(List)
 ProjectPatchingService.<init>() -> Object.<init>()
 IntFunction GettingStartedGuides.callsite_sagan.site.guides.GettingStartedGuides$Lambda$_7_18() -> __new
 IntFunction GettingStartedGuides.callsite_sagan.site.guides.GettingStartedGuides$Lambda$_7_18() -> GettingStartedGuides$Lambda$_7_18.<init>()
+boolean GuidesController.lambda$listGuides$0(GuideResource) -> GuideType GuideResource.getType()
+boolean GuidesController.lambda$listGuides$0(GuideResource) -> boolean Enum.equals(Object)
 void Topical.setImages(List) -> void AbstractGuide.setImages(List)
 Object ProjectsController$Lambda$_3_63.apply(Object) -> __cast
 Object ProjectsController$Lambda$_3_63.apply(Object) -> String ProjectsController.access_sagan.projects.support.ProjectsController$Lambda$_3_63(ProjectsController)
@@ -1667,6 +2000,35 @@ void TeamService.updateMemberProfile(MemberProfile,MemberProfile) -> GeoLocation
 void TeamService.updateMemberProfile(MemberProfile,MemberProfile) -> String MemberProfile.getBio()
 void TeamService.updateMemberProfile(String,MemberProfile) -> void TeamService.updateMemberProfile(MemberProfile,MemberProfile)
 void TeamService.updateMemberProfile(String,MemberProfile) -> MemberProfile TeamService.fetchMemberProfileUsername(String)
+void AsciidoctorGuideContentContributor.contribute(GuideContentResource,File) -> __unwrap_exception
+void AsciidoctorGuideContentContributor.contribute(GuideContentResource,File) -> __set_file_attribute
+void AsciidoctorGuideContentContributor.contribute(GuideContentResource,File) -> __new
+void AsciidoctorGuideContentContributor.contribute(GuideContentResource,File) -> __instanceof
+void AsciidoctorGuideContentContributor.contribute(GuideContentResource,File) -> String StringWriter.toString()
+void AsciidoctorGuideContentContributor.contribute(GuideContentResource,File) -> String StringBuilder.toString()
+void AsciidoctorGuideContentContributor.contribute(GuideContentResource,File) -> void GuideContentResource.setTableOfContents(String)
+void AsciidoctorGuideContentContributor.contribute(GuideContentResource,File) -> void Attributes.setSkipFrontMatter(boolean)
+void AsciidoctorGuideContentContributor.contribute(GuideContentResource,File) -> void GuideContentResource.setContent(String)
+void AsciidoctorGuideContentContributor.contribute(GuideContentResource,File) -> void Attributes.setAllowUriRead(boolean)
+void AsciidoctorGuideContentContributor.contribute(GuideContentResource,File) -> Elements Element.select(String)
+void AsciidoctorGuideContentContributor.contribute(GuideContentResource,File) -> OptionsBuilder OptionsBuilder.safe(SafeMode)
+void AsciidoctorGuideContentContributor.contribute(GuideContentResource,File) -> Document Jsoup.parse(String)
+void AsciidoctorGuideContentContributor.contribute(GuideContentResource,File) -> OptionsBuilder OptionsBuilder.options()
+void AsciidoctorGuideContentContributor.contribute(GuideContentResource,File) -> String Elements.html()
+void AsciidoctorGuideContentContributor.contribute(GuideContentResource,File) -> OptionsBuilder OptionsBuilder.headerFooter(boolean)
+void AsciidoctorGuideContentContributor.contribute(GuideContentResource,File) -> String GuideContentResource.getName()
+void AsciidoctorGuideContentContributor.contribute(GuideContentResource,File) -> String File.getAbsolutePath()
+void AsciidoctorGuideContentContributor.contribute(GuideContentResource,File) -> String AsciidoctorGuideContentContributor.findTableOfContents(Document)
+void AsciidoctorGuideContentContributor.contribute(GuideContentResource,File) -> void Asciidoctor.convert(Reader,Writer,OptionsBuilder)
+void AsciidoctorGuideContentContributor.contribute(GuideContentResource,File) -> OptionsBuilder OptionsBuilder.baseDir(File)
+void AsciidoctorGuideContentContributor.contribute(GuideContentResource,File) -> OptionsBuilder OptionsBuilder.attributes(Attributes)
+void AsciidoctorGuideContentContributor.contribute(GuideContentResource,File) -> StringBuilder StringBuilder.append(String)
+void AsciidoctorGuideContentContributor.contribute(GuideContentResource,File) -> GuideRenderingException.<init>(String,Throwable)
+void AsciidoctorGuideContentContributor.contribute(GuideContentResource,File) -> File.<init>(String)
+void AsciidoctorGuideContentContributor.contribute(GuideContentResource,File) -> FileReader.<init>(File)
+void AsciidoctorGuideContentContributor.contribute(GuideContentResource,File) -> StringWriter.<init>()
+void AsciidoctorGuideContentContributor.contribute(GuideContentResource,File) -> StringBuilder.<init>()
+void AsciidoctorGuideContentContributor.contribute(GuideContentResource,File) -> Attributes.<init>()
 Optional GettingStartedGuides.findGuideHeaderByName(String) -> __new
 Optional GettingStartedGuides.findGuideHeaderByName(String) -> Optional Optional.of(Object)
 Optional GettingStartedGuides.findGuideHeaderByName(String) -> GuideMetadata SaganRendererClient.fetchGettingStartedGuide(String)
@@ -1677,6 +2039,16 @@ String Topical.getTitle() -> String AbstractGuide.getTitle()
 Object Tutorials$Lambda$_5_20.apply(int) -> DefaultGuideHeader[] Tutorials.access_sagan.site.guides.Tutorials$Lambda$_5_20(int)
 Object CachedRestClient.get(RestOperations,String,Class) -> __new_array
 Object CachedRestClient.get(RestOperations,String,Class) -> Object RestOperations.getForObject(String,Class,Object[])
+ResponseEntity MarkupController.renderMarkup(MediaType,String) -> __cast
+ResponseEntity MarkupController.renderMarkup(MediaType,String) -> Stream Collection.stream()
+ResponseEntity MarkupController.renderMarkup(MediaType,String) -> ResponseEntity$BodyBuilder ResponseEntity.status(HttpStatus)
+ResponseEntity MarkupController.renderMarkup(MediaType,String) -> Object Optional.orElse(Object)
+ResponseEntity MarkupController.renderMarkup(MediaType,String) -> Optional Optional.map(Function)
+ResponseEntity MarkupController.renderMarkup(MediaType,String) -> Optional Stream.findFirst()
+ResponseEntity MarkupController.renderMarkup(MediaType,String) -> Stream Stream.filter(Predicate)
+ResponseEntity MarkupController.renderMarkup(MediaType,String) -> Function MarkupController.callsite_sagan.renderer.markup.MarkupController$Lambda$_4_26(String)
+ResponseEntity MarkupController.renderMarkup(MediaType,String) -> Predicate MarkupController.callsite_sagan.renderer.markup.MarkupController$Lambda$_4_10(MediaType)
+ResponseEntity MarkupController.renderMarkup(MediaType,String) -> ResponseEntity ResponseEntity$BodyBuilder.build()
 Tutorials$Lambda$_5_10.<init>() -> Object.<init>()
 boolean GuideType.lambda$fromName$0(String,GuideType) -> String GuideType.getName()
 boolean GuideType.lambda$fromName$0(String,GuideType) -> boolean String.equals(Object)
@@ -1776,6 +2148,7 @@ ProjectRelease ProjectReleaseBuilder.build() -> __new
 ProjectRelease ProjectReleaseBuilder.build() -> ProjectRelease.<init>(String,ProjectRelease$ReleaseStatus,boolean,String,String,String,String)
 String Tutorial.getGitUrl() -> String AbstractGuide.getGitUrl()
 AbstractGuide$Lambda$_2_47.<init>() -> Object.<init>()
+GuideType.<init>(String,int,String,String) -> Enum.<init>(String,int)
 void Event.<clinit>() -> Pattern Pattern.compile(String)
 PostView PostView.lambda$pageOf$0(DateFactory,Post) -> PostView PostView.of(Post,DateFactory)
 PaginationInfo.<init>(Page) -> int Page.getTotalPages()
@@ -1787,6 +2160,12 @@ boolean Period$Lambda$_6_1.test(Object) -> __cast
 boolean Period$Lambda$_6_1.test(Object) -> boolean Period.access_sagan.site.events.Period$Lambda$_6_1(Period,VEvent)
 RedisConnectionFactory CloudFoundryCacheConfig.redisConnectionFactory() -> RedisConnectionFactory ServiceConnectionFactory.redisConnectionFactory()
 RedisConnectionFactory CloudFoundryCacheConfig.redisConnectionFactory() -> ServiceConnectionFactory AbstractCloudConfig.connectionFactory()
+ResponseEntity MarkupController.lambda$renderMarkup$1(String,MarkupRenderer) -> __new
+ResponseEntity MarkupController.lambda$renderMarkup$1(String,MarkupRenderer) -> String StringBuilder.toString()
+ResponseEntity MarkupController.lambda$renderMarkup$1(String,MarkupRenderer) -> String MarkupRenderer.renderToHtml(String)
+ResponseEntity MarkupController.lambda$renderMarkup$1(String,MarkupRenderer) -> ResponseEntity ResponseEntity.ok(Object)
+ResponseEntity MarkupController.lambda$renderMarkup$1(String,MarkupRenderer) -> StringBuilder StringBuilder.append(String)
+ResponseEntity MarkupController.lambda$renderMarkup$1(String,MarkupRenderer) -> StringBuilder.<init>()
 String BlogAdminController.refreshBlogPosts(int,int) -> __new_array
 String BlogAdminController.refreshBlogPosts(int,int) -> Long Long.valueOf(long)
 String BlogAdminController.refreshBlogPosts(int,int) -> Integer Integer.valueOf(int)
@@ -1812,6 +2191,7 @@ DefaultGuideHeader.<init>(GuideMetadata) -> String GuideMetadata.getCloneUrl()
 DefaultGuideHeader.<init>(GuideMetadata) -> boolean Set.addAll(Collection)
 DefaultGuideHeader.<init>(GuideMetadata) -> Object.<init>()
 DefaultGuideHeader.<init>(GuideMetadata) -> HashSet.<init>()
+String GithubClient.lambda$findNextPageLink$0(Matcher) -> String Matcher.group(int)
 String Topical.getCloneUrl() -> String AbstractGuide.getCloneUrl()
 List AtomFeedView.buildFeedEntries(Map,HttpServletRequest,HttpServletResponse) -> __new
 List AtomFeedView.buildFeedEntries(Map,HttpServletRequest,HttpServletResponse) -> __cast
@@ -1867,6 +2247,10 @@ Object Topicals$Lambda$_5_10.apply(Object) -> __cast
 Object Topicals$Lambda$_5_10.apply(Object) -> DefaultGuideHeader Topicals.access_sagan.site.guides.Topicals$Lambda$_5_10(GuideMetadata)
 Object Link.clone() -> Set Collections.emptySet()
 Object Link.clone() -> Object CloneableBean.beanClone(Object,Set)
+void PwsGuideContentContributor.<clinit>() -> __new
+void PwsGuideContentContributor.<clinit>() -> String StringBuilder.toString()
+void PwsGuideContentContributor.<clinit>() -> StringBuilder StringBuilder.append(String)
+void PwsGuideContentContributor.<clinit>() -> StringBuilder.<init>()
 BiConsumer ProjectPatchingService.callsite_sagan.projects.ProjectPatchingService$Lambda$_2_23() -> __new
 BiConsumer ProjectPatchingService.callsite_sagan.projects.ProjectPatchingService$Lambda$_2_23() -> ProjectPatchingService$Lambda$_2_23.<init>()
 String AbstractGuide.getCiLatestUrl() -> String GuideHeader.getCiLatestUrl()
@@ -1912,6 +2296,8 @@ IntFunction SaganRendererClient.callsite_sagan.site.renderer.SaganRendererClient
 String StaticPagePathFinder.buildRequestMapping(String) -> String String.replace(CharSequence,CharSequence)
 String StaticPagePathFinder.buildRequestMapping(String) -> boolean String.equals(Object)
 String StaticPagePathFinder.buildRequestMapping(String) -> boolean String.endsWith(String)
+boolean AsciidoctorGuideContentContributor$Lambda$_7_28.test(Object) -> __cast
+boolean AsciidoctorGuideContentContributor$Lambda$_7_28.test(Object) -> boolean AsciidoctorGuideContentContributor.access_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_7_28(String)
 String AbstractGuide.getCiStatusImageUrl() -> String GuideHeader.getCiStatusImageUrl()
 Predicate BadgeController.callsite_sagan.projects.support.BadgeController$Lambda$_3_39(Predicate) -> __new
 Predicate BadgeController.callsite_sagan.projects.support.BadgeController$Lambda$_3_39(Predicate) -> BadgeController$Lambda$_3_39.<init>(Predicate)
@@ -1987,6 +2373,11 @@ IntFunction Tutorials.callsite_sagan.site.guides.Tutorials$Lambda$_7_18() -> Tut
 ProjectReleaseBuilder.<init>() -> Object.<init>()
 void BlogService.deletePost(Post) -> void PostRepository.delete(Object)
 String Project.getParentId() -> String Project.getId()
+GithubResourceNotFoundException.<init>(String,String,Throwable) -> __new
+GithubResourceNotFoundException.<init>(String,String,Throwable) -> String StringBuilder.toString()
+GithubResourceNotFoundException.<init>(String,String,Throwable) -> StringBuilder StringBuilder.append(String)
+GithubResourceNotFoundException.<init>(String,String,Throwable) -> RuntimeException.<init>(String,Throwable)
+GithubResourceNotFoundException.<init>(String,String,Throwable) -> StringBuilder.<init>()
 String Project.toString() -> __new
 String Project.toString() -> String StringBuilder.toString()
 String Project.toString() -> StringBuilder StringBuilder.append(String)
@@ -1995,12 +2386,12 @@ String Project.toString() -> StringBuilder StringBuilder.append(char)
 String Project.toString() -> StringBuilder.<init>()
 void PostCategoryFormatter.<clinit>() -> __new
 void PostCategoryFormatter.<clinit>() -> HashMap.<init>()
+ResponseEntity GuidesController.resourceNotFound() -> ResponseEntity$HeadersBuilder ResponseEntity.notFound()
+ResponseEntity GuidesController.resourceNotFound() -> ResponseEntity ResponseEntity$HeadersBuilder.build()
 String GettingStartedGuide.getTableOfContents() -> String AbstractGuide.getTableOfContents()
 void Topicals.evictFromCache(String) -> void Logger.info(String,Object)
 Optional GettingStartedGuide.getImageContent(String) -> Optional AbstractGuide.getImageContent(String)
 Pageable PageableFactory.forLists(int) -> Pageable PageableFactory.build(int,int)
-String ProjectAdminController.edit(String,Model) -> Project ProjectMetadataService.getProject(String)
-String ProjectAdminController.edit(String,Model) -> String ProjectAdminController.edit(Project,Model)
 String ProjectAdminController.edit(Project,Model) -> __cast
 String ProjectAdminController.edit(Project,Model) -> Integer Integer.valueOf(int)
 String ProjectAdminController.edit(Project,Model) -> Stream Collection.stream()
@@ -2016,6 +2407,8 @@ String ProjectAdminController.edit(Project,Model) -> Object List.get(int)
 String ProjectAdminController.edit(Project,Model) -> void ProjectAdminController.denormalizeProjectReleases(Project)
 String ProjectAdminController.edit(Project,Model) -> ToIntFunction ProjectAdminController.callsite_sagan.projects.support.ProjectAdminController$Lambda$_6_57()
 String ProjectAdminController.edit(Project,Model) -> Model Model.addAttribute(String,Object)
+String ProjectAdminController.edit(String,Model) -> Project ProjectMetadataService.getProject(String)
+String ProjectAdminController.edit(String,Model) -> String ProjectAdminController.edit(Project,Model)
 DefaultGuideHeader[] Tutorials.access_sagan.site.guides.Tutorials$Lambda$_5_20(int) -> DefaultGuideHeader[] Tutorials.lambda$findAll$0(int)
 PostNotFoundException.<init>(long) -> __new
 PostNotFoundException.<init>(long) -> String StringBuilder.toString()
@@ -2024,6 +2417,7 @@ PostNotFoundException.<init>(long) -> StringBuilder StringBuilder.append(long)
 PostNotFoundException.<init>(long) -> ResourceNotFoundException.<init>(String)
 PostNotFoundException.<init>(long) -> StringBuilder.<init>()
 void DateFactory.<clinit>() -> TimeZone TimeZone.getTimeZone(String)
+String GuideType.stripPrefix(String) -> String String.replaceFirst(String,String)
 boolean ProjectAdminController$Lambda$_12_164.test(Object) -> __cast
 boolean ProjectAdminController$Lambda$_12_164.test(Object) -> boolean ProjectAdminController.access_sagan.projects.support.ProjectAdminController$Lambda$_12_164(List,ProjectSample)
 Filter SecurityConfig$ApiAuthenticationConfig.githubBasicAuthFilter() -> __new
@@ -2077,6 +2471,8 @@ String PostView.getEditPath() -> StringBuilder.<init>()
 GitHubConfig.<init>() -> Object.<init>()
 Function TopicalController.callsite_sagan.site.guides.TopicalController$Lambda$_3_9(String) -> __new
 Function TopicalController.callsite_sagan.site.guides.TopicalController$Lambda$_3_9(String) -> TopicalController$Lambda$_3_9.<init>(String)
+Object GithubClient$Lambda$_7_52.apply(Object) -> __cast
+Object GithubClient$Lambda$_7_52.apply(Object) -> String GithubClient.access_sagan.renderer.github.GithubClient$Lambda$_7_52(Matcher)
 void SecurityConfig$AdminAuthenticationConfig$1.doFilterInternal(HttpServletRequest,HttpServletResponse,FilterChain) -> __new
 void SecurityConfig$AdminAuthenticationConfig$1.doFilterInternal(HttpServletRequest,HttpServletResponse,FilterChain) -> __instanceof
 void SecurityConfig$AdminAuthenticationConfig$1.doFilterInternal(HttpServletRequest,HttpServletResponse,FilterChain) -> boolean Authentication.isAuthenticated()
@@ -2094,8 +2490,12 @@ void VersionBadgeService$1.<clinit>() -> __instanceof
 void VersionBadgeService$1.<clinit>() -> __get_array_length
 void VersionBadgeService$1.<clinit>() -> ProjectRelease$ReleaseStatus[] ProjectRelease$ReleaseStatus.values()
 void VersionBadgeService$1.<clinit>() -> int Enum.ordinal()
+Function MarkupController.callsite_sagan.renderer.markup.MarkupController$Lambda$_4_26(String) -> __new
+Function MarkupController.callsite_sagan.renderer.markup.MarkupController$Lambda$_4_26(String) -> MarkupController$Lambda$_4_26.<init>(String)
 Set Project.getStackOverflowTagList() -> Set StringUtils.commaDelimitedListToSet(String)
 Page BlogService.getPublishedPostsByDate(int,int,int,Pageable) -> Page PostRepository.findByDate(int,int,int,Pageable)
+boolean GuideType$Lambda$_3_7.test(Object) -> __cast
+boolean GuideType$Lambda$_3_7.test(Object) -> boolean GuideType.access_sagan.renderer.guides.GuideType$Lambda$_3_7(String,GuideType)
 String PostCategory.getId() -> String Enum.name()
 Page PostView.pageOf(Page,DateFactory) -> __new
 Page PostView.pageOf(Page,DateFactory) -> __cast
@@ -2117,6 +2517,7 @@ DocsWebhookController.<init>(ObjectMapper,Tutorials,GettingStartedGuides,Topical
 DocsWebhookController.<init>(ObjectMapper,Tutorials,GettingStartedGuides,Topicals,String) -> byte[] String.getBytes(Charset)
 DocsWebhookController.<init>(ObjectMapper,Tutorials,GettingStartedGuides,Topicals,String) -> SecretKeySpec.<init>(byte[],String)
 DocsWebhookController.<init>(ObjectMapper,Tutorials,GettingStartedGuides,Topicals,String) -> Object.<init>()
+GuidesController$Lambda$_3_29.<init>() -> Object.<init>()
 List Project.getProjectSamples() -> void List.sort(Comparator)
 List Project.getProjectSamples() -> Comparator Comparator.comparingInt(ToIntFunction)
 List Project.getProjectSamples() -> ToIntFunction Project.callsite_sagan.projects.Project$Lambda$_18_4()
@@ -2133,6 +2534,8 @@ DefaultGuideHeader Tutorials.access_sagan.site.guides.Tutorials$Lambda$_5_10(Gui
 DefaultGuideHeader Tutorials.access_sagan.site.guides.Tutorials$Lambda$_5_10(GuideMetadata) -> DefaultGuideHeader.<init>(GuideMetadata)
 Topical.<init>() -> void Topical.setTypeLabel(String)
 Topical.<init>() -> AbstractGuide.<init>()
+void AsciidoctorGuideContentContributor$Lambda$_3_13.accept(Object) -> __cast
+void AsciidoctorGuideContentContributor$Lambda$_3_13.accept(Object) -> void AsciidoctorGuideContentContributor.access_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_3_13(Element)
 void GeoLocationFormatter.<clinit>() -> Pattern Pattern.compile(String)
 ResponseEntity BadgeController.snapshotBadge(String) -> ResponseEntity BadgeController.badgeFor(String,ProjectRelease$ReleaseStatus)
 PostCategory PostCategory.valueOf(String) -> __cast
@@ -2161,6 +2564,28 @@ Date DateFactory.now() -> __new
 Date DateFactory.now() -> Date.<init>()
 TopicalController.<init>(Topicals) -> Object.<init>()
 GettingStartedGuides$Lambda$_5_20.<init>() -> Object.<init>()
+Resources GuidesController.listGuides() -> __new_array
+Resources GuidesController.listGuides() -> __new
+Resources GuidesController.listGuides() -> __get_array_length
+Resources GuidesController.listGuides() -> __cast
+Resources GuidesController.listGuides() -> Link LinkBuilderSupport.withRel(String)
+Resources GuidesController.listGuides() -> GuideType[] GuideType.values()
+Resources GuidesController.listGuides() -> List ResourceAssemblerSupport.toResources(Iterable)
+Resources GuidesController.listGuides() -> Collector Collectors.toList()
+Resources GuidesController.listGuides() -> Stream Collection.stream()
+Resources GuidesController.listGuides() -> ResponseEntity GuidesController.showGuide(String,String)
+Resources GuidesController.listGuides() -> Object ControllerLinkBuilder.methodOn(Class,Object[])
+Resources GuidesController.listGuides() -> ControllerLinkBuilder ControllerLinkBuilder.linkTo(Object)
+Resources GuidesController.listGuides() -> String GuideType.getSlug()
+Resources GuidesController.listGuides() -> String RendererProperties$Guides.getOrganization()
+Resources GuidesController.listGuides() -> RendererProperties$Guides RendererProperties.getGuides()
+Resources GuidesController.listGuides() -> Stream Stream.filter(Predicate)
+Resources GuidesController.listGuides() -> List GithubClient.fetchOrgRepositories(String)
+Resources GuidesController.listGuides() -> boolean Enum.equals(Object)
+Resources GuidesController.listGuides() -> Object Stream.collect(Collector)
+Resources GuidesController.listGuides() -> Predicate GuidesController.callsite_sagan.renderer.guides.GuidesController$Lambda$_3_29()
+Resources GuidesController.listGuides() -> void ResourceSupport.add(Link)
+Resources GuidesController.listGuides() -> Resources.<init>(Iterable,Link[])
 SecurityConfig$SigninAuthenticationConfig.<init>() -> WebSecurityConfigurerAdapter.<init>()
 BiConsumer AbstractGuide.callsite_sagan.site.guides.AbstractGuide$Lambda$_3_39(UriComponentsBuilder) -> __new
 BiConsumer AbstractGuide.callsite_sagan.site.guides.AbstractGuide$Lambda$_3_39(UriComponentsBuilder) -> AbstractGuide$Lambda$_3_39.<init>(UriComponentsBuilder)
@@ -2169,6 +2594,10 @@ ResponseEntity DocsWebhookController.handlePayloadParsingException(IOException) 
 ResponseEntity DocsWebhookController.handlePayloadParsingException(IOException) -> ResponseEntity$BodyBuilder ResponseEntity.badRequest()
 List Topical.getImages() -> List AbstractGuide.getImages()
 boolean BadgeController.access_sagan.projects.support.BadgeController$Lambda$_3_39(Predicate,ProjectRelease) -> boolean BadgeController.lambda$getRelease$2(Predicate,ProjectRelease)
+Object GithubClient$Lambda$_7_32.apply(Object) -> __cast
+Object GithubClient$Lambda$_7_32.apply(Object) -> Matcher GithubClient.access_sagan.renderer.github.GithubClient$Lambda$_7_32(GithubClient,CharSequence)
+boolean AsciidoctorGuideContentContributor$Lambda$_5_10.test(Object) -> __cast
+boolean AsciidoctorGuideContentContributor$Lambda$_5_10.test(Object) -> boolean AsciidoctorGuideContentContributor.access_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_5_10(Document,Element)
 TopicalController$Lambda$_3_17.<init>() -> Object.<init>()
 byte[] AbstractGuide.access_sagan.site.guides.AbstractGuide$Lambda$_12_25(GuideImage) -> byte[] AbstractGuide.lambda$getImageContent$3(GuideImage)
 Topicals.<init>(SaganRendererClient) -> Object.<init>()
@@ -2196,6 +2625,9 @@ String SecurityConfig$GithubAuthenticationSigninAdapter.signIn(String,Connection
 String SecurityConfig$GithubAuthenticationSigninAdapter.signIn(String,Connection,NativeWebRequest) -> Long.<init>(String)
 String SecurityConfig$GithubAuthenticationSigninAdapter.signIn(String,Connection,NativeWebRequest) -> BadCredentialsException.<init>(String)
 String SecurityConfig$GithubAuthenticationSigninAdapter.signIn(String,Connection,NativeWebRequest) -> UsernamePasswordAuthenticationToken.<init>(Object,Object,Collection)
+void AsciidoctorGuideContentContributor$Lambda$_3_23.accept(Object) -> __cast
+void AsciidoctorGuideContentContributor$Lambda$_3_23.accept(Object) -> void AsciidoctorGuideContentContributor.access_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_3_23(Document,Element)
+AsciidoctorGuideContentContributor$Lambda$_3_13.<init>() -> Object.<init>()
 void PostFormAdapter.refreshPost(Post) -> void PostFormAdapter.summarize(Post)
 void PostFormAdapter.refreshPost(Post) -> void Post.setRenderedContent(String)
 void PostFormAdapter.refreshPost(Post) -> String PostContentRenderer.render(String,PostFormat)
@@ -2208,6 +2640,8 @@ Post.<init>(String,String,PostCategory,PostFormat) -> Date.<init>()
 Post.<init>(Long,String,String,PostCategory,PostFormat) -> Post.<init>(String,String,PostCategory,PostFormat)
 void Post.addPublicSlugAlias(String) -> boolean Set.add(Object)
 boolean SaganRendererClient.access_sagan.site.renderer.SaganRendererClient$Lambda$_9_7(GuideMetadata) -> boolean SaganRendererClient.lambda$fetchTopicalGuides$4(GuideMetadata)
+boolean GuideType$Lambda$_4_7.test(Object) -> __cast
+boolean GuideType$Lambda$_4_7.test(Object) -> boolean GuideType.access_sagan.renderer.guides.GuideType$Lambda$_4_7(String,GuideType)
 String BlogAdminController.updatePost(Long,PostForm,BindingResult,Model) -> PostFormat[] PostFormat.values()
 String BlogAdminController.updatePost(Long,PostForm,BindingResult,Model) -> PostCategory[] PostCategory.values()
 String BlogAdminController.updatePost(Long,PostForm,BindingResult,Model) -> void BlogService.updatePost(Post,PostForm)
@@ -2221,10 +2655,10 @@ String Link.toString() -> Class Object.getClass()
 int ProjectGroup.hashCode() -> __new_array
 int ProjectGroup.hashCode() -> int Objects.hash(Object[])
 GuideMetadata[] SaganRendererClient.access_sagan.site.renderer.SaganRendererClient$Lambda$_12_17(int) -> GuideMetadata[] SaganRendererClient.lambda$fetchTutorialGuides$3(int)
+Object PostCategoryFormatter.parse(String,Locale) -> PostCategory PostCategoryFormatter.parse(String,Locale)
 PostCategory PostCategoryFormatter.parse(String,Locale) -> __cast
 PostCategory PostCategoryFormatter.parse(String,Locale) -> String String.trim()
 PostCategory PostCategoryFormatter.parse(String,Locale) -> Object Map.get(Object)
-Object PostCategoryFormatter.parse(String,Locale) -> PostCategory PostCategoryFormatter.parse(String,Locale)
 String TeamAdminController.getTeamAdminPage(Model) -> List TeamService.fetchHiddenMembers()
 String TeamAdminController.getTeamAdminPage(Model) -> List TeamService.fetchActiveMembers()
 String TeamAdminController.getTeamAdminPage(Model) -> Model Model.addAttribute(String,Object)
@@ -2237,6 +2671,7 @@ GuideType$Lambda$_3_7.<init>(String) -> Object.<init>()
 ProjectMetadataController$MetadataNotFoundException.<init>(String) -> RuntimeException.<init>(String)
 Tutorials$Lambda$_7_8.<init>(Project) -> Object.<init>()
 SaganRendererClient$Lambda$_6_7.<init>() -> Object.<init>()
+AsciidoctorRenderer.<init>(Asciidoctor) -> Object.<init>()
 AbstractGuide$Lambda$_12_10.<init>(String) -> Object.<init>()
 IntFunction SaganRendererClient.callsite_sagan.site.renderer.SaganRendererClient$Lambda$_9_17() -> __new
 IntFunction SaganRendererClient.callsite_sagan.site.renderer.SaganRendererClient$Lambda$_9_17() -> SaganRendererClient$Lambda$_9_17.<init>()
@@ -2266,7 +2701,33 @@ void ProjectMetadataService.<clinit>() -> Sort.<init>(String[])
 PostForm.<init>() -> Object.<init>()
 GettingStartedGuides.<init>(SaganRendererClient) -> Object.<init>()
 BadgeController$Lambda$_2_30.<init>(ProjectRelease$ReleaseStatus) -> Object.<init>()
+boolean AsciidoctorGuideContentContributor.access_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_7_28(String) -> boolean AsciidoctorGuideContentContributor.lambda$null$1(String)
+byte[] GithubClient.downloadRepositoryAsZipball(String,String) -> __unwrap_exception
+byte[] GithubClient.downloadRepositoryAsZipball(String,String) -> __new_array
+byte[] GithubClient.downloadRepositoryAsZipball(String,String) -> __new
+byte[] GithubClient.downloadRepositoryAsZipball(String,String) -> __instanceof
+byte[] GithubClient.downloadRepositoryAsZipball(String,String) -> __cast
+byte[] GithubClient.downloadRepositoryAsZipball(String,String) -> Object RestTemplate.getForObject(String,Class,Object[])
+byte[] GithubClient.downloadRepositoryAsZipball(String,String) -> GithubResourceNotFoundException.<init>(String,Throwable)
+boolean MarkupController.access_sagan.renderer.markup.MarkupController$Lambda$_4_10(MediaType,MarkupRenderer) -> boolean MarkupController.lambda$renderMarkup$0(MediaType,MarkupRenderer)
 String Topical.getTypeLabel() -> String AbstractGuide.getTypeLabel()
+GuideResource.<init>(Repository) -> __new_array
+GuideResource.<init>(Repository) -> __get_array_length
+GuideResource.<init>(Repository) -> __cast
+GuideResource.<init>(Repository) -> String String.trim()
+GuideResource.<init>(Repository) -> Object[] List.toArray(Object[])
+GuideResource.<init>(Repository) -> String GuideType.stripPrefix(String)
+GuideResource.<init>(Repository) -> String[] String.split(String)
+GuideResource.<init>(Repository) -> List Repository.getTopics()
+GuideResource.<init>(Repository) -> String Repository.getSshUrl()
+GuideResource.<init>(Repository) -> String Repository.getName()
+GuideResource.<init>(Repository) -> String Repository.getHtmlUrl()
+GuideResource.<init>(Repository) -> String Repository.getGitUrl()
+GuideResource.<init>(Repository) -> String Repository.getFullName()
+GuideResource.<init>(Repository) -> String Repository.getDescription()
+GuideResource.<init>(Repository) -> String Repository.getCloneUrl()
+GuideResource.<init>(Repository) -> GuideType GuideType.fromRepositoryName(String)
+GuideResource.<init>(Repository) -> ResourceSupport.<init>()
 boolean BadgeController$Lambda$_2_30.test(Object) -> __cast
 boolean BadgeController$Lambda$_2_30.test(Object) -> boolean BadgeController.access_sagan.projects.support.BadgeController$Lambda$_2_30(ProjectRelease$ReleaseStatus,ProjectRelease)
 void Tutorials.evictFromCache(String) -> void Logger.info(String,Object)
@@ -2304,6 +2765,7 @@ String ProjectsController.showProject(Model,String) -> StringBuilder StringBuild
 String ProjectsController.showProject(Model,String) -> Model Model.addAttribute(String,Object)
 String ProjectsController.showProject(Model,String) -> ResourceNotFoundException.<init>(String)
 String ProjectsController.showProject(Model,String) -> StringBuilder.<init>()
+boolean GuideType.access_sagan.renderer.guides.GuideType$Lambda$_3_7(String,GuideType) -> boolean GuideType.lambda$fromRepositoryName$1(String,GuideType)
 GuideHeader[] Tutorials.findAll() -> __cast
 GuideHeader[] Tutorials.findAll() -> Object[] Stream.toArray(IntFunction)
 GuideHeader[] Tutorials.findAll() -> Stream Arrays.stream(Object[])
@@ -2326,6 +2788,7 @@ String CloudFoundryMvcConfig.getGitCommitId() -> Properties PropertiesLoaderUtil
 String CloudFoundryMvcConfig.getGitCommitId() -> String Properties.getProperty(String)
 String CloudFoundryMvcConfig.getGitCommitId() -> boolean Resource.exists()
 String CloudFoundryMvcConfig.getGitCommitId() -> IllegalStateException.<init>(String)
+MarkupController$Lambda$_4_26.<init>(String) -> Object.<init>()
 BadgeController$Lambda$_3_7.<init>(Predicate) -> Object.<init>()
 GuideHeader[] GettingStartedGuides.findAll() -> __cast
 GuideHeader[] GettingStartedGuides.findAll() -> Object[] Stream.toArray(IntFunction)
@@ -2340,12 +2803,14 @@ Function ProjectPatchingService.callsite_sagan.projects.ProjectPatchingService$L
 StandaloneCacheConfig$Lambda$_3_58.<init>() -> Object.<init>()
 boolean Project$Lambda$_11_9.test(Object) -> __cast
 boolean Project$Lambda$_11_9.test(Object) -> boolean Project.access_sagan.projects.Project$Lambda$_11_9(Project)
+Repository.<init>(Long,String,String,String,String,String,String,String,List) -> Object.<init>()
 Optional BadgeController.getRelease(Collection,Predicate) -> Stream Collection.stream()
 Optional BadgeController.getRelease(Collection,Predicate) -> boolean Optional.isPresent()
 Optional BadgeController.getRelease(Collection,Predicate) -> Optional Stream.findFirst()
 Optional BadgeController.getRelease(Collection,Predicate) -> Stream Stream.filter(Predicate)
 Optional BadgeController.getRelease(Collection,Predicate) -> Predicate BadgeController.callsite_sagan.projects.support.BadgeController$Lambda$_3_7(Predicate)
 Optional BadgeController.getRelease(Collection,Predicate) -> Predicate BadgeController.callsite_sagan.projects.support.BadgeController$Lambda$_3_39(Predicate)
+GithubClient$GithubAppTokenInterceptor.<init>(String) -> Object.<init>()
 IntFunction SaganRendererClient.callsite_sagan.site.renderer.SaganRendererClient$Lambda$_6_17() -> __new
 IntFunction SaganRendererClient.callsite_sagan.site.renderer.SaganRendererClient$Lambda$_6_17() -> SaganRendererClient$Lambda$_6_17.<init>()
 void PostFormAdapter.summarize(Post) -> void Post.setRenderedSummary(String)
@@ -2369,6 +2834,7 @@ String TopicalController.viewTutorial(String,Model) -> Object Optional.get()
 String TopicalController.viewTutorial(String,Model) -> Optional Topicals.findByName(String)
 String TopicalController.viewTutorial(String,Model) -> Model Model.addAttribute(String,Object)
 boolean Project.hasSite() -> boolean String.isEmpty()
+MarkdownToHtmlSerializer.<init>(LinkRenderer,Map) -> ToHtmlSerializer.<init>(LinkRenderer,Map)
 DefaultGuideHeader[] Topicals.lambda$findAll$0(int) -> __new_array
 Predicate SaganRendererClient.callsite_sagan.site.renderer.SaganRendererClient$Lambda$_9_7() -> __new
 Predicate SaganRendererClient.callsite_sagan.site.renderer.SaganRendererClient$Lambda$_9_7() -> SaganRendererClient$Lambda$_9_7.<init>()
@@ -2384,14 +2850,16 @@ String BlogAdminController.editPost(Long,String,Model) -> String PostView.getPat
 String BlogAdminController.editPost(Long,String,Model) -> Model Model.addAttribute(String,Object)
 String BlogAdminController.editPost(Long,String,Model) -> PostForm.<init>(Post)
 AbstractGuide$Lambda$_12_25.<init>() -> Object.<init>()
-Project.<init>(String,String,String,String,int,List,String,String,String) -> void Project.setStackOverflowTags(String)
-Project.<init>(String,String,String,String,int,List,String,String,String) -> void Project.setRawBootConfig(String)
-Project.<init>(String,String,String,String,int,List,String,String,String) -> void Project.setDisplayOrder(int)
-Project.<init>(String,String,String,String,int,List,String,String,String) -> Project.<init>(String,String,String,String,List,String)
 Project.<init>(String,String,String,String,List,String) -> __new
 Project.<init>(String,String,String,String,List,String) -> Object.<init>()
 Project.<init>(String,String,String,String,List,String) -> HashSet.<init>()
 Project.<init>(String,String,String,String,List,String) -> ArrayList.<init>()
+Project.<init>(String,String,String,String,int,List,String,String,String) -> void Project.setStackOverflowTags(String)
+Project.<init>(String,String,String,String,int,List,String,String,String) -> void Project.setRawBootConfig(String)
+Project.<init>(String,String,String,String,int,List,String,String,String) -> void Project.setDisplayOrder(int)
+Project.<init>(String,String,String,String,int,List,String,String,String) -> Project.<init>(String,String,String,String,List,String)
+Function GithubClient.callsite_sagan.renderer.github.GithubClient$Lambda$_7_52() -> __new
+Function GithubClient.callsite_sagan.renderer.github.GithubClient$Lambda$_7_52() -> GithubClient$Lambda$_7_52.<init>()
 void DocsWebhookController.logPayload(Map) -> __new
 void DocsWebhookController.logPayload(Map) -> __cast
 void DocsWebhookController.logPayload(Map) -> String StringBuilder.toString()
@@ -2436,10 +2904,12 @@ Project ProjectMetadataController.updateProject(String,Project) -> Project Proje
 Project ProjectMetadataController.updateProject(String,Project) -> StringBuilder StringBuilder.append(String)
 Project ProjectMetadataController.updateProject(String,Project) -> ProjectMetadataController$MetadataNotFoundException.<init>(String)
 Project ProjectMetadataController.updateProject(String,Project) -> StringBuilder.<init>()
+AsciidoctorGuideContentContributor$Lambda$_5_20.<init>() -> Object.<init>()
 ProjectMetadataController.<init>(ProjectMetadataService,ProjectPatchingService) -> Object.<init>()
 boolean Project.equals(Object) -> __cast
 boolean Project.equals(Object) -> Class Object.getClass()
 boolean Project.equals(Object) -> boolean String.equals(Object)
+AsciidoctorGuideContentContributor$Lambda$_5_10.<init>(Document) -> Object.<init>()
 String GettingStartedGuide.getPushToPwsUrl() -> String AbstractGuide.getPushToPwsUrl()
 void SecurityConfig$AdminAuthenticationConfig.configure(HttpSecurity) -> __new_array
 void SecurityConfig$AdminAuthenticationConfig.configure(HttpSecurity) -> __new
@@ -2497,6 +2967,7 @@ ResponseEntity TutorialController.loadImage(String,String) -> Optional Tutorials
 ResponseEntity TutorialController.loadImage(String,String) -> Function TutorialController.callsite_sagan.site.guides.TutorialController$Lambda$_3_9(String)
 ResponseEntity TutorialController.loadImage(String,String) -> Function TutorialController.callsite_sagan.site.guides.TutorialController$Lambda$_3_17()
 ResponseEntity TutorialController.loadImage(String,String) -> ResponseEntity ResponseEntity$HeadersBuilder.build()
+Matcher GithubClient.access_sagan.renderer.github.GithubClient$Lambda$_7_32(GithubClient,CharSequence) -> Matcher Pattern.matcher(CharSequence)
 GuideContent SaganRendererClient.fetchTutorialGuideContent(String) -> __new_array
 GuideContent SaganRendererClient.fetchTutorialGuideContent(String) -> __cast
 GuideContent SaganRendererClient.fetchTutorialGuideContent(String) -> Hop Hop.withParameter(String,Object)
@@ -2512,7 +2983,6 @@ Object GettingStartedGuideController$Lambda$_4_9.apply(Object) -> Optional Getti
 Event.<init>(LocalDate,LocalDate,String,URI,String) -> Object.<init>()
 Function GettingStartedGuideController.callsite_sagan.site.guides.GettingStartedGuideController$Lambda$_4_17() -> __new
 Function GettingStartedGuideController.callsite_sagan.site.guides.GettingStartedGuideController$Lambda$_4_17() -> GettingStartedGuideController$Lambda$_4_17.<init>()
-SaganRendererClient$Lambda$_12_7.<init>() -> Object.<init>()
 GuideContent SaganRendererClient.fetchTopicalGuideContent(String) -> __new_array
 GuideContent SaganRendererClient.fetchTopicalGuideContent(String) -> __cast
 GuideContent SaganRendererClient.fetchTopicalGuideContent(String) -> Hop Hop.withParameter(String,Object)
@@ -2521,6 +2991,7 @@ GuideContent SaganRendererClient.fetchTopicalGuideContent(String) -> Hop Hop.rel
 GuideContent SaganRendererClient.fetchTopicalGuideContent(String) -> Traverson$TraversalBuilder Traverson$TraversalBuilder.follow(String[])
 GuideContent SaganRendererClient.fetchTopicalGuideContent(String) -> Traverson$TraversalBuilder Traverson.follow(String[])
 GuideContent SaganRendererClient.fetchTopicalGuideContent(String) -> Traverson$TraversalBuilder Traverson$TraversalBuilder.follow(Hop)
+SaganRendererClient$Lambda$_12_7.<init>() -> Object.<init>()
 Function ProjectPatchingService.callsite_sagan.projects.ProjectPatchingService$Lambda$_2_5() -> __new
 Function ProjectPatchingService.callsite_sagan.projects.ProjectPatchingService$Lambda$_2_5() -> ProjectPatchingService$Lambda$_2_5.<init>()
 void DocsWebhookController.verifyHmacSignature(String,String) -> __new
@@ -2559,6 +3030,7 @@ DefaultGuideHeader GettingStartedGuides.access_sagan.site.guides.GettingStartedG
 DefaultGuideHeader GettingStartedGuides.access_sagan.site.guides.GettingStartedGuides$Lambda$_5_10(GuideMetadata) -> DefaultGuideHeader.<init>(GuideMetadata)
 ToIntFunction Project.callsite_sagan.projects.Project$Lambda$_18_4() -> __new
 ToIntFunction Project.callsite_sagan.projects.Project$Lambda$_18_4() -> Project$Lambda$_18_4.<init>()
+Asciidoctor AsciidoctorConfig.asciidoctor() -> Asciidoctor Asciidoctor$Factory.create()
 MemberProfileBuilder MemberProfileBuilder.geoLocation(float,float) -> __new
 MemberProfileBuilder MemberProfileBuilder.geoLocation(float,float) -> GeoLocation.<init>(float,float)
 boolean Topicals$Lambda$_7_8.test(Object) -> __cast
@@ -2567,6 +3039,7 @@ PostView PostView.of(Post,DateFactory) -> __new
 PostView PostView.of(Post,DateFactory) -> PostView.<init>(Post,DateFactory)
 PostFormat PostFormat.valueOf(String) -> __cast
 PostFormat PostFormat.valueOf(String) -> Enum Enum.valueOf(Class,String)
+GithubClient$Lambda$_7_32.<init>(Pattern) -> Object.<init>()
 SecurityConfig$GithubAuthenticationSigninAdapter.<init>(String,SignInService) -> Object.<init>()
 GeoLocation.<init>() -> Object.<init>()
 String BlogAdminController.newPost(Model) -> __new
@@ -2609,6 +3082,21 @@ URI Event.parseLink(VEvent) -> Object ValuedProperty.getValue()
 URI Event.parseLink(VEvent) -> Description VEvent.getDescription()
 URI Event.parseLink(VEvent) -> boolean Matcher.find()
 URI Event.parseLink(VEvent) -> URI URI.create(String)
+ResponseEntity GuidesController.renderGuide(String,String) -> __new_array
+ResponseEntity GuidesController.renderGuide(String,String) -> __cast
+ResponseEntity GuidesController.renderGuide(String,String) -> Link LinkBuilderSupport.withSelfRel()
+ResponseEntity GuidesController.renderGuide(String,String) -> Link LinkBuilderSupport.withRel(String)
+ResponseEntity GuidesController.renderGuide(String,String) -> ResponseEntity GuidesController.showGuide(String,String)
+ResponseEntity GuidesController.renderGuide(String,String) -> GuideContentResource GuideRenderer.render(GuideType,String)
+ResponseEntity GuidesController.renderGuide(String,String) -> ResponseEntity ResponseEntity.ok(Object)
+ResponseEntity GuidesController.renderGuide(String,String) -> ResponseEntity$HeadersBuilder ResponseEntity.notFound()
+ResponseEntity GuidesController.renderGuide(String,String) -> Object ControllerLinkBuilder.methodOn(Class,Object[])
+ResponseEntity GuidesController.renderGuide(String,String) -> ControllerLinkBuilder ControllerLinkBuilder.linkTo(Object)
+ResponseEntity GuidesController.renderGuide(String,String) -> String GuideType.getSlug()
+ResponseEntity GuidesController.renderGuide(String,String) -> GuideType GuideType.fromSlug(String)
+ResponseEntity GuidesController.renderGuide(String,String) -> boolean Enum.equals(Object)
+ResponseEntity GuidesController.renderGuide(String,String) -> ResponseEntity ResponseEntity$HeadersBuilder.build()
+ResponseEntity GuidesController.renderGuide(String,String) -> void ResourceSupport.add(Link)
 String Topical.getGithubUrl() -> String AbstractGuide.getGithubUrl()
 CloudFoundryCacheConfig.<init>() -> AbstractCloudConfig.<init>()
 String GettingStartedGuide.getCiStatusImageUrl() -> String AbstractGuide.getCiStatusImageUrl()
@@ -2626,10 +3114,20 @@ String EventsController.events(Model) -> Period Period.of(String,int)
 String EventsController.events(Model) -> LocalDate LocalDate.now()
 String EventsController.events(Model) -> List EventsCalendarService.findEvents(Period)
 String EventsController.events(Model) -> Model Model.addAttribute(String,Object)
-String PostCategoryFormatter.print(PostCategory,Locale) -> String PostCategory.getUrlSlug()
 String PostCategoryFormatter.print(Object,Locale) -> __cast
 String PostCategoryFormatter.print(Object,Locale) -> String PostCategoryFormatter.print(PostCategory,Locale)
+String PostCategoryFormatter.print(PostCategory,Locale) -> String PostCategory.getUrlSlug()
 SpringToolsController$Lambda$_3_10.<init>(Model) -> Object.<init>()
+String MarkdownRenderer.renderToHtml(String) -> __unwrap_exception
+String MarkdownRenderer.renderToHtml(String) -> __set_locked_attribute
+String MarkdownRenderer.renderToHtml(String) -> __new
+String MarkdownRenderer.renderToHtml(String) -> __delete_locked_attribute
+String MarkdownRenderer.renderToHtml(String) -> String ToHtmlSerializer.toHtml(RootNode)
+String MarkdownRenderer.renderToHtml(String) -> char[] String.toCharArray()
+String MarkdownRenderer.renderToHtml(String) -> Map Collections.singletonMap(Object,Object)
+String MarkdownRenderer.renderToHtml(String) -> RootNode PegDownProcessor.parseMarkdown(char[])
+String MarkdownRenderer.renderToHtml(String) -> MarkdownToHtmlSerializer.<init>(LinkRenderer,Map)
+String MarkdownRenderer.renderToHtml(String) -> LinkRenderer.<init>()
 String Post.generatePublicSlug() -> __new_array
 String Post.generatePublicSlug() -> String Post.getSlug()
 String Post.generatePublicSlug() -> Date Post.getPublishAt()
@@ -2671,6 +3169,8 @@ boolean Tutorials.lambda$findByProject$1(Project,GuideHeader) -> boolean Set.con
 Object SaganRendererClient$Lambda$_12_17.apply(int) -> GuideMetadata[] SaganRendererClient.access_sagan.site.renderer.SaganRendererClient$Lambda$_12_17(int)
 void BlogService.updatePost(Post,PostForm) -> void PostFormAdapter.updatePostFromPostForm(Post,PostForm)
 void BlogService.updatePost(Post,PostForm) -> Object PostRepository.save(Object)
+GuideType GuideType.valueOf(String) -> __cast
+GuideType GuideType.valueOf(String) -> Enum Enum.valueOf(Class,String)
 PostBuilder PostBuilder.post() -> __new
 PostBuilder PostBuilder.post() -> PostBuilder.<init>()
 Optional Topicals.findByName(String) -> __new
@@ -2682,6 +3182,16 @@ Optional Topicals.findByName(String) -> Topical.<init>(GuideHeader,GuideContent)
 GuideImage AbstractGuide.access_sagan.site.guides.AbstractGuide$Lambda$_2_47(GuideImage) -> GuideImage AbstractGuide.lambda$new$0(GuideImage)
 Optional TopicalController.lambda$loadImage$0(String,Topical) -> Optional Topical.getImageContent(String)
 TutorialController$Lambda$_3_17.<init>() -> Object.<init>()
+String AsciidoctorRenderer.renderToHtml(String) -> __new
+String AsciidoctorRenderer.renderToHtml(String) -> void Attributes.setSkipFrontMatter(boolean)
+String AsciidoctorRenderer.renderToHtml(String) -> void Attributes.setAttribute(String,Object)
+String AsciidoctorRenderer.renderToHtml(String) -> void Attributes.setAnchors(boolean)
+String AsciidoctorRenderer.renderToHtml(String) -> void Attributes.setAllowUriRead(boolean)
+String AsciidoctorRenderer.renderToHtml(String) -> OptionsBuilder OptionsBuilder.safe(SafeMode)
+String AsciidoctorRenderer.renderToHtml(String) -> OptionsBuilder OptionsBuilder.options()
+String AsciidoctorRenderer.renderToHtml(String) -> String Asciidoctor.convert(String,OptionsBuilder)
+String AsciidoctorRenderer.renderToHtml(String) -> OptionsBuilder OptionsBuilder.attributes(Attributes)
+String AsciidoctorRenderer.renderToHtml(String) -> Attributes.<init>()
 MemberProfile.<init>() -> Object.<init>()
 boolean AbstractGuide.access_sagan.site.guides.AbstractGuide$Lambda$_12_10(String,GuideImage) -> boolean AbstractGuide.lambda$getImageContent$2(String,GuideImage)
 void BlogService.<clinit>() -> Log LogFactory.getLog(Class)
@@ -2734,10 +3244,23 @@ void PageElementsBuilder.addFirstPage(ArrayList) -> PageElement.<init>(long,bool
 boolean Topicals.access_sagan.site.guides.Topicals$Lambda$_7_8(Project,GuideHeader) -> boolean Topicals.lambda$findByProject$1(Project,GuideHeader)
 int Project$Lambda$_18_4.applyAsInt(Object) -> __cast
 int Project$Lambda$_18_4.applyAsInt(Object) -> int Project.access_sagan.projects.Project$Lambda$_18_4(Project)
+GuideType$Lambda$_4_7.<init>(String) -> Object.<init>()
+GuideRenderingException.<init>(String,Throwable) -> __new
+GuideRenderingException.<init>(String,Throwable) -> String StringBuilder.toString()
+GuideRenderingException.<init>(String,Throwable) -> StringBuilder StringBuilder.append(String)
+GuideRenderingException.<init>(String,Throwable) -> RuntimeException.<init>(String,Throwable)
+GuideRenderingException.<init>(String,Throwable) -> StringBuilder.<init>()
 SecurityConfig$ApiAuthenticationConfig$1.<init>(SecurityConfig$ApiAuthenticationConfig) -> Object.<init>()
 String GettingStartedGuide.getCloneUrl() -> String AbstractGuide.getCloneUrl()
+GithubResourceNotFoundException.<init>(String,Throwable) -> __new
+GithubResourceNotFoundException.<init>(String,Throwable) -> String StringBuilder.toString()
+GithubResourceNotFoundException.<init>(String,Throwable) -> StringBuilder StringBuilder.append(String)
+GithubResourceNotFoundException.<init>(String,Throwable) -> RuntimeException.<init>(String,Throwable)
+GithubResourceNotFoundException.<init>(String,Throwable) -> StringBuilder.<init>()
 Date PostView.getCreatedAt() -> Date Post.getCreatedAt()
 SecurityConfig$AdminAuthenticationConfig$1.<init>(SecurityConfig$AdminAuthenticationConfig) -> OncePerRequestFilter.<init>()
+void PrettifyVerbatimSerializer.<clinit>() -> __new
+void PrettifyVerbatimSerializer.<clinit>() -> PrettifyVerbatimSerializer.<init>()
 boolean Tutorials.access_sagan.site.guides.Tutorials$Lambda$_7_8(Project,GuideHeader) -> boolean Tutorials.lambda$findByProject$1(Project,GuideHeader)
 boolean Project.access_sagan.projects.Project$Lambda$_13_22(Optional,ProjectRelease) -> boolean Project.lambda$getNonMostCurrentReleases$0(Optional,ProjectRelease)
 ResponseEntity BadgeController.latestBadge(String) -> ResponseEntity BadgeController.badgeFor(String,ProjectRelease$ReleaseStatus)
@@ -2789,7 +3312,11 @@ boolean SignInService.isSpringMember(String,GitHub) -> RestOperations GitHub.res
 boolean SignInService.isSpringMember(String,GitHub) -> HttpStatus ResponseEntity.getStatusCode()
 boolean SignInService.isSpringMember(String,GitHub) -> ResponseEntity RestOperations.getForEntity(String,Class,Object[])
 int ProjectRelease.hashCode() -> int String.hashCode()
+AsciidoctorGuideContentContributor$Lambda$_7_28.<init>() -> Object.<init>()
+MarkupController$Lambda$_4_10.<init>(MediaType) -> Object.<init>()
 ProjectAdminController.<init>(ProjectMetadataService,PostContentRenderer) -> Object.<init>()
+ImagesGuideContentContributor.<init>() -> Logger LoggerFactory.getLogger(Class)
+ImagesGuideContentContributor.<init>() -> Object.<init>()
 boolean SaganRendererClient.lambda$fetchTopicalGuides$4(GuideMetadata) -> GuideType GuideMetadata.getType()
 boolean SaganRendererClient.lambda$fetchTopicalGuides$4(GuideMetadata) -> boolean Enum.equals(Object)
 String ProjectRepository.toString() -> __new
@@ -2806,6 +3333,7 @@ Predicate Period.toCalendarFilter() -> Predicate Period.callsite_sagan.site.even
 GuideMetadata[] SaganRendererClient.access_sagan.site.renderer.SaganRendererClient$Lambda$_6_17(int) -> GuideMetadata[] SaganRendererClient.lambda$fetchGettingStartedGuides$1(int)
 void ProjectPatchingService.access_sagan.projects.ProjectPatchingService$Lambda$_2_23(ProjectPatchingService,String) -> void Project.setRawBootConfig(String)
 InvalidCalendarException.<init>(String,Throwable) -> RuntimeException.<init>(String,Throwable)
+GuideContentResource.<init>(String,String,String) -> ResourceSupport.<init>()
 void MemberProfile.<clinit>() -> __new
 void MemberProfile.<clinit>() -> MemberProfile.<init>()
 Object GettingStartedGuides$Lambda$_7_18.apply(int) -> GuideHeader[] GettingStartedGuides.access_sagan.site.guides.GettingStartedGuides$Lambda$_7_18(int)
@@ -2849,6 +3377,7 @@ void ProjectPatchingService.access_sagan.projects.ProjectPatchingService$Lambda$
 String SaganRendererClient.renderMarkdown(String) -> String SaganRendererClient.renderMarkup(String,MediaType)
 String PostCategory.toString() -> String PostCategory.getDisplayName()
 ProjectPatchingService$Lambda$_2_18.<init>() -> Object.<init>()
+void AsciidoctorGuideContentContributor.lambda$findTableOfContents$0(Element) -> void Node.remove()
 void GettingStartedGuide.setImages(List) -> void AbstractGuide.setImages(List)
 void TuckeyRewriteFilter.loadUrlRewriter(FilterConfig) -> __unwrap_exception
 void TuckeyRewriteFilter.loadUrlRewriter(FilterConfig) -> __new
@@ -2866,6 +3395,12 @@ void TuckeyRewriteFilter.loadUrlRewriter(FilterConfig) -> Conf.<init>(ServletCon
 Object GettingStartedGuideController$Lambda$_5_25.apply(Object) -> __cast
 Object GettingStartedGuideController$Lambda$_5_25.apply(Object) -> Project GettingStartedGuideController.access_sagan.site.guides.GettingStartedGuideController$Lambda$_5_25(GettingStartedGuideController,String)
 String Tutorial.getCloneUrl() -> String AbstractGuide.getCloneUrl()
+void AsciidoctorGuideContentContributor.lambda$findTableOfContents$4(Document,Element) -> Stream Elements.stream()
+void AsciidoctorGuideContentContributor.lambda$findTableOfContents$4(Document,Element) -> Elements Element.select(String)
+void AsciidoctorGuideContentContributor.lambda$findTableOfContents$4(Document,Element) -> void Stream.forEach(Consumer)
+void AsciidoctorGuideContentContributor.lambda$findTableOfContents$4(Document,Element) -> Stream Stream.filter(Predicate)
+void AsciidoctorGuideContentContributor.lambda$findTableOfContents$4(Document,Element) -> Consumer AsciidoctorGuideContentContributor.callsite_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_5_20()
+void AsciidoctorGuideContentContributor.lambda$findTableOfContents$4(Document,Element) -> Predicate AsciidoctorGuideContentContributor.callsite_sagan.renderer.guides.content.AsciidoctorGuideContentContributor$Lambda$_5_10(Document)
 Predicate ProjectsController.callsite_sagan.projects.support.ProjectsController$Lambda$_3_33() -> __new
 Predicate ProjectsController.callsite_sagan.projects.support.ProjectsController$Lambda$_3_33() -> ProjectsController$Lambda$_3_33.<init>()
 boolean Period.access_sagan.site.events.Period$Lambda$_6_1(Period,VEvent) -> boolean Period.lambda$toCalendarFilter$0(VEvent)
@@ -2885,3 +3420,5 @@ AuthenticationManager SecurityConfig$SecurityContextAuthenticationFilter.callsit
 AuthenticationManager SecurityConfig$SecurityContextAuthenticationFilter.callsite_sagan.SecurityConfig$SecurityContextAuthenticationFilter$Lambda$_1_6() -> SecurityConfig$SecurityContextAuthenticationFilter$Lambda$_1_6.<init>()
 void PageElementsBuilder.findStartPage() -> long Math.max(long,long)
 List ProjectMetadataService.getProjectsWithGroups() -> List ProjectMetadataRepository.findTopLevelProjectsWithGroup()
+GuideType[] GuideType.values() -> __cast
+GuideType[] GuideType.values() -> Object Object.clone()
