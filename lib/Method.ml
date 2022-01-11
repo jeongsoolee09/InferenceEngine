@@ -158,18 +158,52 @@ let find_unique_identifier (method_ : t) : string =
     (Deserializer.deserialize_method_txt () @ Deserializer.deserialize_skip_func ())
 
 
-let get_package_name (method_ : t) : string =
-  try
-    let unique_id = find_unique_identifier method_ in
-    UniqueID.get_package_name unique_id
-  with Not_found_s _ ->
+module PackageResolver = struct
+  exception TODO
+
+  let resolve_via_import_stmts (method_ : t) : string =
     (* find from the list of scraped packages *)
     let imports_in_directory =
       DirectoryManager.PackageScraper.scrape_imports_in_directory
         (Deserializer.deserialize_config ())
     in
     let method_classname = get_class_name method_ in
-    match List.find ~f:(fun str ->
-        String.equal (List.last_exn (String.split ~on:'.' str)) method_classname) imports_in_directory with
-    | None -> failwithf "could not get package name for %s\n" method_ ()
-    | Some res -> DirectoryManager.PackageScraper.extract_package_from_import_stmt res
+    match
+      List.find
+        ~f:(fun str -> String.equal (List.last_exn (String.split ~on:'.' str)) method_classname)
+        imports_in_directory
+    with
+    | None ->
+        failwithf "could not get package name for %s\n" method_ ()
+    | Some res ->
+        DirectoryManager.PackageScraper.extract_package_from_import_stmt res
+
+
+  let resolve_via_package_decls (method_ : t) : string =
+    if is_initializer method_ then
+      let java_filenames =
+        DirectoryManager.walk_for_extension ".java" (Deserializer.deserialize_config ())
+      in
+      let classname = get_class_name method_ in
+      match
+        List.find
+          ~f:(fun java_filename ->
+            let filename_only = List.last_exn @@ String.split ~on:'/' java_filename in
+            String.equal java_filename (classname ^ ".java") )
+          java_filenames
+      with
+      | Some java_filename ->
+          List.hd_exn
+          @@ DirectoryManager.PackageScraper.scrape_package_decls_in_single_file java_filename
+      | None ->
+          failwithf "resolving via package decls failed: %s\n" method_ ()
+    else failwithf "non-initializer method resolving is not yet supported: %s\n" method_ ()
+end
+
+let get_package_name (method_ : t) : string =
+  try
+    let unique_id = find_unique_identifier method_ in
+    UniqueID.get_package_name unique_id
+  with Not_found_s _ -> (
+    try PackageResolver.resolve_via_import_stmts method_
+    with Not_found_s _ -> PackageResolver.resolve_via_package_decls method_ )
