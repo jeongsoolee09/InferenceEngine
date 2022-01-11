@@ -364,7 +364,9 @@ module Notebook50 = struct
 
   (* now, get all the ns edges of renderer_vertices. *)
 
-  let renderer_methods = G.all_methods_of_graph renderer_graph
+  let renderer_methods =
+    List.filter ~f:(not << is_frontend) @@ G.all_methods_of_graph renderer_graph
+
 
   let _ =
     SimilarVertexPairExtractor.NodewisePairExtractor.update_nodewise_similarity_map renderer_methods
@@ -398,8 +400,124 @@ module Notebook51 = struct
     let java_files = walk_for_extension root_dir ".java" in
     java_files >>= scrape_packages_in_single_file
 
-  let _ = extract_package_from_import_stmt "import org.springframework.context.annotation.Configuration;"
+
+  let _ =
+    extract_package_from_import_stmt "import org.springframework.context.annotation.Configuration;"
+
 
   (* put this in DirectoryManager *)
+  let _ = End
+end
+
+module Notebook52 = struct
+  let sample = "Attributes.<init>()"
+
+  let sample_dir =
+    "/Users/jslee/Taint-Analysis/Code/benchmarks/realworld/sagan//sagan-site/src/main/java/sagan/site/events/InvalidCalendarException.java"
+
+
+  let sample_dir2 =
+    "/Users/jslee/Taint-Analysis/Code/benchmarks/realworld/sagan/sagan-renderer/src/main/java/sagan/renderer/markup/AsciidoctorRenderer.java"
+
+
+  let sample_dir3 =
+    "/Users/jslee/Taint-Analysis/Code/benchmarks/realworld/sagan/sagan-renderer/src/main/java/sagan/renderer/guides/content/AsciidoctorGuideContentContributor.java"
+
+
+  let _ = PackageScraper.scrape_imports_in_single_file sample_dir
+
+  let _ = PackageScraper.scrape_imports_in_single_file sample_dir2
+
+  let _ = PackageScraper.scrape_imports_in_single_file sample_dir3
+
+  let _ = get_package_name sample
+
+  let _ = End
+end
+
+module Notebook53 = struct
+  let df_edges_added =
+    match graph_already_serialized "df_edges" with
+    | None ->
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
+
+
+  let splitted = split_graph_by_comp_unit df_edges_added
+
+  let all_vertices = G.all_vertices_of_graph df_edges_added
+
+  (* ============ renderer ============ *)
+  let renderer_graph = List.nth_exn splitted 0
+
+  let renderer_vertices = G.all_vertices_of_graph renderer_graph
+
+  (* ============ site ============ *)
+  let site_graph = List.nth_exn splitted 1
+
+  let site_vertices = G.all_vertices_of_graph site_graph
+
+  (* now, get all the ns edges of renderer_vertices. *)
+
+  let renderer_methods = G.all_methods_of_graph renderer_graph
+
+  let _ =
+    SimilarVertexPairExtractor.NodewisePairExtractor.update_nodewise_similarity_map renderer_methods
+
+
+  let _ = Method.PackageResolver.resolve_via_package_decls "GuideResource.<init>(Repository)"
+
+  let method_ = "GuideResource.<init>(Repository)"
+
+  let _ = find_unique_identifier method_
+
+  let _ =
+    if is_initializer method_ then
+      let java_filenames =
+        DirectoryManager.walk_for_extension (Deserializer.deserialize_config ()) ".java"
+      in
+      let classname = get_class_name method_ in
+      match
+        List.find
+          ~f:(fun java_filename ->
+            let filename_only = List.last_exn @@ String.split ~on:'/' java_filename in
+            String.equal filename_only (classname ^ ".java") )
+          java_filenames
+      with
+      | Some java_filename ->
+          List.hd_exn
+          @@ DirectoryManager.PackageScraper.scrape_package_decls_in_single_file java_filename
+      | None ->
+          Core_kernel.failwithf "resolving via package decls failed: %s\n" method_ ()
+    else
+      Core_kernel.failwithf "non-initializer method resolving is not yet supported: %s\n" method_ ()
+
+
+  (* Exception: *)
+  (* (Failure "could not get package name for GuideResource.<init>(Repository)\n") *)
+
+  (* why..??? *)
+
+  (* don't know... for some reason, it's missing. *)
+
+  let _ = End
+end
+
+module Notebook54 = struct
+  (* testing parmap *)
+
+  let x = List.init ~f:(fun i -> i) 100000000
+
+  let _ = List.map ~f:(fun x -> x * 2) x (* takes a lot *)
+
+  let xseq = Parmap.L x
+
+  let _ = Parmap.parmap ~ncores:6 (fun x -> x * 2) xseq (* wow fast!! *)
+
+  (* good!!! *)
+
   let _ = End
 end
