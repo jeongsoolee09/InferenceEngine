@@ -3,6 +3,8 @@ open InfixOperators
 module F = Format
 module Hashtbl = Caml.Hashtbl
 
+exception TODO
+
 let is_directory (abs_dir : string) : bool =
   match Sys.is_directory abs_dir with `Yes -> true | _ -> false
 
@@ -134,21 +136,17 @@ module Classnames = struct
 end
 
 module PackageScraper = struct
-  let regex = Re2.create_exn "import ([a-z.]+\.[A-Za-z]+);"
+  let import_regex = Re2.create_exn "import ([a-z.]+\.[A-Za-z]+);"
 
-  let is_import_stmt = Re2.matches regex
+  let is_import_stmt = Re2.matches import_regex
 
   let extract_package_from_import_stmt (import_stmt : string) : string =
     String.split ~on:' ' import_stmt |> List.last_exn |> String.rstrip ~drop:(Char.equal ';')
-    (* print_endline @@ F.asprintf "import_stmt = %s" import_stmt; *)
-    (* Option.value_exn (Re2.find_submatches_exn regex import_stmt |> Array.last) *)
 
 
   let scrape_imports_in_single_file =
     let cache = Hashtbl.create 777 in
     fun (file_absdir : string) : string list ->
-      print_endline "====================";
-      print_endline file_absdir;
       match Hashtbl.find_opt cache file_absdir with
       | None ->
           let out =
@@ -170,6 +168,45 @@ module PackageScraper = struct
           let out =
             let java_files = walk_for_extension root_dir ".java" in
             java_files >>= scrape_imports_in_single_file
+          in
+          Hashtbl.add cache root_dir out ;
+          out
+      | Some res ->
+          res
+
+
+  let package_regex = Re2.create_exn "package ([a-zA-Z.]+);"
+
+  let is_package_decl string = Re2.matches package_regex string
+
+  let extract_package_from_package_decl package_decl =
+    String.split ~on:' ' package_decl |> List.last_exn |> String.rstrip ~drop:(Char.equal ';')
+
+
+  let scrape_package_decls_in_single_file =
+    let cache = Hashtbl.create 777 in
+    fun (file_absdir : string) : string list ->
+      match Hashtbl.find_opt cache file_absdir with
+      | None ->
+          let out =
+            let file_line_by_line = In_channel.read_lines file_absdir in
+            let package_decl_lines = List.filter file_line_by_line ~f:is_package_decl in
+            package_decl_lines >>| extract_package_from_import_stmt
+          in
+          Hashtbl.add cache file_absdir out ;
+          out
+      | Some res ->
+          res
+
+
+  let scrape_package_decls_in_directory =
+    let cache = Hashtbl.create 777 in
+    fun (root_dir : string) : string list ->
+      match Hashtbl.find_opt cache root_dir with
+      | None ->
+          let out =
+            let java_files = walk_for_extension root_dir ".java" in
+            java_files >>= scrape_package_decls_in_single_file
           in
           Hashtbl.add cache root_dir out ;
           out
