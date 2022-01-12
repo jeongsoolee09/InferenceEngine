@@ -17,26 +17,10 @@ let main () =
         Deserializer.deserialize_graph filename
   in
   print_endline "df_graph initialized." ;
-  (* let renderer_graph = GraphMaker.get_subgraph_for_comp_unit df_graph "renderer" in *)
-  (* let nodewise_featuremap = NodeWiseFeatures.init_feature_map graph in *)
+  let renderer_graph = List.nth_exn (GraphSplitter.split_graph_by_comp_unit df_edges_added) 2 in
+  let nodewise_featuremap = NodeWiseFeatures.init_feature_map renderer_graph in
   (* let interaction_completed = Loop.loop graph [] nodewise_featuremap 1 in *)
-  let splitted = GraphSplitter.split_graph_by_comp_unit df_edges_added in
-  let renderer_graph = List.nth_exn splitted 0 in
-  let renderer_vertices = G.all_vertices_of_graph renderer_graph in
-  let site_graph = List.nth_exn splitted 1 in
-  let site_vertices = G.all_vertices_of_graph site_graph in
-  let renderer_methods = G.all_methods_of_graph renderer_graph in
-  let map_array =
-    SimilarityHandler.NodeWiseSimilarityMap.make_empty renderer_methods
-    |> fun map ->
-    SimilarityHandler.NodeWiseSimilarityMap.fold (fun k _ acc -> k :: acc) map []
-    |> List.filter ~f:(fun (m1, m2) ->
-           (not << Method.is_frontend) m1 && (not << Method.is_frontend) m2 )
-    |> Array.of_list
-  in
-  Array.map
-    ~f:SimilarityHandler.SimilarVertexPairExtractor.NodewisePairExtractor.get_nodewise_similarity
-    map_array
+  print_endline "done!"
 
 
 let _ = main ()
