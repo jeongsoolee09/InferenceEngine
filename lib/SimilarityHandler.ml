@@ -84,7 +84,7 @@ module NodeWiseSimilarityMap = struct
 
   let threshold = 5 (* TEMP *)
 
-  let init (all_methods : Method.t list) : t =
+  let make_empty (all_methods : Method.t list) : t =
     let method_pairs =
       let* method1 = all_methods in
       let* method2 = all_methods in
@@ -97,6 +97,11 @@ module NodeWiseSimilarityMap = struct
 
   let is_similar_nodewise (meth1 : Method.t) (meth2 : Method.t) (map : t) : bool =
     Int.( >= ) (find (meth1, meth2) map) threshold
+
+
+  let to_alist (map : t) = fold (fun k v acc -> (k, v) :: acc) map []
+
+  let of_alist alist = List.fold ~f:(fun acc (k, v) -> add k v acc) alist ~init:empty
 end
 
 module TrunkSimilarityMap = struct
@@ -139,7 +144,7 @@ module ContextualSimilarityMap = struct
 
   type t = Int.t WithMethodPairDomain.t
 
-  let init (all_methods : Method.t list) : t =
+  let make_empty (all_methods : Method.t list) : t =
     let method_pairs =
       let* method1 = all_methods in
       let* method2 = all_methods in
@@ -155,19 +160,19 @@ module SimilarVertexPairExtractor = struct
   module NodewisePairExtractor = struct
     let pairwise_features_and_their_scores =
       let open NodeWiseFeatures.PairwiseFeature in
-      [ (is_both_framework_code, 4)
-      ; (belong_to_same_class, 2)
-      ; (belong_to_same_package, 2)
-      ; (return_type_is_another's_class, 3)
-      ; (is_both_java_builtin, 2)
-      ; (is_both_initializer, 4)
-      ; (has_same_annots, 6) ]
+      [| (is_both_framework_code, 4)
+       ; (belong_to_same_class, 2)
+       ; (belong_to_same_package, 2)
+       ; (return_type_is_another's_class, 3)
+       ; (is_both_java_builtin, 2)
+       ; (is_both_initializer, 4)
+       ; (has_same_annots, 6) |]
 
 
     (** Run all extractors for every method pair. *)
     let get_nodewise_similarity (method_pair : Method.t * Method.t) : int =
       (* execute all extractors. *)
-      List.fold
+      Array.fold
         ~f:(fun current_score (feature, score) ->
           if feature method_pair then current_score + score else current_score )
         ~init:0 pairwise_features_and_their_scores
@@ -175,8 +180,8 @@ module SimilarVertexPairExtractor = struct
 
     (** main functionality: calculate the nodewise simliarity of each method and organize those in a
         table. *)
-    let update_nodewise_similarity_map (all_methods : Method.t list) : NodeWiseSimilarityMap.t =
-      let initial_map = NodeWiseSimilarityMap.init all_methods in
+    let init_nodewise_similarity_map (all_methods : Method.t list) : NodeWiseSimilarityMap.t =
+      let initial_map = NodeWiseSimilarityMap.make_empty all_methods in
       NodeWiseSimilarityMap.fold
         (fun ((m1, m2) as pair) _ acc ->
           let nodewise_similarity = get_nodewise_similarity pair in
@@ -356,8 +361,7 @@ module EstablishSimEdges = struct
     let open SimilarVertexPairExtractor in
     let all_vertices = G.all_vertices_of_graph graph in
     let nodewise_similarity_map =
-      NodewisePairExtractor.update_nodewise_similarity_map
-        (G.all_non_frontend_methods_of_graph graph)
+      NodewisePairExtractor.init_nodewise_similarity_map (G.all_non_frontend_methods_of_graph graph)
     in
     let above_threshold_entries =
       NodeWiseSimilarityMap.filter

@@ -29,6 +29,7 @@ module String = Core_kernel.String
 module Int = Core_kernel.Int
 module Float = Core_kernel.Float
 module Array = Core_kernel.Array
+open Core
 open InferenceEngineLib
 open GraphRepr
 open ListMonad

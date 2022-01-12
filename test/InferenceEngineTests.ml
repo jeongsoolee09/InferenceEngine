@@ -369,7 +369,7 @@ module Notebook50 = struct
 
 
   let _ =
-    SimilarVertexPairExtractor.NodewisePairExtractor.update_nodewise_similarity_map renderer_methods
+    SimilarVertexPairExtractor.NodewisePairExtractor.init_nodewise_similarity_map renderer_methods
 
 
   (* Exception: (Not_found_s "List.find_exn: not found")
@@ -465,7 +465,7 @@ module Notebook53 = struct
   let renderer_methods = G.all_methods_of_graph renderer_graph
 
   let _ =
-    SimilarVertexPairExtractor.NodewisePairExtractor.update_nodewise_similarity_map renderer_methods
+    SimilarVertexPairExtractor.NodewisePairExtractor.init_nodewise_similarity_map renderer_methods
 
 
   let _ = Method.PackageResolver.resolve_via_package_decls "GuideResource.<init>(Repository)"
@@ -506,18 +506,55 @@ module Notebook53 = struct
   let _ = End
 end
 
-module Notebook54 = struct
-  (* testing parmap *)
+module Notebook55 = struct
+  (* it's obvious that parmap is not a solution, but we bet on making an array. *)
 
-  let x = List.init ~f:(fun i -> i) 100000000
+  let df_edges_added =
+    match graph_already_serialized "df_edges" with
+    | None ->
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
 
-  let _ = List.map ~f:(fun x -> x * 2) x (* takes a lot *)
 
-  let xseq = Parmap.L x
+  let splitted = split_graph_by_comp_unit df_edges_added
 
-  let _ = Parmap.parmap ~ncores:6 (fun x -> x * 2) xseq (* wow fast!! *)
+  let all_vertices = G.all_vertices_of_graph df_edges_added
 
-  (* good!!! *)
+  (* ============ renderer ============ *)
+  let renderer_graph = List.nth_exn splitted 0
+
+  let renderer_vertices = G.all_vertices_of_graph renderer_graph
+
+  (* ============ site ============ *)
+  let site_graph = List.nth_exn splitted 1
+
+  let site_vertices = G.all_vertices_of_graph site_graph
+
+  (* now, get all the ns edges of renderer_vertices. *)
+
+  let renderer_methods = G.all_methods_of_graph renderer_graph
+
+  let map_array =
+    NodeWiseSimilarityMap.make_empty renderer_methods
+    |> fun map ->
+    NodeWiseSimilarityMap.fold (fun k _ acc -> k :: acc) map []
+    |> List.filter ~f:(fun (m1, m2) ->
+           (not << Method.is_frontend) m1 && (not << Method.is_frontend) m2 )
+    |> Array.of_list
+
+
+  let _ = Array.length map_array
+
+  let mapped =
+    Array.iteri
+      ~f:(fun index pair ->
+        if index mod 10 = 0 then print_endline "check" ;
+        ignore @@ SimilarVertexPairExtractor.NodewisePairExtractor.get_nodewise_similarity pair )
+      map_array
+
 
   let _ = End
 end

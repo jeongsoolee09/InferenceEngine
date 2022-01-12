@@ -182,7 +182,7 @@ module PackageResolver = struct
   let resolve_via_package_decls (method_ : t) : string =
     if is_initializer method_ then
       let java_filenames =
-        DirectoryManager.walk_for_extension ".java" (Deserializer.deserialize_config ())
+        DirectoryManager.walk_for_extension (Deserializer.deserialize_config ()) ".java" 
       in
       let classname = get_class_name method_ in
       match
