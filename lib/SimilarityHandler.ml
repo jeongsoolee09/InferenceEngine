@@ -2,6 +2,7 @@
 
 open Yojson.Basic
 open ListMonad
+open InfixOperators
 open GraphRepr
 open Chain
 open NodeWiseFeatures
@@ -178,16 +179,60 @@ module SimilarVertexPairExtractor = struct
         ~init:0 pairwise_features_and_their_scores
 
 
+    let project_root = Deserializer.deserialize_config ()
+
+    (* TEMP: Sys.readdir "." should be replaced with Deserializer.deserialize_config (). *)
+    let ns_map_already_serialized (comp_unit : string) : bool =
+      Array.exists
+        ~f:(fun dir -> String.is_substring ~substring:("yojson_" ^ comp_unit) dir)
+        (Sys.readdir ".")
+
+
+    (* TEMP: Sys.readdir "." should be replaced with Deserializer.deserialize_config (). *)
+    let find_serialized_ns_map (comp_unit : string) : string =
+      Array.find_exn
+        ~f:(fun dir -> String.is_substring ~substring:("yojson_" ^ comp_unit) dir)
+        (Sys.readdir ".")
+
+
     (** main functionality: calculate the nodewise simliarity of each method and organize those in a
         table. *)
-    let init_nodewise_similarity_map (all_methods : Method.t list) : NodeWiseSimilarityMap.t =
-      let initial_map = NodeWiseSimilarityMap.make_empty all_methods in
-      NodeWiseSimilarityMap.fold
-        (fun ((m1, m2) as pair) _ acc ->
-          let nodewise_similarity = get_nodewise_similarity pair in
-          NodeWiseSimilarityMap.remove pair acc
-          |> NodeWiseSimilarityMap.add pair nodewise_similarity )
-        initial_map initial_map
+    let init_nodewise_similarity_map =
+      let cache = Hashtbl.create 777 in
+      fun (comp_unit : string) (all_methods : Method.t list) : NodeWiseSimilarityMap.t ->
+        match Hashtbl.find_opt cache all_methods with
+        | None ->
+            if not @@ ns_map_already_serialized comp_unit then (
+              let out =
+                let map_array =
+                  NodeWiseSimilarityMap.make_empty all_methods
+                  |> fun map ->
+                  NodeWiseSimilarityMap.fold (fun k _ acc -> k :: acc) map []
+                  |> List.filter ~f:(fun (m1, m2) ->
+                         (not << Method.is_frontend) m1 && (not << Method.is_frontend) m2 )
+                  |> Array.of_list
+                in
+                Out_channel.print_endline
+                @@ Format.asprintf "length is %d\n" (Array.length map_array) ;
+                let mapped =
+                  Array.map
+                    ~f:(fun pair ->
+                      ( pair
+                      , get_nodewise_similarity pair ) )
+                    map_array
+                in
+                mapped |> Array.to_list |> NodeWiseSimilarityMap.of_alist
+              in
+              Hashtbl.add cache all_methods out ;
+              out )
+            else
+              let marshal_in_chan = In_channel.create (find_serialized_ns_map comp_unit) in
+              let from_marshal = Marshal.from_channel marshal_in_chan in
+              In_channel.close marshal_in_chan ;
+              Hashtbl.add cache all_methods from_marshal ;
+              from_marshal
+        | Some res ->
+            res
   end
 
   module TrunkPairExtractor = struct
@@ -361,7 +406,7 @@ module EstablishSimEdges = struct
     let open SimilarVertexPairExtractor in
     let all_vertices = G.all_vertices_of_graph graph in
     let nodewise_similarity_map =
-      NodewisePairExtractor.init_nodewise_similarity_map (G.all_non_frontend_methods_of_graph graph)
+      NodewisePairExtractor.init_nodewise_similarity_map graph.comp_unit (G.all_non_frontend_methods_of_graph graph)
     in
     let above_threshold_entries =
       NodeWiseSimilarityMap.filter

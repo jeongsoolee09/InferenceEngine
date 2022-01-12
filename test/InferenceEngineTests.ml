@@ -369,7 +369,7 @@ module Notebook50 = struct
 
 
   let _ =
-    SimilarVertexPairExtractor.NodewisePairExtractor.init_nodewise_similarity_map renderer_methods
+    SimilarVertexPairExtractor.NodewisePairExtractor.init_nodewise_similarity_map "sagan_renderer" renderer_methods
 
 
   (* Exception: (Not_found_s "List.find_exn: not found")
@@ -465,7 +465,7 @@ module Notebook53 = struct
   let renderer_methods = G.all_methods_of_graph renderer_graph
 
   let _ =
-    SimilarVertexPairExtractor.NodewisePairExtractor.init_nodewise_similarity_map renderer_methods
+    SimilarVertexPairExtractor.NodewisePairExtractor.init_nodewise_similarity_map "sagan_renderer" renderer_methods
 
 
   let _ = Method.PackageResolver.resolve_via_package_decls "GuideResource.<init>(Repository)"
@@ -557,4 +557,9 @@ module Notebook55 = struct
 
 
   let _ = End
+end
+
+module Notebook56 = struct
+  (* now, what we need to do is serializing the initialized NodeWiseSimilarityMap. *)
+  let x = raise TODO
 end

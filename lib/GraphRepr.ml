@@ -168,7 +168,7 @@ end
 module BiDiGraph = Graph.Persistent.Digraph.ConcreteBidirectionalLabeled (Vertex) (EdgeLabel)
 
 module G = struct
-  type t = {graph: BiDiGraph.t; label: String.t; desc: String.t}
+  type t = {graph: BiDiGraph.t; comp_unit: String.t; label: String.t; desc: String.t}
 
   (* ==================== Really Boring Wrapping Logic ==================== *)
 
@@ -239,7 +239,7 @@ module G = struct
 
   let fold_pred_e f g v init = BiDiGraph.fold_pred_e f g.graph v
 
-  let empty = {graph= BiDiGraph.empty; label= ""; desc= ""}
+  let empty = {graph= BiDiGraph.empty; label= ""; desc= "";  comp_unit=""}
 
   let add_vertex g v = {g with graph= BiDiGraph.add_vertex g.graph v}
 
