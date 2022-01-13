@@ -239,7 +239,7 @@ module G = struct
 
   let fold_pred_e f g v init = BiDiGraph.fold_pred_e f g.graph v
 
-  let empty = {graph= BiDiGraph.empty; label= ""; desc= "";  comp_unit=""}
+  let empty = {graph= BiDiGraph.empty; label= ""; desc= ""; comp_unit= ""}
 
   let add_vertex g v = {g with graph= BiDiGraph.add_vertex g.graph v}
 
@@ -427,17 +427,6 @@ module G = struct
   let pp_vertex = vertex_name
 
   let pp_edge (v1, v2) = F.asprintf "\"(%s, %s)\"" (vertex_name v1) (vertex_name v2)
-
-  module Trunk = struct
-    type t = V.t list [@@deriving compare, equal]
-
-    let pp (trunk : t) : unit =
-      print_endline "[" ;
-      List.iter ~f:(fun vertex -> print_endline @@ Vertex.to_string vertex ^ ", ") trunk ;
-      print_endline "]"
-  end
-
-  type trunk = Trunk.t
 
   let serialize_to_bin ?(suffix = "") (graph : t) : unit =
     let out_chan = Out_channel.create (make_now_string 9 ^ "_" ^ suffix ^ ".bin") in
@@ -727,26 +716,6 @@ end
 
 module Dot = Graph.Graphviz.Dot (G)
 
-let identify_trunks (graph : G.t) : G.Trunk.t list =
-  let df_only_graph = G.leave_only_df_edges graph in
-  let roots = G.collect_df_roots df_only_graph in
-  let leaves = G.collect_df_leaves df_only_graph in
-  let carpro = roots >>= fun root -> leaves >>= fun leaf -> return (root, leaf) in
-  (* not all leaves are reachable from all roots. So we filter out unreachable (root, leaf) pairs. *)
-  let reachable_root_and_leaf_pairs =
-    List.filter ~f:(fun (root, leaf) -> PathUtils.is_reachable root leaf df_only_graph) carpro
-  in
-  (* now, find the path between the root and the leaf. *)
-  reachable_root_and_leaf_pairs
-  >>= fun (root, leaf) ->
-  PathUtils.find_path_from_source_to_dest df_only_graph (G.LiteralVertex.of_vertex root) leaf
-
-
-let find_trunks_containing_vertex graph vertex =
-  let all_trunks = identify_trunks graph in
-  List.filter ~f:(fun trunk -> List.mem ~equal:Vertex.equal trunk vertex) all_trunks
-
-
 let all_ns_clusters (graph : G.t) : G.V.t list list =
   let module Hashtbl = Caml.Hashtbl in
   let cache = Hashtbl.create 777 in
@@ -825,17 +794,3 @@ let get_recursive_succs (g : G.t) (vertex : G.LiteralVertex.t) ~(label : EdgeLab
         ~init:big_acc to_explore
   in
   inner (G.LiteralVertex.to_vertex vertex g.graph) []
-
-
-(** 어떤 root로부터 시작하는 trunk 중 가장 먼 곳에 있는 leaf *)
-let find_longest_trunk_from_leaf_to_sink ~(root : G.V.t) ~(leaf : G.V.t) (graph : G.t) : G.Trunk.t =
-  let all_trunks = identify_trunks graph in
-  let trunks_in_question =
-    List.filter all_trunks ~f:(fun trunk ->
-        let root_match = Vertex.equal (List.hd_exn trunk) root in
-        let leaf_match = Vertex.equal (List.last_exn trunk) leaf in
-        root_match && leaf_match )
-  in
-  List.hd_exn
-  @@ List.sort trunks_in_question ~compare:(fun trunk1 trunk2 ->
-         -Int.compare (List.length trunk1) (List.length trunk2) )
