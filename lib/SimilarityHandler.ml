@@ -184,14 +184,14 @@ module SimilarVertexPairExtractor = struct
     (* TEMP: Sys.readdir "." should be replaced with Deserializer.deserialize_config (). *)
     let ns_map_already_serialized (comp_unit : string) : bool =
       Array.exists
-        ~f:(fun dir -> String.is_substring ~substring:("yojson_" ^ comp_unit) dir)
+        ~f:(fun dir -> String.is_substring ~substring:(F.asprintf "ns_map_%s" comp_unit) dir)
         (Sys.readdir ".")
 
 
     (* TEMP: Sys.readdir "." should be replaced with Deserializer.deserialize_config (). *)
     let find_serialized_ns_map (comp_unit : string) : string =
       Array.find_exn
-        ~f:(fun dir -> String.is_substring ~substring:("yojson_" ^ comp_unit) dir)
+        ~f:(fun dir -> String.is_substring ~substring:(F.asprintf "ns_map_%s" comp_unit) dir)
         (Sys.readdir ".")
 
 
@@ -215,15 +215,16 @@ module SimilarVertexPairExtractor = struct
                 Out_channel.print_endline
                 @@ Format.asprintf "length is %d\n" (Array.length map_array) ;
                 let mapped =
-                  Array.map
-                    ~f:(fun pair ->
-                      ( pair
-                      , get_nodewise_similarity pair ) )
-                    map_array
+                  Array.map ~f:(fun pair -> (pair, get_nodewise_similarity pair)) map_array
                 in
                 mapped |> Array.to_list |> NodeWiseSimilarityMap.of_alist
               in
               Hashtbl.add cache all_methods out ;
+              let marshal_out_chan =
+                Out_channel.create (F.asprintf "%s_ns_map_%s.bin" (make_now_string 9) comp_unit)
+              in
+              Marshal.to_channel marshal_out_chan out [] ;
+              Out_channel.close marshal_out_chan ;
               out )
             else
               let marshal_in_chan = In_channel.create (find_serialized_ns_map comp_unit) in
@@ -406,7 +407,8 @@ module EstablishSimEdges = struct
     let open SimilarVertexPairExtractor in
     let all_vertices = G.all_vertices_of_graph graph in
     let nodewise_similarity_map =
-      NodewisePairExtractor.init_nodewise_similarity_map graph.comp_unit (G.all_non_frontend_methods_of_graph graph)
+      NodewisePairExtractor.init_nodewise_similarity_map graph.comp_unit
+        (G.all_non_frontend_methods_of_graph graph)
     in
     let above_threshold_entries =
       NodeWiseSimilarityMap.filter
