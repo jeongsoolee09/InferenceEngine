@@ -1,6 +1,7 @@
 open ListMonad
 open InfixOperators
 module F = Format
+module Hashtbl = Caml.Hashtbl
 
 type t = String.t [@@deriving compare, equal, sexp]
 
@@ -11,6 +12,8 @@ let is_frontend (method_ : t) : bool =
   || String.is_substring ~substring:"lambda$" method_
   || String.is_prefix ~prefix:"__" method_
 
+
+let hash = Hashtbl.hash
 
 let is_initializer (method_ : t) : bool = String.is_substring ~substring:"<init>" method_
 
@@ -182,7 +185,7 @@ module PackageResolver = struct
   let resolve_via_package_decls (method_ : t) : string =
     if is_initializer method_ then
       let java_filenames =
-        DirectoryManager.walk_for_extension (Deserializer.deserialize_config ()) ".java" 
+        DirectoryManager.walk_for_extension (Deserializer.deserialize_config ()) ".java"
       in
       let classname = get_class_name method_ in
       match
