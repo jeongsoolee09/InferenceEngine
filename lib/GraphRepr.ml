@@ -492,14 +492,12 @@ module G = struct
   (*          && EdgeLabel.equal label target_label ) *)
   (*   >>| fst3 *)
 
-
   (* let get_succs (vertex : LiteralVertex.t) (g : t) ~(label : EdgeLabel.t) : Vertex.t list = *)
   (*   fold_edges_e List.cons g [] *)
   (*   |> List.filter ~f:(fun (v, target_label, _) -> *)
   (*          Vertex.equal (LiteralVertex.to_vertex vertex g.graph) v *)
   (*          && EdgeLabel.equal label target_label ) *)
   (*   >>| fst3 *)
-
 
   let get_preds_any (vertex : LiteralVertex.t) (g : t) : Vertex.t list =
     fold_pred List.cons g (LiteralVertex.to_vertex vertex g.graph) []
@@ -651,6 +649,7 @@ module G = struct
     fold_vertex
       (fun vertex acc -> ProbQuadruple.equal (Vertex.get_dist vertex) ProbQuadruple.initial)
       graph true
+
 
   let delete_all_bidirectional_vertices (graph : t) : t =
     fold_vertex
