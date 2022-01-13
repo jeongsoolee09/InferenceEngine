@@ -517,8 +517,6 @@ module Notebook55 = struct
 end
 
 module Notebook56 = struct
-  (* let's test the efficiency of trunk list generation. *)
-
   let df_edges_added =
     match graph_already_serialized "df_edges" with
     | None ->
@@ -544,6 +542,8 @@ module Notebook56 = struct
   let site_vertices = G.all_vertices_of_graph site_graph
 
   let _ = Trunk.identify_longest_trunks renderer_graph
+
+  let dieted = G.delete_all_bidirectional_vertices df_edges_added
 
   let _ = End
 end

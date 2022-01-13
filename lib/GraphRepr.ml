@@ -649,8 +649,16 @@ module G = struct
     fold_vertex
       (fun vertex acc -> ProbQuadruple.equal (Vertex.get_dist vertex) ProbQuadruple.initial)
       graph true
-end
 
+
+  let delete_all_bidirectional_vertices (graph : t) : t =
+    fold_vertex
+      (fun vertex acc ->
+        if is_bidirectional_vertex (LiteralVertex.of_vertex vertex) acc ~label:DataFlow then
+          remove_vertex acc vertex
+        else acc )
+      graph graph
+end
 
 module Dot = Graph.Graphviz.Dot (G)
 
