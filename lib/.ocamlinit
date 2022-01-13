@@ -47,6 +47,7 @@ open Chain
 open Method
 open GraphSplitter
 open Annotations
+open Trunk
 module Json = Yojson.Basic
 
 let fst3 (a, b, c) = a
