@@ -2,7 +2,7 @@ open GraphRepr
 open InfixOperators
 open ListMonad
 
-type trunk = G.Trunk.t
+type trunk = Trunk.t
 
 module TrunkFeatures = struct
   (** Do the two trunks share the same callee? **)

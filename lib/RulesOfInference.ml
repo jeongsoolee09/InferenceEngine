@@ -371,7 +371,7 @@ module PropagationRules = struct
     let new_fact_vertices = G.this_method_vertices graph new_fact_method in
     if not @@ TaintLabel.equal TaintLabel.Sink new_fact_label then
       let trunks_containing_vertices =
-        new_fact_vertices >>= GraphRepr.find_trunks_containing_vertex graph
+        new_fact_vertices >>= Trunk.find_trunks_containing_vertex graph
       in
       let trunk_leaves = trunks_containing_vertices >>| List.last_exn in
       (* if all of trunk_leaves are sinks, then this may be a source! *)
@@ -420,7 +420,7 @@ module PropagationRules = struct
     then (graph, []) (* Do nothing *)
     else
       let trunks_containing_vertices =
-        new_fact_vertices >>= GraphRepr.find_trunks_containing_vertex graph
+        new_fact_vertices >>= Trunk.find_trunks_containing_vertex graph
       in
       let new_fact_propagated =
         List.fold

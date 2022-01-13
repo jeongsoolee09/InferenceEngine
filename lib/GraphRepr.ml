@@ -239,7 +239,7 @@ module G = struct
 
   let fold_pred_e f g v init = BiDiGraph.fold_pred_e f g.graph v
 
-  let empty = {graph= BiDiGraph.empty; label= ""; desc= "";  comp_unit=""}
+  let empty = {graph= BiDiGraph.empty; label= ""; desc= ""; comp_unit= ""}
 
   let add_vertex g v = {g with graph= BiDiGraph.add_vertex g.graph v}
 
@@ -427,17 +427,6 @@ module G = struct
   let pp_vertex = vertex_name
 
   let pp_edge (v1, v2) = F.asprintf "\"(%s, %s)\"" (vertex_name v1) (vertex_name v2)
-
-  module Trunk = struct
-    type t = V.t list [@@deriving compare, equal]
-
-    let pp (trunk : t) : unit =
-      print_endline "[" ;
-      List.iter ~f:(fun vertex -> print_endline @@ Vertex.to_string vertex ^ ", ") trunk ;
-      print_endline "]"
-  end
-
-  type trunk = Trunk.t
 
   let serialize_to_bin ?(suffix = "") (graph : t) : unit =
     let out_chan = Out_channel.create (make_now_string 9 ^ "_" ^ suffix ^ ".bin") in
@@ -662,90 +651,8 @@ module G = struct
       graph true
 end
 
-module PathUtils = struct
-  module HaveBeenMap = struct
-    module WithEdgeDomain = Caml.Map.Make (VertexPair)
-    include WithEdgeDomain
-
-    type value = int
-
-    type t = Int.t WithEdgeDomain.t
-
-    let init (graph : G.t) : t = G.fold_edges (fun v1 v2 acc -> add (v1, v2) 0 acc) graph empty
-  end
-
-  let is_reachable (source : G.V.t) (dest : G.V.t) (graph : G.t) : bool =
-    (* dest is reachable from source iff dest is one of the descendants of source. *)
-    let module DFS = Graph.Traverse.Dfs (G) in
-    let descendants = DFS.fold_component List.cons [] graph source in
-    List.mem ~equal:G.V.equal descendants dest
-
-
-  let increment_option prev =
-    let ( >>= ) = Option.( >>= ) and return = Option.return in
-    prev >>= fun x -> return (x + 1)
-
-
-  (** For every leaf, print paths to the leaf from the given source, where the given graph may
-      contain a cycle, using a customized DFS algorithm **)
-  let enumerate_paths_from_source_to_leaves (g : G.t) (source : G.LiteralVertex.t) : G.V.t list list
-      =
-    let rec inner (current : G.LiteralVertex.t) (smol_acc : Vertex.t list)
-        (big_acc : Vertex.t list list) (current_havebeenmap : HaveBeenMap.t) : G.V.t list list =
-      if G.is_leaf current g then List.rev smol_acc :: big_acc
-      else
-        let children = G.succ g (G.LiteralVertex.to_vertex current g.graph) in
-        List.fold
-          ~f:(fun acc child ->
-            if
-              HaveBeenMap.find
-                (G.LiteralVertex.to_vertex current g.graph, child)
-                current_havebeenmap
-              >= 1
-            then acc
-            else
-              let current_alist_updated =
-                HaveBeenMap.update
-                  (G.LiteralVertex.to_vertex current g.graph, child)
-                  increment_option current_havebeenmap
-              in
-              inner (G.LiteralVertex.of_vertex child) (child :: smol_acc) acc current_alist_updated
-            )
-          ~init:big_acc children
-    in
-    inner source [G.LiteralVertex.to_vertex source g.graph] [] (HaveBeenMap.init g)
-
-
-  (** Find all paths from the given source to the given destination. **)
-  let find_path_from_source_to_dest (graph : G.t) (source : G.LiteralVertex.t) (dest : G.V.t) :
-      G.V.t list list =
-    enumerate_paths_from_source_to_leaves graph source
-    |> List.filter ~f:(fun path -> List.mem ~equal:G.V.equal path dest)
-    >>| List.take_while ~f:(fun vertex -> not @@ G.V.equal vertex dest)
-    >>| fun list -> List.append list [dest]
-end
 
 module Dot = Graph.Graphviz.Dot (G)
-
-let identify_trunks (graph : G.t) : G.Trunk.t list =
-  let df_only_graph = G.leave_only_df_edges graph in
-  let roots = G.collect_df_roots df_only_graph in
-  let leaves = G.collect_df_leaves df_only_graph in
-  let carpro = roots >>= fun root -> leaves >>= fun leaf -> return (root, leaf) in
-  (* not all leaves are reachable from all roots. So we filter out unreachable (root, leaf) pairs. *)
-  let reachable_root_and_leaf_pairs =
-    List.filter ~f:(fun (root, leaf) -> PathUtils.is_reachable root leaf df_only_graph) carpro
-  in
-  (* now, find the path between the root and the leaf. *)
-  reachable_root_and_leaf_pairs
-  >>= fun (root, leaf) ->
-  PathUtils.find_path_from_source_to_dest df_only_graph (G.LiteralVertex.of_vertex root) leaf
-
-
-let find_trunks_containing_vertex graph vertex =
-  let all_trunks = identify_trunks graph in
-  List.filter ~f:(fun trunk -> List.mem ~equal:Vertex.equal trunk vertex) all_trunks
-
 
 let all_ns_clusters (graph : G.t) : G.V.t list list =
   let module Hashtbl = Caml.Hashtbl in
@@ -825,17 +732,3 @@ let get_recursive_succs (g : G.t) (vertex : G.LiteralVertex.t) ~(label : EdgeLab
         ~init:big_acc to_explore
   in
   inner (G.LiteralVertex.to_vertex vertex g.graph) []
-
-
-(** 어떤 root로부터 시작하는 trunk 중 가장 먼 곳에 있는 leaf *)
-let find_longest_trunk_from_leaf_to_sink ~(root : G.V.t) ~(leaf : G.V.t) (graph : G.t) : G.Trunk.t =
-  let all_trunks = identify_trunks graph in
-  let trunks_in_question =
-    List.filter all_trunks ~f:(fun trunk ->
-        let root_match = Vertex.equal (List.hd_exn trunk) root in
-        let leaf_match = Vertex.equal (List.last_exn trunk) leaf in
-        root_match && leaf_match )
-  in
-  List.hd_exn
-  @@ List.sort trunks_in_question ~compare:(fun trunk1 trunk2 ->
-         -Int.compare (List.length trunk1) (List.length trunk2) )
