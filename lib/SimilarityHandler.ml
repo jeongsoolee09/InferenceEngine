@@ -215,11 +215,7 @@ module SimilarVertexPairExtractor = struct
                 Out_channel.print_endline
                 @@ Format.asprintf "length is %d\n" (Array.length map_array) ;
                 let mapped =
-                  Array.map
-                    ~f:(fun pair ->
-                      ( pair
-                      , get_nodewise_similarity pair ) )
-                    map_array
+                  Array.map ~f:(fun pair -> (pair, get_nodewise_similarity pair)) map_array
                 in
                 mapped |> Array.to_list |> NodeWiseSimilarityMap.of_alist
               in
@@ -406,7 +402,8 @@ module EstablishSimEdges = struct
     let open SimilarVertexPairExtractor in
     let all_vertices = G.all_vertices_of_graph graph in
     let nodewise_similarity_map =
-      NodewisePairExtractor.init_nodewise_similarity_map graph.comp_unit (G.all_non_frontend_methods_of_graph graph)
+      NodewisePairExtractor.init_nodewise_similarity_map graph.comp_unit
+        (G.all_non_frontend_methods_of_graph graph)
     in
     let above_threshold_entries =
       NodeWiseSimilarityMap.filter
@@ -439,7 +436,7 @@ module EstablishSimEdges = struct
   let make_contextual_sim_edge (graph : G.t) : G.t =
     (* we use smart_pairup here, to translate method simliarity to vertex similarity. *)
     let open SimilarVertexPairExtractor in
-    let all_trunks = Trunk.identify_trunks graph in
+    let all_trunks = Trunk.identify_longest_trunks graph in
     let trunk_similarity_map = TrunkPairExtractor.update_trunk_similarity_map all_trunks in
     TrunkSimilarityMap.fold
       (fun ((trunk1, trunk2) as trunk_pair) similarity acc ->

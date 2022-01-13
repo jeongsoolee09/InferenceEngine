@@ -15,6 +15,7 @@ open Chain
 open Method
 open GraphSplitter
 open Annotations
+open Trunk
 module Json = Yojson.Basic
 
 exception End
@@ -33,7 +34,7 @@ let demo () = loop graph received_responses nodewise_featuremap 1
 
 let trunk_finder ~(start : G.LiteralVertex.t) ~(end_ : G.LiteralVertex.t) (graph : G.t) : trunk list
     =
-  let all_trunks = identify_trunks graph in
+  let all_trunks = identify_longest_trunks graph in
   List.filter
     ~f:(fun trunk ->
       Vertex.equal (G.LiteralVertex.to_vertex start graph.graph) (List.hd_exn trunk)
@@ -204,52 +205,6 @@ module Notebook47 = struct
   let _ = End
 end
 
-module Comment = struct
-  exception End
-
-  let sample = "Model Model.addAttribute(String,Object)"
-
-  let get_annots (method_ : Method.t) : t =
-    let annot_str_alist = Deserializer.deserialize_annots () in
-    let this_method_annot =
-      List.Assoc.find_exn
-        ~equal:(fun this method_unique_id ->
-          String.equal (Method.find_unique_identifier this) method_unique_id )
-        annot_str_alist method_
-    in
-    of_string this_method_annot
-
-
-  (* let x = Annotations.get_annots (Method.of_string sample) *)
-
-  (* oh no this is taking too long *)
-
-  let method_ = "Model Model.addAttribute(String,Object)"
-
-  let annot_str_alist = Deserializer.deserialize_annots ()
-
-  let this_method_annot =
-    List.Assoc.find_exn
-      ~equal:(fun this method_unique_id ->
-        String.equal (Method.find_unique_identifier this) method_unique_id )
-      annot_str_alist method_
-
-
-  (* Hey, we need to make the above into a Hashtbl.t to make an O(1) lookup. *)
-
-  let _ = of_string this_method_annot
-
-  (* oooh, library codes don't have annots, which is obvious *)
-
-  let sample2 = "ProjectAdminController.<init>(ProjectMetadataService,PostContentRenderer)"
-
-  (* let x = Annotations.get_annots sample2 *)
-
-  let this_method_annot = List.Assoc.find_exn ~equal:Method.equal annot_str_alist sample2
-
-  let _ = End
-end
-
 module Notebook48 = struct
   let sample =
     "<_org.springframework.web.bind.annotation.RequestMapping(value=\"/{username}\", \
@@ -369,7 +324,8 @@ module Notebook50 = struct
 
 
   let _ =
-    SimilarVertexPairExtractor.NodewisePairExtractor.init_nodewise_similarity_map "sagan_renderer" renderer_methods
+    SimilarVertexPairExtractor.NodewisePairExtractor.init_nodewise_similarity_map "sagan_renderer"
+      renderer_methods
 
 
   (* Exception: (Not_found_s "List.find_exn: not found")
@@ -465,7 +421,8 @@ module Notebook53 = struct
   let renderer_methods = G.all_methods_of_graph renderer_graph
 
   let _ =
-    SimilarVertexPairExtractor.NodewisePairExtractor.init_nodewise_similarity_map "sagan_renderer" renderer_methods
+    SimilarVertexPairExtractor.NodewisePairExtractor.init_nodewise_similarity_map "sagan_renderer"
+      renderer_methods
 
 
   let _ = Method.PackageResolver.resolve_via_package_decls "GuideResource.<init>(Repository)"
@@ -560,6 +517,33 @@ module Notebook55 = struct
 end
 
 module Notebook56 = struct
-  (* now, what we need to do is serializing the initialized NodeWiseSimilarityMap. *)
-  let x = raise TODO
+  (* let's test the efficiency of trunk list generation. *)
+
+  let df_edges_added =
+    match graph_already_serialized "df_edges" with
+    | None ->
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
+
+
+  let splitted = split_graph_by_comp_unit df_edges_added
+
+  let all_vertices = G.all_vertices_of_graph df_edges_added
+
+  (* ============ renderer ============ *)
+  let renderer_graph = List.nth_exn splitted 0
+
+  let renderer_vertices = G.all_vertices_of_graph renderer_graph
+
+  (* ============ site ============ *)
+  let site_graph = List.nth_exn splitted 1
+
+  let site_vertices = G.all_vertices_of_graph site_graph
+
+  let _ = Trunk.identify_longest_trunks renderer_graph
+
+  let _ = End
 end
