@@ -286,6 +286,8 @@ module G = struct
             (LocationSet.to_string loc) ()
 
 
+    let to_vertex_cheap ((meth, loc) : t) : Vertex.t = (meth, loc, ProbQuadruple.initial)
+
     let to_string ((meth, loc) : t) : string =
       F.asprintf "(\"%s\", \"%s\")" (Method.to_string meth) (LocationSet.to_string loc)
 
@@ -483,20 +485,20 @@ module G = struct
       g []
 
 
-  let get_preds (vertex : LiteralVertex.t) (g : t) ~(label : EdgeLabel.t) : Vertex.t list =
-    fold_edges_e List.cons g []
-    |> List.filter ~f:(fun (_, target_label, v2) ->
-           Vertex.equal (LiteralVertex.to_vertex vertex g.graph) v2
-           && EdgeLabel.equal label target_label )
-    >>| fst3
+  (* let get_preds (vertex : LiteralVertex.t) (g : t) ~(label : EdgeLabel.t) : Vertex.t list = *)
+  (*   fold_edges_e List.cons g [] *)
+  (*   |> List.filter ~f:(fun (_, target_label, v2) -> *)
+  (*          Vertex.equal (LiteralVertex.to_vertex vertex g.graph) v2 *)
+  (*          && EdgeLabel.equal label target_label ) *)
+  (*   >>| fst3 *)
 
 
-  let get_succs (vertex : LiteralVertex.t) (g : t) ~(label : EdgeLabel.t) : Vertex.t list =
-    fold_edges_e List.cons g []
-    |> List.filter ~f:(fun (v, target_label, _) ->
-           Vertex.equal (LiteralVertex.to_vertex vertex g.graph) v
-           && EdgeLabel.equal label target_label )
-    >>| fst3
+  (* let get_succs (vertex : LiteralVertex.t) (g : t) ~(label : EdgeLabel.t) : Vertex.t list = *)
+  (*   fold_edges_e List.cons g [] *)
+  (*   |> List.filter ~f:(fun (v, target_label, _) -> *)
+  (*          Vertex.equal (LiteralVertex.to_vertex vertex g.graph) v *)
+  (*          && EdgeLabel.equal label target_label ) *)
+  (*   >>| fst3 *)
 
 
   let get_preds_any (vertex : LiteralVertex.t) (g : t) : Vertex.t list =
@@ -507,19 +509,19 @@ module G = struct
     fold_succ List.cons g (LiteralVertex.to_vertex vertex g.graph) []
 
 
-  let is_df_root (vertex : LiteralVertex.t) (graph : t) : bool =
-    Int.equal (List.length (get_preds vertex graph ~label:EdgeLabel.DataFlow)) 0
-    && Int.( > ) (List.length (get_succs vertex graph ~label:EdgeLabel.DataFlow)) 0
+  let is_df_root (vertex : LiteralVertex.t) (df_only_graph : t) : bool =
+    Int.equal (in_degree df_only_graph (LiteralVertex.to_vertex_cheap vertex)) 0
+    && Int.( > ) (out_degree df_only_graph (LiteralVertex.to_vertex_cheap vertex)) 0
 
 
-  let is_df_leaf (vertex : LiteralVertex.t) (graph : t) : bool =
-    Int.equal (List.length (get_succs vertex graph ~label:EdgeLabel.DataFlow)) 0
-    && Int.( > ) (List.length (get_preds vertex graph ~label:EdgeLabel.DataFlow)) 0
+  let is_df_leaf (vertex : LiteralVertex.t) (df_only_graph : t) : bool =
+    Int.equal (out_degree df_only_graph (LiteralVertex.to_vertex_cheap vertex)) 0
+    && Int.( > ) (in_degree df_only_graph (LiteralVertex.to_vertex_cheap vertex)) 0
 
 
-  let is_df_internal (vertex : LiteralVertex.t) (graph : t) : bool =
-    Int.( > ) (List.length (get_preds vertex graph ~label:EdgeLabel.DataFlow)) 0
-    && Int.( > ) (List.length (get_succs vertex graph ~label:EdgeLabel.DataFlow)) 0
+  let is_df_internal (vertex : LiteralVertex.t) (df_only_graph : t) : bool =
+    Int.( > ) (out_degree df_only_graph (LiteralVertex.to_vertex_cheap vertex)) 0
+    && Int.( > ) (in_degree df_only_graph (LiteralVertex.to_vertex_cheap vertex)) 0
 
 
   let collect_df_roots (graph : t) : V.t list =
@@ -650,7 +652,6 @@ module G = struct
       (fun vertex acc -> ProbQuadruple.equal (Vertex.get_dist vertex) ProbQuadruple.initial)
       graph true
 end
-
 
 module Dot = Graph.Graphviz.Dot (G)
 
