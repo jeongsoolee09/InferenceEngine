@@ -538,13 +538,27 @@ module Notebook56 = struct
 
   let renderer_methods = G.all_methods_of_graph renderer_graph (* Without Test Codes *)
 
-  let dieted = G.delete_all_bidirectional_vertices renderer_graph (* taking too much *)
-
-  (* 오늘의 결론: 아... 쪼개야겠다. 답이 없다. *)
-
   (* 근데 일단 visualization부터 해 보자. *)
 
   let _ = Visualizer.visualize_snapshot renderer_graph ~micro:false ~autoopen:false
+
+  let _ = Trunk.identify_longest_trunks renderer_graph
+
+  (* it works on renderer_graph!!!! *)
+
+  (* ============ site ============ *)
+
+  let site_graph = List.nth_exn splitted 1
+
+  let site_vertices = G.all_vertices_of_graph site_graph
+
+  let site_methods = G.all_methods_of_graph site_graph (* Without Test Codes *)
+
+  let _ = Trunk.identify_longest_trunks site_graph
+
+  (* it also works on site_graph!!!! *)
+
+  (* 아 너무 행복하다 *)
 
   let _ = End
 end
