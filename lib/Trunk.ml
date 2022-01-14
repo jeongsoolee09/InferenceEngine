@@ -4,18 +4,9 @@ open ListMonad
 
 type t = G.V.t list [@@deriving compare, equal]
 
+module Hashtbl = Caml.Hashtbl
+
 module PathUtils = struct
-  module HaveBeenMap = struct
-    module WithEdgeDomain = Caml.Map.Make (VertexPair)
-    include WithEdgeDomain
-
-    type value = int
-
-    type t = Int.t WithEdgeDomain.t
-
-    let init (graph : G.t) : t = G.fold_edges (fun v1 v2 acc -> add (v1, v2) 0 acc) graph empty
-  end
-
   let is_reachable (source : G.V.t) (dest : G.V.t) (graph : G.t) : bool =
     (* dest is reachable from source iff dest is one of the descendants of source. *)
     let module DFS = Graph.Traverse.Dfs (G) in
@@ -32,30 +23,32 @@ module PathUtils = struct
       contain a cycle, using a customized DFS algorithm **)
   let enumerate_paths_from_source_to_leaves (g : G.t) (source : G.LiteralVertex.t) : G.V.t list list
       =
+    let havebeenmap =
+      let out = Hashtbl.create 777 in
+      G.iter_edges (fun v1 v2 -> Hashtbl.add out (v1, v2) 0) g ;
+      out
+    in
     let rec inner (current : G.LiteralVertex.t) (smol_acc : Vertex.t list)
-        (big_acc : Vertex.t list list) (current_havebeenmap : HaveBeenMap.t) : G.V.t list list =
+        (big_acc : Vertex.t list list) : G.V.t list list =
       if G.is_leaf current g then List.rev smol_acc :: big_acc
       else
-        let children = G.succ g (G.LiteralVertex.to_vertex current g.graph) in
+        let children = G.succ g (G.LiteralVertex.to_vertex_cheap current) in
         List.fold
           ~f:(fun acc child ->
-            if
-              HaveBeenMap.find
-                (G.LiteralVertex.to_vertex current g.graph, child)
-                current_havebeenmap
-              >= 1
-            then acc
+            let havebeen_num =
+              Hashtbl.find havebeenmap (G.LiteralVertex.to_vertex_cheap current, child)
+            in
+            if havebeen_num >= 1 then acc
             else
               let current_alist_updated =
-                HaveBeenMap.update
-                  (G.LiteralVertex.to_vertex current g.graph, child)
-                  increment_option current_havebeenmap
+                Hashtbl.replace havebeenmap
+                  (G.LiteralVertex.to_vertex_cheap current, child)
+                  (havebeen_num + 1)
               in
-              inner (G.LiteralVertex.of_vertex child) (child :: smol_acc) acc current_alist_updated
-            )
+              inner (G.LiteralVertex.of_vertex child) (child :: smol_acc) acc )
           ~init:big_acc children
     in
-    inner source [G.LiteralVertex.to_vertex source g.graph] [] (HaveBeenMap.init g)
+    inner source [G.LiteralVertex.to_vertex_cheap source] []
 
 
   (** Find all paths from the given source to the given destination. **)
