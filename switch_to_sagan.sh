@@ -1,6 +1,6 @@
 #!/bin/zsh
 
-lib="$(PWD)/lib"
+lib="$PWD/lib"
 
 cp $PWD/resources/Annotations.json.sagan $PWD/Annotations.json
 cp $PWD/resources/Annotations.json.sagan $lib/Annotations.json
