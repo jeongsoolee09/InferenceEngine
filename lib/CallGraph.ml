@@ -26,11 +26,15 @@ let collect_all_deadcode (callgraph : t) : Vertex.t list =
       callgraph []
   in
   fold_vertex
-    (fun vertex big_acc ->
+    (fun vertex deadcode_acc ->
       let callees_are_all_deadcodes =
         fold_pred
-          (fun pred smol_acc -> List.mem ~equal:Vertex.equal big_acc pred && smol_acc)
+          (fun pred smol_acc -> List.mem ~equal:Vertex.equal deadcode_acc pred && smol_acc)
           callgraph vertex true
       in
-      if callees_are_all_deadcodes then vertex :: big_acc else big_acc )
+      if callees_are_all_deadcodes then vertex :: deadcode_acc else deadcode_acc )
     callgraph initial_deadcodes
+
+(* 아 이건 너무 나이브하구나 *)
+
+(* 에바네ㅋㅋ *)

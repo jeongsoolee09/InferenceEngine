@@ -69,7 +69,7 @@ let split_graph_by_single_comp_unit (df_graph : G.t)
         || List.mem ~equal:Vertex.equal this_comp_unit_vertices v2 )
       all_edges
   in
-  {G.empty with comp_unit=comp_unit_name}
+  {G.empty with comp_unit= comp_unit_name}
   |> fun graph ->
   List.fold this_comp_unit_vertices ~f:G.add_vertex ~init:graph
   |> fun graph -> List.fold edges_involving_this_comp_unit_udfs ~f:G.add_edge_e ~init:graph
@@ -81,3 +81,8 @@ let split_graph_by_comp_unit (graph : G.t) : G.t list =
   in
   let lookup_table = create_comp_unit_lookup_table (G.all_methods_of_graph graph) in
   all_comp_units >>| split_graph_by_single_comp_unit graph lookup_table
+
+
+exception TODO
+
+let eliminate_deadcode (graph : G.t) : G.t = raise TODO

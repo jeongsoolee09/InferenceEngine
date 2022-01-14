@@ -536,14 +536,15 @@ module Notebook56 = struct
 
   let renderer_vertices = G.all_vertices_of_graph renderer_graph
 
-  (* ============ site ============ *)
-  let site_graph = List.nth_exn splitted 1
+  let renderer_methods = G.all_methods_of_graph renderer_graph (* Without Test Codes *)
 
-  let site_vertices = G.all_vertices_of_graph site_graph
+  let dieted = G.delete_all_bidirectional_vertices renderer_graph (* taking too much *)
 
-  let _ = Trunk.identify_longest_trunks renderer_graph
+  (* 오늘의 결론: 아... 쪼개야겠다. 답이 없다. *)
 
-  let dieted = G.delete_all_bidirectional_vertices df_edges_added
+  (* 근데 일단 visualization부터 해 보자. *)
+
+  let _ = Visualizer.visualize_snapshot renderer_graph ~micro:false ~autoopen:false
 
   let _ = End
 end
