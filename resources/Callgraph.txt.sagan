@@ -232,7 +232,6 @@ DataSource CloudFoundryDatabaseConfig.dataSource() -> __cast
 DataSource CloudFoundryDatabaseConfig.dataSource() -> Object Cloud.getServiceConnector(String,Class,ServiceConnectorConfig)
 DataSource CloudFoundryDatabaseConfig.dataSource() -> Cloud CloudFoundryDatabaseConfig.cloud()
 StaticPagePathFinder.<init>(ResourcePatternResolver) -> Object.<init>()
-Object GeoLocationFormatter.parse(String,Locale) -> GeoLocation GeoLocationFormatter.parse(String,Locale)
 GeoLocation GeoLocationFormatter.parse(String,Locale) -> __new
 GeoLocation GeoLocationFormatter.parse(String,Locale) -> Float Float.valueOf(String)
 GeoLocation GeoLocationFormatter.parse(String,Locale) -> Matcher Pattern.matcher(CharSequence)
@@ -241,6 +240,7 @@ GeoLocation GeoLocationFormatter.parse(String,Locale) -> float Float.floatValue(
 GeoLocation GeoLocationFormatter.parse(String,Locale) -> boolean Matcher.find()
 GeoLocation GeoLocationFormatter.parse(String,Locale) -> ParseException.<init>(String,int)
 GeoLocation GeoLocationFormatter.parse(String,Locale) -> GeoLocation.<init>(float,float)
+Object GeoLocationFormatter.parse(String,Locale) -> GeoLocation GeoLocationFormatter.parse(String,Locale)
 Function AbstractGuide.callsite_sagan.site.guides.AbstractGuide$Lambda$_2_47() -> __new
 Function AbstractGuide.callsite_sagan.site.guides.AbstractGuide$Lambda$_2_47() -> AbstractGuide$Lambda$_2_47.<init>()
 Object AbstractGuide$Lambda$_12_25.apply(Object) -> __cast
@@ -468,9 +468,9 @@ String GeoLocationFormatter.print(GeoLocation,Locale) -> float GeoLocation.getLa
 String GeoLocationFormatter.print(GeoLocation,Locale) -> String String.format(Locale,String,Object[])
 GuideImage.<init>() -> Object.<init>()
 String Topical.getCiLatestUrl() -> String AbstractGuide.getCiLatestUrl()
-int Event.compareTo(Event) -> int LocalDate.compareTo(ChronoLocalDate)
 int Event.compareTo(Object) -> __cast
 int Event.compareTo(Object) -> int Event.compareTo(Event)
+int Event.compareTo(Event) -> int LocalDate.compareTo(ChronoLocalDate)
 GettingStartedGuideController$Lambda$_5_25.<init>(GettingStartedGuideController) -> Object.<init>()
 String PostFormat.getId() -> String Enum.name()
 String SiteUrl.getUrl() -> __cast
@@ -2392,6 +2392,8 @@ String GettingStartedGuide.getTableOfContents() -> String AbstractGuide.getTable
 void Topicals.evictFromCache(String) -> void Logger.info(String,Object)
 Optional GettingStartedGuide.getImageContent(String) -> Optional AbstractGuide.getImageContent(String)
 Pageable PageableFactory.forLists(int) -> Pageable PageableFactory.build(int,int)
+String ProjectAdminController.edit(String,Model) -> Project ProjectMetadataService.getProject(String)
+String ProjectAdminController.edit(String,Model) -> String ProjectAdminController.edit(Project,Model)
 String ProjectAdminController.edit(Project,Model) -> __cast
 String ProjectAdminController.edit(Project,Model) -> Integer Integer.valueOf(int)
 String ProjectAdminController.edit(Project,Model) -> Stream Collection.stream()
@@ -2407,8 +2409,6 @@ String ProjectAdminController.edit(Project,Model) -> Object List.get(int)
 String ProjectAdminController.edit(Project,Model) -> void ProjectAdminController.denormalizeProjectReleases(Project)
 String ProjectAdminController.edit(Project,Model) -> ToIntFunction ProjectAdminController.callsite_sagan.projects.support.ProjectAdminController$Lambda$_6_57()
 String ProjectAdminController.edit(Project,Model) -> Model Model.addAttribute(String,Object)
-String ProjectAdminController.edit(String,Model) -> Project ProjectMetadataService.getProject(String)
-String ProjectAdminController.edit(String,Model) -> String ProjectAdminController.edit(Project,Model)
 DefaultGuideHeader[] Tutorials.access_sagan.site.guides.Tutorials$Lambda$_5_20(int) -> DefaultGuideHeader[] Tutorials.lambda$findAll$0(int)
 PostNotFoundException.<init>(long) -> __new
 PostNotFoundException.<init>(long) -> String StringBuilder.toString()
@@ -2655,10 +2655,10 @@ String Link.toString() -> Class Object.getClass()
 int ProjectGroup.hashCode() -> __new_array
 int ProjectGroup.hashCode() -> int Objects.hash(Object[])
 GuideMetadata[] SaganRendererClient.access_sagan.site.renderer.SaganRendererClient$Lambda$_12_17(int) -> GuideMetadata[] SaganRendererClient.lambda$fetchTutorialGuides$3(int)
-Object PostCategoryFormatter.parse(String,Locale) -> PostCategory PostCategoryFormatter.parse(String,Locale)
 PostCategory PostCategoryFormatter.parse(String,Locale) -> __cast
 PostCategory PostCategoryFormatter.parse(String,Locale) -> String String.trim()
 PostCategory PostCategoryFormatter.parse(String,Locale) -> Object Map.get(Object)
+Object PostCategoryFormatter.parse(String,Locale) -> PostCategory PostCategoryFormatter.parse(String,Locale)
 String TeamAdminController.getTeamAdminPage(Model) -> List TeamService.fetchHiddenMembers()
 String TeamAdminController.getTeamAdminPage(Model) -> List TeamService.fetchActiveMembers()
 String TeamAdminController.getTeamAdminPage(Model) -> Model Model.addAttribute(String,Object)
@@ -2850,14 +2850,14 @@ String BlogAdminController.editPost(Long,String,Model) -> String PostView.getPat
 String BlogAdminController.editPost(Long,String,Model) -> Model Model.addAttribute(String,Object)
 String BlogAdminController.editPost(Long,String,Model) -> PostForm.<init>(Post)
 AbstractGuide$Lambda$_12_25.<init>() -> Object.<init>()
-Project.<init>(String,String,String,String,List,String) -> __new
-Project.<init>(String,String,String,String,List,String) -> Object.<init>()
-Project.<init>(String,String,String,String,List,String) -> HashSet.<init>()
-Project.<init>(String,String,String,String,List,String) -> ArrayList.<init>()
 Project.<init>(String,String,String,String,int,List,String,String,String) -> void Project.setStackOverflowTags(String)
 Project.<init>(String,String,String,String,int,List,String,String,String) -> void Project.setRawBootConfig(String)
 Project.<init>(String,String,String,String,int,List,String,String,String) -> void Project.setDisplayOrder(int)
 Project.<init>(String,String,String,String,int,List,String,String,String) -> Project.<init>(String,String,String,String,List,String)
+Project.<init>(String,String,String,String,List,String) -> __new
+Project.<init>(String,String,String,String,List,String) -> Object.<init>()
+Project.<init>(String,String,String,String,List,String) -> HashSet.<init>()
+Project.<init>(String,String,String,String,List,String) -> ArrayList.<init>()
 Function GithubClient.callsite_sagan.renderer.github.GithubClient$Lambda$_7_52() -> __new
 Function GithubClient.callsite_sagan.renderer.github.GithubClient$Lambda$_7_52() -> GithubClient$Lambda$_7_52.<init>()
 void DocsWebhookController.logPayload(Map) -> __new
@@ -2983,6 +2983,7 @@ Object GettingStartedGuideController$Lambda$_4_9.apply(Object) -> Optional Getti
 Event.<init>(LocalDate,LocalDate,String,URI,String) -> Object.<init>()
 Function GettingStartedGuideController.callsite_sagan.site.guides.GettingStartedGuideController$Lambda$_4_17() -> __new
 Function GettingStartedGuideController.callsite_sagan.site.guides.GettingStartedGuideController$Lambda$_4_17() -> GettingStartedGuideController$Lambda$_4_17.<init>()
+SaganRendererClient$Lambda$_12_7.<init>() -> Object.<init>()
 GuideContent SaganRendererClient.fetchTopicalGuideContent(String) -> __new_array
 GuideContent SaganRendererClient.fetchTopicalGuideContent(String) -> __cast
 GuideContent SaganRendererClient.fetchTopicalGuideContent(String) -> Hop Hop.withParameter(String,Object)
@@ -2991,7 +2992,6 @@ GuideContent SaganRendererClient.fetchTopicalGuideContent(String) -> Hop Hop.rel
 GuideContent SaganRendererClient.fetchTopicalGuideContent(String) -> Traverson$TraversalBuilder Traverson$TraversalBuilder.follow(String[])
 GuideContent SaganRendererClient.fetchTopicalGuideContent(String) -> Traverson$TraversalBuilder Traverson.follow(String[])
 GuideContent SaganRendererClient.fetchTopicalGuideContent(String) -> Traverson$TraversalBuilder Traverson$TraversalBuilder.follow(Hop)
-SaganRendererClient$Lambda$_12_7.<init>() -> Object.<init>()
 Function ProjectPatchingService.callsite_sagan.projects.ProjectPatchingService$Lambda$_2_5() -> __new
 Function ProjectPatchingService.callsite_sagan.projects.ProjectPatchingService$Lambda$_2_5() -> ProjectPatchingService$Lambda$_2_5.<init>()
 void DocsWebhookController.verifyHmacSignature(String,String) -> __new
@@ -3114,9 +3114,9 @@ String EventsController.events(Model) -> Period Period.of(String,int)
 String EventsController.events(Model) -> LocalDate LocalDate.now()
 String EventsController.events(Model) -> List EventsCalendarService.findEvents(Period)
 String EventsController.events(Model) -> Model Model.addAttribute(String,Object)
+String PostCategoryFormatter.print(PostCategory,Locale) -> String PostCategory.getUrlSlug()
 String PostCategoryFormatter.print(Object,Locale) -> __cast
 String PostCategoryFormatter.print(Object,Locale) -> String PostCategoryFormatter.print(PostCategory,Locale)
-String PostCategoryFormatter.print(PostCategory,Locale) -> String PostCategory.getUrlSlug()
 SpringToolsController$Lambda$_3_10.<init>(Model) -> Object.<init>()
 String MarkdownRenderer.renderToHtml(String) -> __unwrap_exception
 String MarkdownRenderer.renderToHtml(String) -> __set_locked_attribute

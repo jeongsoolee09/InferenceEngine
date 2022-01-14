@@ -5,7 +5,13 @@ module Hashtbl = Caml.Hashtbl
 
 module CompUnit = struct
   type t = Known of string | Unknown [@@deriving equal]
+
+  let to_string (comp_unit: t) =
+    match comp_unit with
+    | Known unit_ -> unit_
+    | Unknown -> "Unknown"
 end
+
 
 let get_comp_unit =
   let cache = Hashtbl.create 777 in
