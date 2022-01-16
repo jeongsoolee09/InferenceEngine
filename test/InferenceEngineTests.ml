@@ -544,7 +544,7 @@ module Notebook56 = struct
 
   let _ = Trunk.identify_longest_trunks renderer_graph
 
-  (* it works on renderer_graph!!!! *)
+  (* it works *instantaneously* on renderer_graph!!!! *)
 
   (* ============ site ============ *)
 
@@ -554,11 +554,34 @@ module Notebook56 = struct
 
   let site_methods = G.all_methods_of_graph site_graph (* Without Test Codes *)
 
-  let _ = Trunk.identify_longest_trunks site_graph
+  let identify_trunks (graph : G.t) : t list =
+    let df_only_graph = G.leave_only_df_edges graph in
+    let roots = G.collect_df_roots df_only_graph in
+    let leaves = G.collect_df_leaves df_only_graph in
+    let carpro = roots >>= fun root -> leaves >>= fun leaf -> return (root, leaf) in
+    (* not all leaves are reachable from all roots. So we filter out unreachable (root, leaf) pairs. *)
+    let reachable_root_and_leaf_pairs =
+      List.filter ~f:(fun (root, leaf) -> PathUtils.is_reachable root leaf df_only_graph) carpro
+    in
+    (* now, find the path between the root and the leaf. *)
+    reachable_root_and_leaf_pairs
+    >>= fun (root, leaf) ->
+    PathUtils.find_paths_from_source_to_dest df_only_graph (G.LiteralVertex.of_vertex root) leaf
 
-  (* it also works on site_graph!!!! *)
 
-  (* 아 너무 행복하다 *)
+  let all_trunks = identify_trunks site_graph
 
+  let _ = List.length all_trunks (* 1776 *)
+
+  let all_shortest_trunks = Trunk.identify_longest_trunks site_graph
+
+  let _ = List.length all_shortest_trunks (* 1252 *)
+
+  (* 엄청나게 많이는 아니지만 꽤 줄긴 하네 *)
+
+  let _ = End
+end
+
+module Notebook57 = struct
   let _ = End
 end

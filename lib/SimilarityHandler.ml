@@ -212,8 +212,8 @@ module SimilarVertexPairExtractor = struct
                          (not << Method.is_frontend) m1 && (not << Method.is_frontend) m2 )
                   |> Array.of_list
                 in
-                Out_channel.print_endline
-                @@ Format.asprintf "length is %d\n" (Array.length map_array) ;
+                (* Out_channel.print_endline *)
+                (* @@ Format.asprintf "length is %d\n" (Array.length map_array) ; *)
                 let mapped =
                   Array.map ~f:(fun pair -> (pair, get_nodewise_similarity pair)) map_array
                 in

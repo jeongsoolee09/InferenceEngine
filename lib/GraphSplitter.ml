@@ -87,8 +87,3 @@ let split_graph_by_comp_unit (graph : G.t) : G.t list =
   in
   let lookup_table = create_comp_unit_lookup_table (G.all_methods_of_graph graph) in
   all_comp_units >>| split_graph_by_single_comp_unit graph lookup_table
-
-
-exception TODO
-
-let eliminate_deadcode (graph : G.t) : G.t = raise TODO
