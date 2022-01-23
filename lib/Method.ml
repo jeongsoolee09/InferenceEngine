@@ -21,31 +21,36 @@ module UniqueID = struct
   (* unique_identifiers are strings of the format {package}.{classname}.{method_name}:{return_type_with_package}
      they are obtained from Procname.pp_unique_id. *)
 
-  let id_regex = Str.regexp "\\(.*\\)\\.?\\([A-Z][a-zA-Z$0-9]+\\)\\.\\([a-zA-Z<>$0-9]+\\)(.*)"
+  let id_regex = Re2.create_exn "(.*)\.([A-Z][a-zA-Z$0-9_]+).([a-zA-Z<>$0-9_]+)\(.*\)(:.*)?"
 
   let get_package_name (unique_identifier : string) : string =
     try
-      assert (Str.string_match id_regex unique_identifier 0) ;
-      Str.matched_group 1 unique_identifier
+      assert (Re2.matches id_regex unique_identifier) ;
+      let matches =
+        Re2.find_submatches_exn id_regex unique_identifier |> Array.to_list |> catMaybes
+      in
+      List.nth_exn matches 1
     with Assert_failure _ ->
       failwithf "extract_package_name_from_id failed: %s" unique_identifier ()
 
 
   let get_class_name (unique_identifier : string) : string =
     try
-      assert (Str.string_match id_regex unique_identifier 0) ;
-      let match_ = Str.matched_group 2 unique_identifier in
-      if String.is_substring ~substring:"$" match_ then
-        (* whoo it's a subclass *)
-        String.take_while ~f:(fun char -> not @@ Char.equal '$' char) match_
-      else match_
+      assert (Re2.matches id_regex unique_identifier) ;
+      let matches =
+        Re2.find_submatches_exn id_regex unique_identifier |> Array.to_list |> catMaybes
+      in
+      List.nth_exn matches 2
     with Assert_failure _ -> failwithf "extract_class_name_from_id: %s" unique_identifier ()
 
 
   let get_method_name (unique_identifier : string) : string =
     try
-      assert (Str.string_match id_regex unique_identifier 0) ;
-      Str.matched_group 3 unique_identifier
+      assert (Re2.matches id_regex unique_identifier) ;
+      let matches =
+        Re2.find_submatches_exn id_regex unique_identifier |> Array.to_list |> catMaybes
+      in
+      List.nth_exn matches 3
     with Assert_failure _ -> failwithf "extract_method_name_from_id: %s" unique_identifier ()
 end
 

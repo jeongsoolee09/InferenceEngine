@@ -31,7 +31,7 @@ let split_single_annot_string (string : string) : string list =
 
 
 let split_up_input_sig (input_sig : string) : (string * string) list =
-  let regex = Re2.create_exn "([a-z]+=\\\".*\\\")" in
+  let regex = Re2.create_exn "[a-z]+=[^ ]+" in
   let split_on_comma = Re2.find_all_exn regex input_sig in
   split_on_comma
   >>| fun str ->
@@ -96,9 +96,7 @@ let make_annot_lookup_table =
 
 
 let get_annots (method_ : Method.t) =
-  match Hashtbl.find_opt (make_annot_lookup_table ()) method_ with
-  | Some res -> res
-  | None -> empty
+  match Hashtbl.find_opt (make_annot_lookup_table ()) method_ with Some res -> res | None -> empty
 
 (* let has_same_annotation (method1 : Method.t) (method2 : Method.t) : bool = *)
 (*   equal (get_annots method1) (get_annots method2) *)
