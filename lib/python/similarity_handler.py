@@ -209,6 +209,17 @@ def no_reflexive(dataframe):
     return dataframe[cond1 | cond2 | cond3 | cond4 | cond5 | cond6 | cond7 | cond8 | cond9 | cond10 | cond11]
 
 
+def leave_only_most_similar_pairs(carpro):
+    lhs_unique_values = carpro.methname_x.unique()
+    acc = []
+    for method in lhs_unique_values:
+        rows_with_this_method_as_lhs = carpro[carpro.methname_x == method]
+        rows_with_max_similarity_with_lhs =\
+            rows_with_this_method_as_lhs[rows_with_this_method_as_lhs.ns_score == rows_with_this_method_as_lhs.ns_score.max()]
+        acc.append(rows_with_max_similarity_with_lhs)
+    return pd.concat(acc)
+
+
 def main():
     for csvfile in glob("../../*.csv"):
         dataframe = deserialize_csv(csvfile)
@@ -216,8 +227,8 @@ def main():
         nodewise_sim_column = carpro.apply(run_all_pairwise_feature, axis=1)
         carpro["ns_score"] = nodewise_sim_column
         # filter rows based on ns_score
-        filtered = carpro[carpro.ns_score > ns_threshold]
-        filtered = no_reflexive(filtered)
+        filtered_above_threshold = carpro[carpro.ns_score > ns_threshold]
+        filtered = leave_only_most_similar_pairs(no_reflexive(filtered_above_threshold))
         filename = os.path.split(csvfile)[-1]
         filtered.to_csv(f"{filename}_filtered.csv")
 
