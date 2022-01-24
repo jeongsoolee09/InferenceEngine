@@ -1,7 +1,7 @@
 open ListMonad
 open InfixOperators
 open GraphRepr
-open FeatureMaps
+(* open FeatureMaps *)
 open Method
 
 exception TODO

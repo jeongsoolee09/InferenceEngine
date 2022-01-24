@@ -1,7 +1,7 @@
 open GraphRepr
 open ListMonad
 open RulesOfInference
-open FeatureMaps
+(* open FeatureMaps *)
 
 exception TODO
 
