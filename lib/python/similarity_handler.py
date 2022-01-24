@@ -2,12 +2,14 @@ import csv
 import networkx
 from glob import glob
 import os
+import re
 import modin.pandas as pd
 from functools import reduce
 
 # NOTE KEEP THIS SCRIPT SIMPLE
 
-ns_threshold = 5                # TEMP
+ns_threshold = 14                # TEMP
+
 
 def deserialize_csv(csv_directory):
     return pd.read_csv(csv_directory)
@@ -48,15 +50,30 @@ def make_carpro_of_dataframe(dataframe):
     return carpro
 
 
+# https://stackoverflow.com/questions/29916065/how-to-do-camelcase-split-in-python
+def camel_case_split(identifier):
+    matches = re.finditer(
+        '.+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)', identifier)
+    return [m.group(0) for m in matches]
+
+
+def get_word_set(identifier):
+    return set(map(lambda string: string.lower(), camel_case_split(identifier)))
+
+
 class PairwiseFeature:
     scores = {
         "is_both_framework_code": 4,
         "belong_to_same_class": 2,
         "belong_to_same_package": 2,
-        "return_type_is_anothers_class": 3,
+        "returnval_not_used_in_caller": 3,
+        "return_type_is_anothers_class": 4,
+        "has_same_return_type": 2,
         "is_both_java_builtin": 2,
         "is_both_initializer": 4,
-        "has_same_annots": 6
+        "has_same_annots": 6,
+        "method_contains_same_words": 3,
+        "method_has_same_prefixes": 4
     }
 
     @staticmethod
@@ -68,7 +85,6 @@ class PairwiseFeature:
         else:
             return 0
 
-
     @staticmethod
     def belong_to_same_class(row):
         method1_class_name = row.class_name1
@@ -77,7 +93,6 @@ class PairwiseFeature:
             return PairwiseFeature.scores["belong_to_same_class"]
         else:
             return 0
-
 
     @staticmethod
     def belong_to_same_package(row):
@@ -88,6 +103,15 @@ class PairwiseFeature:
         else:
             return 0
 
+    @staticmethod
+    def returnval_not_used_in_caller(row):
+        method1_returnval_not_used_in_caller = row.returnval_not_used_in_caller1
+        method2_returnval_not_used_in_caller = row.returnval_not_used_in_caller2
+        if (method1_returnval_not_used_in_caller, method2_returnval_not_used_in_caller) == (True, True) or\
+                (method1_returnval_not_used_in_caller, method2_returnval_not_used_in_caller) == (False, False):
+            return PairwiseFeature.scores["belong_to_same_package"]
+        else:
+            return 0
 
     @staticmethod
     def return_type_is_anothers_class(row):
@@ -100,6 +124,14 @@ class PairwiseFeature:
         else:
             return 0
 
+    @staticmethod
+    def has_same_return_type(row):
+        method1_return_type = row.return_type1
+        method2_return_type = row.return_type2
+        if (method1_return_type == method2_return_type):
+            return PairwiseFeature.scores["has_same_return_type"]
+        else:
+            return 0
 
     @staticmethod
     def is_both_java_builtin(row):
@@ -110,7 +142,6 @@ class PairwiseFeature:
         else:
             return 0
 
-
     @staticmethod
     def is_both_initializer(row):
         method1_is_initializer = row.is_initializer1
@@ -119,7 +150,6 @@ class PairwiseFeature:
             return PairwiseFeature.scores["is_both_initializer"]
         else:
             return 0
-
 
     @staticmethod
     def has_same_annots(row):
@@ -130,16 +160,38 @@ class PairwiseFeature:
         else:
             return 0
 
+    @staticmethod
+    def method_contains_same_words(row):
+        method1_method_word_set = get_word_set(row.method_name1)
+        method2_method_word_set = get_word_set(row.method_name2)
+        for word1 in method1_method_word_set:
+            if word1 in method2_method_word_set:
+                return PairwiseFeature.scores["method_contains_same_words"]
+        return 0
+
+    @staticmethod
+    def method_has_same_prefixes(row):
+        method1_method_words = camel_case_split(row.method_name1)
+        method2_method_words = camel_case_split(row.method_name2)
+        if method1_method_words[0] == method2_method_words[0]:
+            return PairwiseFeature.scores["method_has_same_prefixes"]
+        else:
+            return 0
+
 
 def run_all_pairwise_feature(row):
     return reduce(lambda acc, feature: acc + feature(row),
                   [PairwiseFeature.is_both_framework_code,
                    PairwiseFeature.belong_to_same_class,
                    PairwiseFeature.belong_to_same_package,
+                   PairwiseFeature.returnval_not_used_in_caller,
                    PairwiseFeature.return_type_is_anothers_class,
+                   PairwiseFeature.has_same_return_type,
                    PairwiseFeature.is_both_java_builtin,
                    PairwiseFeature.is_both_initializer,
-                   PairwiseFeature.has_same_annots], 0)
+                   PairwiseFeature.has_same_annots,
+                   PairwiseFeature.method_contains_same_words,
+                   PairwiseFeature.method_has_same_prefixes], 0)
 
 
 def no_reflexive(dataframe):
@@ -154,7 +206,7 @@ def no_reflexive(dataframe):
     cond9 = dataframe["returnval_not_used_in_caller1"] != dataframe["returnval_not_used_in_caller2"]
     cond10 = dataframe["is_initializer1"] != dataframe["is_initializer2"]
     cond11 = dataframe["annots1"] != dataframe["annots2"]
-    return dataframe[cond1 | cond2 | cond3 | cond4 | cond5 | cond6 | cond7 | cond8 | cond9 | cond10 | cond11 ]
+    return dataframe[cond1 | cond2 | cond3 | cond4 | cond5 | cond6 | cond7 | cond8 | cond9 | cond10 | cond11]
 
 
 def main():
