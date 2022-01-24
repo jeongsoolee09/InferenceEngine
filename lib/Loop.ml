@@ -18,20 +18,11 @@ module Visualizer = struct
       if micro then F.asprintf "%s_micro" now_timestring else now_timestring
     in
     graph_to_dot snapshot ~filename:(filename_without_extension ^ ".dot") ;
-    let dot_in_chan, dot_out_chan =
-      Unix.open_process
-        (F.asprintf "dot -Tsvg -o %s.svg %s.dot" filename_without_extension
-           filename_without_extension )
-    in
-    In_channel.close dot_in_chan ;
-    Out_channel.close dot_out_chan ;
-    if autoopen then (
-      Unix.sleep 3 ;
-      let open_in_chan, open_out_chan =
-        Unix.open_process (F.asprintf "open %s.svg" filename_without_extension)
-      in
-      In_channel.close open_in_chan ;
-      Out_channel.close open_out_chan )
+    ignore
+    @@ Unix.system
+         (F.asprintf "dot -Tsvg -o %s.svg %s.dot" filename_without_extension
+            filename_without_extension ) ;
+    if autoopen then ignore @@ Unix.system (F.asprintf "open %s.svg" filename_without_extension)
 end
 
 (** (1) receive a rule to propagate, (2) use that propagation rule, and (3) spawn itself to the
@@ -42,7 +33,7 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t) (previous_sn
   if List.is_empty rules_to_propagate then
     (* if we can't propagate any further, terminate *)
     (current_snapshot, [])
-  else if List.mem (history >>| fst3) (Response.get_method new_fact) ~equal:Method.equal then
+  else if List.mem (history >>| Vertex.get_method) (Response.get_method new_fact) ~equal:Method.equal then
     (current_snapshot, history)
   else (
     Out_channel.print_endline "==============================" ;
@@ -118,7 +109,7 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t) (previous_sn
 
 
 let rec loop (current_snapshot : G.t) (received_responses : Response.t list)
-    (nodewise_featuremap : FeatureMaps.NodeWiseFeatureMap.t) (count : int) : G.t =
+    (nodewise_featuremap : NodeWiseFeatures.NodeWiseFeatureMap.t) (count : int) : G.t =
   if G.Saturation.all_dists_in_graph_are_saturated current_snapshot then current_snapshot
   else
     (* find the most appropriate Asking Rule. *)
@@ -157,7 +148,7 @@ let rec loop (current_snapshot : G.t) (received_responses : Response.t list)
                  PropagationRules.all_rules )
           ~init:current_snapshot propagation_rules_to_apply
       in
-      let propagated' = SelfHeal.HealMisPropagation.heal_all propagated in
+      let propagated' = Axioms.apply_axioms propagated in
       Visualizer.visualize_snapshot propagated' ~micro:false ~autoopen:true ;
       G.serialize_to_bin propagated' ;
       loop propagated' (response :: received_responses) nodewise_featuremap (count + 1)

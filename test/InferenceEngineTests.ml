@@ -24,21 +24,15 @@ type json = Json.t
 
 let json = Deserializer.deserialize_json ()
 
-let graph = GraphMaker.init_graph json ~debug:false
-
 let received_responses = []
 
-let nodewise_featuremap = NodeWiseFeatures.init_feature_map graph
-
-let demo () = loop graph received_responses nodewise_featuremap 1
-
-let trunk_finder ~(start : G.LiteralVertex.t) ~(end_ : G.LiteralVertex.t) (graph : G.t) : trunk list
-    =
+let trunk_finder ~(start : G.LiteralVertex.t) ~(end_ : G.LiteralVertex.t) (graph : G.t) :
+    trunk array =
   let all_trunks = identify_longest_trunks graph in
-  List.filter
+  Array.filter
     ~f:(fun trunk ->
-      Vertex.equal (G.LiteralVertex.to_vertex start graph.graph) (List.hd_exn trunk)
-      && Vertex.equal (G.LiteralVertex.to_vertex end_ graph.graph) (List.last_exn trunk) )
+      Vertex.equal (G.LiteralVertex.to_vertex start graph.graph) trunk.(0)
+      && Vertex.equal (G.LiteralVertex.to_vertex end_ graph.graph) (Array.last trunk) )
     all_trunks
 
 
@@ -124,7 +118,7 @@ end
 
 module Notebook47 = struct
   let df_edges_added =
-    match graph_already_serialized "df_edges" with
+    match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" with
     | None ->
         let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
         G.serialize_to_bin result ~suffix:"df_edges" ;
@@ -294,7 +288,7 @@ end
 
 module Notebook50 = struct
   let df_edges_added =
-    match graph_already_serialized "df_edges" with
+    match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" with
     | None ->
         let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
         G.serialize_to_bin result ~suffix:"df_edges" ;
@@ -393,7 +387,7 @@ end
 
 module Notebook53 = struct
   let df_edges_added =
-    match graph_already_serialized "df_edges" with
+    match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" with
     | None ->
         let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
         G.serialize_to_bin result ~suffix:"df_edges" ;
@@ -467,7 +461,7 @@ module Notebook55 = struct
   (* it's obvious that parmap is not a solution, but we bet on making an array. *)
 
   let df_edges_added =
-    match graph_already_serialized "df_edges" with
+    match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" with
     | None ->
         let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
         G.serialize_to_bin result ~suffix:"df_edges" ;
@@ -518,7 +512,7 @@ end
 
 module Notebook56 = struct
   let df_edges_added =
-    match graph_already_serialized "df_edges" with
+    match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" with
     | None ->
         let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
         G.serialize_to_bin result ~suffix:"df_edges" ;
@@ -554,7 +548,7 @@ module Notebook56 = struct
 
   let site_methods = G.all_methods_of_graph site_graph (* Without Test Codes *)
 
-  let identify_trunks (graph : G.t) : t list =
+  let identify_trunks (graph : G.t) : t array =
     let df_only_graph = G.leave_only_df_edges graph in
     let roots = G.collect_df_roots df_only_graph in
     let leaves = G.collect_df_leaves df_only_graph in
@@ -564,18 +558,21 @@ module Notebook56 = struct
       List.filter ~f:(fun (root, leaf) -> PathUtils.is_reachable root leaf df_only_graph) carpro
     in
     (* now, find the path between the root and the leaf. *)
-    reachable_root_and_leaf_pairs
-    >>= fun (root, leaf) ->
-    PathUtils.find_paths_from_source_to_dest df_only_graph (G.LiteralVertex.of_vertex root) leaf
+    Array.concat
+    @@ List.map
+         ~f:(fun (root, leaf) ->
+           PathUtils.find_paths_from_source_to_dest df_only_graph (G.LiteralVertex.of_vertex root)
+             leaf )
+         reachable_root_and_leaf_pairs
 
 
   let all_trunks = identify_trunks site_graph
 
-  let _ = List.length all_trunks (* 1776 *)
+  let _ = Array.length all_trunks (* 1776 *)
 
   let all_shortest_trunks = Trunk.identify_longest_trunks site_graph
 
-  let _ = List.length all_shortest_trunks (* 1252 *)
+  let _ = Array.length all_shortest_trunks (* 1252 *)
 
   (* 엄청나게 많이는 아니지만 꽤 줄긴 하네 *)
 
@@ -583,5 +580,774 @@ module Notebook56 = struct
 end
 
 module Notebook57 = struct
+  let list = List.init ~f:(fun i -> i) 90000000
+
+  let array = Array.init ~f:(fun i -> i) 90000000
+
+  let list1 = List.init ~f:(fun i -> i) 90000000
+
+  let list2 = List.init ~f:(fun i -> i) 90000000
+
+  let array1 = Array.init ~f:(fun i -> i) 90000000
+
+  let array2 = Array.init ~f:(fun i -> i) 90000000
+
+  let shortlist1 = List.init ~f:(fun i -> i) 10000
+
+  let shortlist2 = List.init ~f:(fun i -> i) 10000
+
+  let shortarray1 = Array.init ~f:(fun i -> i) 10000
+
+  let shortarray2 = Array.init ~f:(fun i -> i) 10000
+
+  let test_list_fold =
+    (* 3 seconds *)
+    let start = Unix.time () in
+    let _ = List.fold ~f:Int.( + ) ~init:0 list in
+    let end_ = Unix.time () in
+    end_ -. start
+
+
+  let test_array_fold =
+    (* 3 seconds *)
+    let start = Unix.time () in
+    let _ = Array.fold ~f:Int.( + ) ~init:0 array in
+    let end_ = Unix.time () in
+    end_ -. start
+
+
+  let test_list_map =
+    (* 32 seconds *)
+    let start = Unix.time () in
+    let _ = List.map ~f:(fun x -> x + 1) list in
+    let end_ = Unix.time () in
+    end_ -. start
+
+
+  let test_array_map =
+    (* 8 seconds *)
+    let start = Unix.time () in
+    let _ = Array.map ~f:Int.(fun x -> x + 1) array in
+    let end_ = Unix.time () in
+    end_ -. start
+
+
+  let test_list_rev =
+    (* 14 seconds *)
+    let start = Unix.time () in
+    let _ = List.rev list in
+    let end_ = Unix.time () in
+    end_ -. start
+
+
+  let test_array_rev =
+    (* 5 seconds *)
+    let start = Unix.time () in
+    Array.rev_inplace array ;
+    let end_ = Unix.time () in
+    end_ -. start
+
+
+  let test_list_append =
+    (* 43 seconds *)
+    let start = Unix.time () in
+    (* Pervasives.( @ ) is not tail-recursive *)
+    let _ = List.append list1 list2 in
+    let end_ = Unix.time () in
+    end_ -. start
+
+
+  let test_array_append =
+    (* 3~15 seconds depending on cache hit/miss (maybe?) *)
+    let start = Unix.time () in
+    let _ = Array.append array1 array2 in
+    let end_ = Unix.time () in
+    end_ -. start
+
+
+  let test_list_length =
+    (* 8-9 seconds *)
+    let start = Unix.time () in
+    let _ = List.length list in
+    let end_ = Unix.time () in
+    end_ -. start
+
+
+  let test_array_length =
+    (* 1-2 seconds *)
+    let start = Unix.time () in
+    let _ = Array.length array in
+    let end_ = Unix.time () in
+    end_ -. start
+
+
+  let test_list_carpro =
+    (* 54 second *)
+    let start = Unix.time () in
+    let _ =
+      let* elem1 = shortlist1 in
+      let* elem2 = shortlist2 in
+      return (elem1, elem2)
+    in
+    let end_ = Unix.time () in
+    end_ -. start
+
+
+  let test_array_carpro =
+    (* 18 seckiya *)
+    let start = Unix.time () in
+    let _ = Array.cartesian_product shortarray1 shortarray2 in
+    let end_ = Unix.time () in
+    end_ -. start
+
+
+  (* Array iteration is much faster *)
+
+  let _ = End
+end
+
+module Notebook58 = struct
+  (* Map.fold vs Array.fold *)
+
+  module IntMap = Caml.Map.Make (Int)
+
+  let shortarray1 = Array.init ~f:(fun i -> i) 30000000
+
+  let map = Array.fold ~f:(fun acc elem -> IntMap.add elem elem acc) ~init:IntMap.empty shortarray1
+
+  let array = Array.init ~f:(fun elem -> (elem, elem)) 30000000
+
+  let test_map_fold =
+    (* 2 seconds *)
+    let start = Unix.time () in
+    let _ = IntMap.fold (fun _ v acc -> v + acc) map 0 in
+    let end_ = Unix.time () in
+    end_ -. start
+
+
+  let test_array_fold =
+    (* 1 seconds *)
+    let start = Unix.time () in
+    let _ = Array.fold ~f:(fun acc (_, v) -> v + acc) ~init:0 array in
+    let end_ = Unix.time () in
+    end_ -. start
+
+
+  let test_map_filter =
+    (* 8 seconds *)
+    let start = Unix.time () in
+    let _ = IntMap.filter (fun _ v -> v mod 2 = 0) map in
+    let end_ = Unix.time () in
+    end_ -. start
+
+
+  let test_array_filter =
+    (* 2 seconds *)
+    let start = Unix.time () in
+    let _ = Array.filter ~f:(fun (_, v) -> v mod 2 = 0) array in
+    let end_ = Unix.time () in
+    end_ -. start
+
+
+  let test_map_map =
+    (* 14 seconds *)
+    let start = Unix.time () in
+    let _ = IntMap.map (fun _ v -> v * 2) map in
+    let end_ = Unix.time () in
+    end_ -. start
+
+
+  let test_array_filter =
+    (* 2 seconds *)
+    let start = Unix.time () in
+    let _ = Array.map ~f:(fun (_, v) -> v * 2) array in
+    let end_ = Unix.time () in
+    end_ -. start
+
+
+  let _ = End
+end
+
+module Notebook59 = struct
+  let df_edges_added =
+    match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" with
+    | None ->
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
+
+
+  let methods = Deserializer.deserialize_method_txt ()
+
+  let graph_vertices = VertexMaker.get_all_vertices json
+
+  let graph_methods = G.all_methods_of_graph df_edges_added
+
+  let _ = End
+end
+
+module Notebook60 = struct
+  (* Debugging Axioms *)
+
+  let df_edges_added =
+    match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" with
+    | None ->
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
+
+
+  (* mark_well_known_java_methods *)
+  (* this_project_main_is_none *)
+  (* internal_udf_vertex_is_none *)
+
+  let test_mark_well_known_java_methods =
+    (* 1. how many are well known java methods in this project? *)
+    let sagan_well_known_java_methods =
+      List.filter ~f:Method.is_well_known_java_none_method (G.all_methods_of_graph df_edges_added)
+      (* length: 9 *)
+    in
+    (* 2. are they updated successfully? *)
+    let sagan_well_known_java_method_vertices =
+      sagan_well_known_java_methods >>= G.this_method_vertices df_edges_added
+      (* length: 24 *)
+    in
+    ()
+
+
+  (* Lesson (TODO): we have to add more to JavaExpert.none_methods! *)
+
+  let test_this_project_main_is_none =
+    (* 1. how many mains are there? *)
+    let sagan_well_known_main_vertices =
+      G.fold_vertex
+        (fun vertex acc ->
+          if Method.is_main_method (Vertex.to_string vertex) then vertex :: acc else acc )
+        df_edges_added []
+    in
+    ()
+
+
+  let test_internal_udf_vertex_is_none =
+    (* 1. how many internal udfs are there? *)
+    let sagan_udf_vertices =
+      (* 1156 *)
+      let time1 = Unix.time () in
+      let out =
+        G.fold_vertex
+          (fun vertex acc -> if Method.is_udf (Vertex.get_method vertex) then vertex :: acc else acc)
+          df_edges_added []
+      in
+      let time2 = Unix.time () in
+      print_endline @@ F.asprintf "%f" (time2 -. time1) ;
+      out
+    in
+    let sagan_internal_udf_vertices =
+      let time1 = Unix.time () in
+      let out =
+        List.filter
+          ~f:(fun vertex -> G.is_df_internal (G.LiteralVertex.of_vertex vertex) df_edges_added)
+          sagan_udf_vertices
+      in
+      let time2 = Unix.time () in
+      print_endline @@ F.asprintf "%f" (time2 -. time1) ;
+      out
+    in
+    let sagan_internal_udf_vertices_no_annot =
+      let time1 = Unix.time () in
+      let out =
+        List.filter
+          ~f:(fun vertex ->
+            let annot = vertex |> Vertex.get_method |> Annotations.get_annots in
+            not @@ Annotations.equal annot Annotations.empty )
+          sagan_internal_udf_vertices
+      in
+      let time2 = Unix.time () in
+      print_endline @@ F.asprintf "%f" (time2 -. time1) ;
+      out
+    in
+    ()
+
+
+  let internal_udf_vertices_no_annot =
+    let time1 = Unix.time () in
+    let out =
+      G.fold_vertex
+        (fun vertex acc ->
+          if
+            Method.is_udf (Vertex.get_method vertex)
+            && G.is_df_internal (G.LiteralVertex.of_vertex vertex) df_edges_added
+            &&
+            let annot = vertex |> Vertex.get_method |> Annotations.get_annots in
+            Annotations.equal annot Annotations.empty
+          then vertex :: acc
+          else acc )
+        df_edges_added []
+    in
+    let time2 = Unix.time () in
+    print_endline @@ F.asprintf "%f" (time2 -. time1) ;
+    out
+
+
+  let _ = List.length @@ internal_udf_vertices_no_annot
+
+  (* 왜 이거밖에 없지?? *)
+
+  (* 14 seconds *)
+
+  (* 오 쩐다 갑자기 최적화됐네 *)
+
+  (* Lesson (TODO): short-circuiting 을 잘 활용하자. *)
+
+  (* +) 나중에 visualization 해가면서 보자. *)
+
+  let _ = End
+end
+
+module Notebook61 = struct
+  let df_edges_added =
+    match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" with
+    | None ->
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
+
+
+  let axiom_applied = Axioms.apply_axioms df_edges_added
+
+  let _ =
+    List.length
+    @@ G.fold_vertex
+         (fun vertex acc ->
+           if ProbQuadruple.is_indeterminate (Vertex.get_dist vertex) then vertex :: acc else acc )
+         axiom_applied []
+
+
+  let _ =
+    assert (
+      Int.( = )
+        (List.length @@ G.all_vertices_of_graph df_edges_added)
+        (List.length @@ G.all_vertices_of_graph axiom_applied) )
+
+
+  (* sanity check pass *)
+
+  let unmarked_vertices =
+    G.fold_vertex
+      (fun vertex acc ->
+        if ProbQuadruple.is_indeterminate (Vertex.get_dist vertex) then vertex :: acc else acc )
+      axiom_applied []
+
+
+  let marked_vertices =
+    G.fold_vertex
+      (fun vertex acc ->
+        if not @@ ProbQuadruple.is_indeterminate (Vertex.get_dist vertex) then vertex :: acc
+        else acc )
+      axiom_applied []
+
+
+  let all_methods = G.all_methods_of_graph df_edges_added
+
+  let marked_methods = marked_vertices >>| Vertex.get_method |> List.stable_dedup (* 564 *)
+
+  let unmarked_methods = unmarked_vertices >>| Vertex.get_method |> List.stable_dedup (* 316 *)
+
+  let unmarked_udfs = List.filter ~f:Method.is_udf unmarked_methods
+
+  let marked_udfs = List.filter ~f:Method.is_udf marked_methods
+
+  let _ = List.length unmarked_udfs (* 188 *)
+
+  let _ = List.length marked_udfs (* 334 *)
+
+  let unmarked_udfs_without_annots =
+    List.filter
+      ~f:(fun meth -> not @@ Annotations.equal Annotations.empty (Annotations.get_annots meth))
+      unmarked_udfs
+
+
+  let _ = List.length unmarked_udfs_without_annots
+
+  (* Curious: how many of unmarked_udfs are not annotated? *)
+
+  let _ = List.length marked_udfs
+
+  let _ = List.length unmarked_methods
+
+  let _ = End
+end
+
+module Notebook62 = struct
+  (* testing nodewise similarity *)
+  let df_edges_added =
+    match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" with
+    | None ->
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
+
+
+  let axiom_applied = Axioms.apply_axioms df_edges_added
+
+  let unmarked_vertices =
+    G.fold_vertex
+      (fun vertex acc ->
+        if ProbQuadruple.is_indeterminate (Vertex.get_dist vertex) then vertex :: acc else acc )
+      axiom_applied []
+
+
+  let unmarked_methods = unmarked_vertices >>| Vertex.get_method |> List.stable_dedup (* 312 *)
+
+  let _ = EstablishSimEdges.make_nodewise_sim_edge axiom_applied
+
+  let _ = End
+end
+
+module Notebook63 = struct
+  (* profiling make_nodewise_sim_edge *)
+  let df_edges_added =
+    match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" with
+    | None ->
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
+
+
+  let axiom_applied = Axioms.apply_axioms df_edges_added
+
+  let nodewise_sim_map =
+    let time1 = Unix.time () in
+    let nodewise_sim_map = EstablishSimEdges.make_nodewise_sim_edge axiom_applied in
+    let time2 = Unix.time () in
+    print_endline @@ F.asprintf "make_nodewise_sim_edge took %f seconds" (time2 -. time1) ;
+    nodewise_sim_map
+
+
+  let unmarked_vertices =
+    G.fold_vertex
+      (fun vertex acc ->
+        if ProbQuadruple.is_indeterminate (Vertex.get_dist vertex) then vertex :: acc else acc )
+      axiom_applied []
+
+
+  let unmarked_methods = unmarked_vertices >>| Vertex.get_method |> List.stable_dedup (* 312 *)
+
+  let unmarked_apis =
+    (* 101 *)
+    unmarked_vertices >>| Vertex.get_method |> List.stable_dedup |> List.filter ~f:Method.is_api
+
+
+  let unmarked_udfs =
+    (* 186 *)
+    unmarked_vertices >>| Vertex.get_method |> List.stable_dedup |> List.filter ~f:Method.is_udf
+
+
+  let what_the_hell =
+    List.filter
+      ~f:(fun meth ->
+        (not @@ List.mem ~equal:Method.equal unmarked_apis meth)
+        && (not @@ List.mem ~equal:Method.equal unmarked_udfs meth) )
+      unmarked_methods
+
+
+  (* 와 뭥미ㅋㅋㅋ *)
+
+  (* 자바는 *메소드 접두사* 가 엄청 중요하긴 하지.ㅋㅋ 그래도 udf/api 차이에 신경쓸 것.
+     get는 getter일수도 있지만 POST/GET의 GET일 수도 있거든. *)
+
+  (* 나머지 애들은 어디갔냐;;;;?? *)
+
+  let graph = axiom_applied
+
+  let all_methods = unmarked_methods
+
+  (* uhhh.. making nodewise_sim_map takes quite a lot *)
+
+  let out =
+    let map_array =
+      NodeWiseSimilarityMap.make_empty all_methods
+      |> fun map ->
+      NodeWiseSimilarityMap.fold (fun k _ acc -> k :: acc) map []
+      |> List.filter ~f:(fun (m1, m2) ->
+             (not << Method.is_frontend) m1 && (not << Method.is_frontend) m2 )
+      |> Array.of_list
+    in
+    let mapped =
+      Array.map
+        ~f:(fun pair ->
+          (pair, SimilarVertexPairExtractor.NodewisePairExtractor.get_nodewise_similarity pair) )
+        map_array
+    in
+    mapped |> Array.to_list |> NodeWiseSimilarityMap.of_alist
+
+
+  let _ = End
+end
+
+module Notebook64 = struct
+  (* 아이디어: 될놈만 짝지어 주기 *)
+
+  (* TODO UDF끼리, API끼리 *)
+
+  let df_edges_added =
+    match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" with
+    | None ->
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
+
+
+  let axiom_applied = Axioms.apply_axioms df_edges_added
+
+  let unmarked_vertices =
+    G.fold_vertex
+      (fun vertex acc ->
+        if ProbQuadruple.is_indeterminate (Vertex.get_dist vertex) then vertex :: acc else acc )
+      axiom_applied []
+
+
+  let unmarked_methods = unmarked_vertices >>| Vertex.get_method |> List.stable_dedup (* 312 *)
+
+  let unmarked_apis =
+    (* 126 *)
+    unmarked_vertices >>| Vertex.get_method |> List.stable_dedup |> List.filter ~f:Method.is_api
+    |> List.filter ~f:(not << Method.is_frontend)
+
+
+  let _ = List.length unmarked_apis
+
+  let unmarked_udfs =
+    (* 178 *)
+    unmarked_vertices >>| Vertex.get_method |> List.stable_dedup |> List.filter ~f:Method.is_udf
+
+
+  let _ = List.length unmarked_udfs
+
+  (* 어케이~~~ *)
+
+  (* making for apis *)
+
+  let api_ns_map =
+    (* 6 minutes *)
+    let map_array =
+      NodeWiseSimilarityMap.make_empty unmarked_apis
+      |> fun map ->
+      NodeWiseSimilarityMap.fold (fun k _ acc -> k :: acc) map []
+      |> List.filter ~f:(fun (m1, m2) ->
+             (not << Method.is_frontend) m1 && (not << Method.is_frontend) m2 )
+      |> Array.of_list
+    in
+    let time1 = Unix.time () in
+    let mapped =
+      Array.map
+        ~f:(fun pair ->
+          (pair, SimilarVertexPairExtractor.NodewisePairExtractor.get_nodewise_similarity pair) )
+        map_array
+    in
+    let time2 = Unix.time () in
+    print_endline @@ F.asprintf "%f" (time2 -. time1) ;
+    mapped |> Array.to_list |> NodeWiseSimilarityMap.of_alist
+
+
+  (* 어떻게 최적화하지?? 모르겟다... *)
+  (* 일단 m1맥에서 돌려보기~~~ *)
+  (* --> m1맥에서 6분 걸림 *)
+
+  let udf_ns_map =
+    (* 9 minutes *)
+    let map_array =
+      NodeWiseSimilarityMap.make_empty unmarked_udfs
+      |> fun map ->
+      NodeWiseSimilarityMap.fold (fun k _ acc -> k :: acc) map []
+      |> List.filter ~f:(fun (m1, m2) ->
+             (not << Method.is_frontend) m1 && (not << Method.is_frontend) m2 )
+      |> Array.of_list
+    in
+    let time1 = Unix.time () in
+    let mapped =
+      Array.map
+        ~f:(fun pair ->
+          (pair, SimilarVertexPairExtractor.NodewisePairExtractor.get_nodewise_similarity pair) )
+        map_array
+    in
+    let time2 = Unix.time () in
+    print_endline @@ F.asprintf "%f" (time2 -. time1) ;
+    mapped |> Array.to_list |> NodeWiseSimilarityMap.of_alist
+
+
+  (* *결국 쪼개야 한다는 결론에 도달.* *)
+  (* --> 쪼개고, 그 안에서 marked/unmarked로 나누기. *)
+
+  let _ = End
+end
+
+(* 그럼 일단 쪼개고, 각각의 쪼개진 그래프들에 대해서 위처럼 marked/unmarked를 나눠 주면 되는 것이다!!! *)
+
+module Notebook65 = struct
+  let df_edges_added =
+    match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" with
+    | None ->
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
+
+
+  let axiom_applied = Axioms.apply_axioms df_edges_added
+
+  let splitted = split_graph_by_comp_unit axiom_applied
+
+  let renderer_graph = List.nth_exn splitted 0
+
+  let site_graph = List.nth_exn splitted 1
+
+  let renderer_graph_vertices = G.all_vertices_of_graph renderer_graph
+
+  let renderer_unmarked_vertices =
+    G.fold_vertex
+      (fun vertex acc ->
+        if ProbQuadruple.is_indeterminate (Vertex.get_dist vertex) then vertex :: acc else acc )
+      renderer_graph []
+
+
+  let renderer_unmarked_methods =
+    renderer_unmarked_vertices >>| Vertex.get_method |> List.stable_dedup
+
+
+  let renderer_unmarked_apis =
+    renderer_unmarked_vertices >>| Vertex.get_method |> List.stable_dedup
+    |> List.filter ~f:Method.is_api
+    |> List.filter ~f:(not << Method.is_frontend)
+
+
+  let renderer_unmarked_udfs =
+    renderer_unmarked_vertices >>| Vertex.get_method |> List.stable_dedup
+    |> List.filter ~f:Method.is_udf
+
+
+  let _ = List.length renderer_graph_vertices (* 311 *)
+
+  let _ = List.length renderer_unmarked_vertices (* 114 *)
+
+  let _ = List.length renderer_unmarked_methods (* 51 *)
+
+  (* finally, a managable size!! *)
+
+  let site_graph_vertices = G.all_vertices_of_graph site_graph
+
+  let site_unmarked_vertices =
+    G.fold_vertex
+      (fun vertex acc ->
+        if ProbQuadruple.is_indeterminate (Vertex.get_dist vertex) then vertex :: acc else acc )
+      site_graph []
+
+
+  let site_unmarked_methods = site_unmarked_vertices >>| Vertex.get_method |> List.stable_dedup
+
+  let _ = List.length site_graph_vertices (* 1645 *)
+
+  let _ = List.length site_unmarked_vertices (* 684 *)
+
+  let _ = List.length site_unmarked_methods (* 280 *)
+
+  (* break it down a bit more *)
+
+  let site_unmarked_apis =
+    site_unmarked_vertices >>| Vertex.get_method |> List.stable_dedup
+    |> List.filter ~f:Method.is_api
+    |> List.filter ~f:(not << Method.is_frontend)
+
+
+  let site_unmarked_udfs =
+    site_unmarked_vertices >>| Vertex.get_method |> List.stable_dedup
+    |> List.filter ~f:Method.is_udf
+
+
+  let _ = List.length site_unmarked_apis (* 97 *)
+
+  let _ = List.length site_unmarked_udfs (* 162 *)
+
+  (* OK, much more managable. *)
+
+  (* Let's batch-run everything! *)
+
+  let make_ns_map all_methods =
+    let map_array =
+      NodeWiseSimilarityMap.make_empty all_methods
+      |> fun map ->
+      NodeWiseSimilarityMap.fold (fun k _ acc -> k :: acc) map []
+      |> List.filter ~f:(fun (m1, m2) ->
+             (not << Method.is_frontend) m1 && (not << Method.is_frontend) m2 )
+      |> Array.of_list
+    in
+    Out_channel.print_endline
+    @@ Format.asprintf "domain size of nodewise sim map is %d\n" (Array.length map_array) ;
+    let mapped =
+      Array.map
+        ~f:(fun pair ->
+          (pair, SimilarVertexPairExtractor.NodewisePairExtractor.get_nodewise_similarity pair) )
+        map_array
+    in
+    mapped |> Array.to_list |> NodeWiseSimilarityMap.of_alist
+
+
+  let _ =
+    let time1 = Unix.time () in
+    let renderer_udf_ns_map = make_ns_map renderer_unmarked_udfs
+    and renderer_api_ns_map = make_ns_map renderer_unmarked_apis
+    and site_udf_ns_map = make_ns_map site_unmarked_udfs
+    and site_api_ns_map = make_ns_map site_unmarked_apis in
+    let time2 = Unix.time () in
+    time2 -. time1
+
+
+  (* 아 ㅋㅋㅋㅋㅋ 시발 개빡치게하네 ^^ *)
+
+  let _ = End
+end
+
+module Notebook66 = struct
+  let method_ = "Post PostRepository.findByPublicSlugAndDraftFalseAndPublishAtBefore(String,Date)"
+
+  let other_method_with_same_classname =
+    List.find_exn
+      ~f:(fun other_method ->
+        String.equal (Method.get_class_name method_) (Method.UniqueID.get_class_name other_method)
+        )
+      (Deserializer.deserialize_skip_func () @ Deserializer.deserialize_method_txt ())
+
+
+  let _ = Method.get_package_name method_
+
+  let get_package_name (method_ : Method.t) : string =
+    try
+      let unique_id = find_unique_identifier method_ in
+      UniqueID.get_package_name unique_id
+    with Core_kernel.Not_found_s _ ->
+      let other_method_with_same_classname =
+        List.find_exn
+          ~f:(fun other_method ->
+            String.equal (get_class_name method_) (UniqueID.get_class_name other_method) )
+          (Deserializer.deserialize_skip_func () @ Deserializer.deserialize_method_txt ())
+      in
+      UniqueID.get_package_name other_method_with_same_classname
+
+
+  let _ = get_package_name method_
+
   let _ = End
 end

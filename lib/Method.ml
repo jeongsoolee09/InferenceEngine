@@ -13,6 +13,8 @@ let is_frontend (method_ : t) : bool =
   || String.is_prefix ~prefix:"__" method_
 
 
+let is_dunder (method_ : t) : bool = String.is_prefix ~prefix:"__" method_
+
 let hash = Hashtbl.hash
 
 let is_initializer (method_ : t) : bool = String.is_substring ~substring:"<init>" method_
@@ -63,25 +65,23 @@ module NormalString = struct
     try
       assert (Str.string_match normalstring_regex normalstring 0) ;
       Str.matched_group 1 normalstring
-    with Assert_failure _ -> failwithf "extract_rtntype_from_normalstring: %s" normalstring ()
+    with Assert_failure _ -> ""
 
 
   let get_class_name (normalstring : String.t) : string =
     try
       assert (Str.string_match normalstring_regex normalstring 0) ;
-      let match_ = Str.matched_group 2 normalstring in
-      if String.is_substring ~substring:"$" match_ then
-        (* whoo it's a subclass *)
-        String.take_while ~f:(fun char -> not @@ Char.equal '$' char) match_
-      else match_
-    with Assert_failure _ -> failwithf "extract_class_name_from_normalstring: %s" normalstring ()
+      Str.matched_group 2 normalstring
+    with Assert_failure _ -> ""
 
 
   let get_method_name (normalstring : String.t) : string =
     try
-      assert (Str.string_match normalstring_regex normalstring 0) ;
-      Str.matched_group 3 normalstring
-    with Assert_failure _ -> failwithf "extract_method_name_from_normalstring: %s" normalstring ()
+      if is_dunder normalstring then normalstring
+      else (
+        assert (Str.string_match normalstring_regex normalstring 0) ;
+        Str.matched_group 3 normalstring )
+    with Assert_failure _ -> ""
 end
 
 module InitString = struct
@@ -104,14 +104,9 @@ module InitString = struct
     with Assert_failure _ -> failwithf "extract_method_name_from_initstring: %s" initstring ()
 end
 
-let to_string (method_ : t) : string = method_
+let to_string : t -> string = ident
 
-let of_string (string : String.t) : t =
-  (* assert ( *)
-  (*   Str.string_match NormalString.normalstring_regex string 0 *)
-  (*   || Str.string_match InitString.initstring_regex string 0 ) ; *)
-  string
-
+let of_string : t -> string = (* we omit input validation to make it cheap *) ident
 
 let get_return_type (method_ : t) : string =
   if is_initializer method_ then "" (* nothing, bro! *) else NormalString.get_return_type method_
@@ -128,24 +123,25 @@ let get_method_name (method_ : t) : string =
   else NormalString.get_method_name method_
 
 
-let is_api (method_ : t) : bool =
-  try
-    let classname = get_class_name method_ and methodname = get_method_name method_ in
-    let classname_methodname = F.asprintf "%s.%s" classname methodname in
-    List.exists
-      ~f:(fun line -> String.is_substring ~substring:classname_methodname line)
-      (Deserializer.deserialize_skip_func ())
-  with _ -> true
-
-
 let is_udf (method_ : t) : bool =
   try
     let classname = get_class_name method_ and methodname = get_method_name method_ in
     let classname_methodname = F.asprintf "%s.%s" classname methodname in
-    List.exists
+    Array.exists
       ~f:(fun line -> String.is_substring ~substring:classname_methodname line)
-      (Deserializer.deserialize_method_txt ())
+      (Array.of_list @@ Deserializer.deserialize_method_txt ())
   with _ -> false
+
+
+let is_api (method_ : t) : bool =
+  (* try *)
+  (*   let classname = get_class_name method_ and methodname = get_method_name method_ in *)
+  (*   let classname_methodname = F.asprintf "%s.%s" classname methodname in *)
+  (*   List.exists *)
+  (*     ~f:(fun line -> String.is_substring ~substring:classname_methodname line) *)
+  (*     (Deserializer.deserialize_skip_func ()) *)
+  (* with _ -> true *)
+  if is_dunder method_ then true else not @@ is_udf method_
 
 
 let is_testcode (method_ : t) : bool =
@@ -167,8 +163,6 @@ let find_unique_identifier (method_ : t) : string =
 
 
 module PackageResolver = struct
-  exception TODO
-
   let resolve_via_import_stmts (method_ : t) : string =
     (* find from the list of scraped packages *)
     let imports_in_directory =
@@ -212,6 +206,73 @@ let get_package_name (method_ : t) : string =
   try
     let unique_id = find_unique_identifier method_ in
     UniqueID.get_package_name unique_id
-  with Not_found_s _ -> (
-    try PackageResolver.resolve_via_import_stmts method_
-    with Not_found_s _ -> PackageResolver.resolve_via_package_decls method_ )
+  with Not_found_s _ ->
+    let other_method_with_same_classname =
+      List.find_exn
+        ~f:(fun other_method ->
+          String.equal (get_class_name method_) (UniqueID.get_class_name other_method) )
+        (Deserializer.deserialize_skip_func () @ Deserializer.deserialize_method_txt ())
+    in
+    UniqueID.get_package_name other_method_with_same_classname
+
+
+let is_java_method (method_ : t) : bool =
+  String.is_prefix ~prefix:"java." (get_package_name method_)
+
+
+let is_main_method (method_ : t) : bool = String.is_substring ~substring:"main(" (to_string method_)
+
+let is_well_known_java_source_method =
+  let cache = Hashtbl.create 777 in
+  fun (method_ : t) : bool ->
+    match Hashtbl.find_opt cache method_ with
+    | None ->
+        Array.exists
+          ~f:(fun (classname, methname) ->
+            String.equal classname (get_class_name method_)
+            && String.equal methname (get_method_name method_) )
+          JavaExpert.java_source_methods
+    | Some res ->
+        res
+
+
+let is_well_known_java_sink_method =
+  let cache = Hashtbl.create 777 in
+  fun (method_ : t) : bool ->
+    match Hashtbl.find_opt cache method_ with
+    | None ->
+        Array.exists
+          ~f:(fun (classname, methname) ->
+            String.equal classname (get_class_name method_)
+            && String.equal methname (get_method_name method_) )
+          JavaExpert.java_sink_methods
+    | Some res ->
+        res
+
+
+let is_well_known_java_sanitizer_method =
+  let cache = Hashtbl.create 777 in
+  fun (method_ : t) : bool ->
+    match Hashtbl.find_opt cache method_ with
+    | None ->
+        Array.exists
+          ~f:(fun (classname, methname) ->
+            String.equal classname (get_class_name method_)
+            && String.equal methname (get_method_name method_) )
+          JavaExpert.java_sanitizer_methods
+    | Some res ->
+        res
+
+
+let is_well_known_java_none_method =
+  let cache = Hashtbl.create 777 in
+  fun (method_ : t) : bool ->
+    match Hashtbl.find_opt cache method_ with
+    | None ->
+        Array.exists
+          ~f:(fun (classname, methname) ->
+            String.equal classname (get_class_name method_)
+            && String.equal methname (get_method_name method_) )
+          JavaExpert.java_none_methods
+    | Some res ->
+        res

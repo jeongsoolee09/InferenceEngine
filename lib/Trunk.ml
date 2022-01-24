@@ -2,7 +2,7 @@ open GraphRepr
 open InfixOperators
 open ListMonad
 
-type t = G.V.t list [@@deriving compare, equal]
+type t = G.V.t array [@@deriving compare, equal]
 
 module Hashtbl = Caml.Hashtbl
 
@@ -14,15 +14,10 @@ module PathUtils = struct
     List.mem ~equal:G.V.equal descendants dest
 
 
-  let increment_option prev =
-    let ( >>= ) = Option.( >>= ) and return = Option.return in
-    prev >>= fun x -> return (x + 1)
-
-
   (** For every leaf, print paths to the leaf from the given source, where the given graph may
       contain a cycle, using a customized DFS algorithm **)
-  let enumerate_paths_from_source_to_leaves (g : G.t) (source : G.LiteralVertex.t) : G.V.t list list
-      =
+  let enumerate_paths_from_source_to_leaves (g : G.t) (source : G.LiteralVertex.t) :
+      G.V.t array array =
     let havebeenmap =
       let out = Hashtbl.create 777 in
       G.iter_edges (fun v1 v2 -> Hashtbl.add out (v1, v2) 0) g ;
@@ -48,58 +43,58 @@ module PathUtils = struct
               inner (G.LiteralVertex.of_vertex child) (child :: smol_acc) acc )
           ~init:big_acc children
     in
-    inner source [G.LiteralVertex.to_vertex_cheap source] []
+    Array.of_list @@ List.map ~f:Array.of_list
+    @@ inner source [G.LiteralVertex.to_vertex_cheap source] []
 
 
-  (** Find all paths from the given source to the given destination. **)
+  (* Array version of the above *)
   let find_paths_from_source_to_dest (graph : G.t) (source : G.LiteralVertex.t) (dest : G.V.t) :
-      t list =
-    enumerate_paths_from_source_to_leaves graph source
-    |> List.filter ~f:(fun path -> List.mem ~equal:G.V.equal path dest)
-    >>| List.take_while ~f:(fun vertex -> not @@ G.V.equal vertex dest)
-    >>| fun list -> List.append list [dest]
+      t array =
+    let paths_to_all_leaves = enumerate_paths_from_source_to_leaves graph source in
+    let paths_to_dest =
+      Array.filter ~f:(fun path -> Array.mem ~equal:G.V.equal path dest) paths_to_all_leaves
+    in
+    let take_while_to_dest_elem_index =
+      Array.map
+        ~f:(fun path_to_dest ->
+          let dest_elem_index, _ =
+            Array.findi_exn ~f:(fun index elem -> G.V.equal elem dest) path_to_dest
+          in
+          Array.slice path_to_dest 0 (dest_elem_index + 1) )
+        paths_to_dest
+    in
+    take_while_to_dest_elem_index
 end
 
 let to_string (trunk : t) : string =
-  let acc = List.fold ~f:(fun acc vertex -> acc ^ Vertex.to_string vertex ^ ", ") ~init:"" trunk in
+  let acc = Array.fold ~f:(fun acc vertex -> acc ^ Vertex.to_string vertex ^ ", ") ~init:"" trunk in
   "[" ^ acc ^ "]"
 
 
-let find_longest_path (paths : t list) : t =
+let find_longest_path (paths : t array) : t =
   Option.value_exn
-    (List.max_elt ~compare:(fun p1 p2 -> Int.compare (List.length p1) (List.length p2)) paths)
+    (Array.max_elt ~compare:(fun p1 p2 -> Int.compare (Array.length p1) (Array.length p2)) paths)
 
 
-let identify_longest_trunks (graph : G.t) : t list =
+let identify_longest_trunks (graph : G.t) : t array =
   let df_only_graph = G.leave_only_df_edges graph in
-  let roots = G.collect_df_roots df_only_graph in
-  let leaves = G.collect_df_leaves df_only_graph in
-  let carpro = roots >>= fun root -> leaves >>= fun leaf -> return (root, leaf) in
+  let roots = Array.of_list @@ G.collect_df_roots df_only_graph in
+  let leaves = Array.of_list @@ G.collect_df_leaves df_only_graph in
+  let carpro = Array.cartesian_product roots leaves in
   (* not all leaves are reachable from all roots. So we filter out unreachable (root, leaf) pairs. *)
   let reachable_root_and_leaf_pairs =
-    List.filter ~f:(fun (root, leaf) -> PathUtils.is_reachable root leaf df_only_graph) carpro
+    Array.filter ~f:(fun (root, leaf) -> PathUtils.is_reachable root leaf df_only_graph) carpro
   in
   (* now, find the path between the root and the leaf. *)
-  reachable_root_and_leaf_pairs
-  >>| fun (root, leaf) ->
-  PathUtils.find_paths_from_source_to_dest df_only_graph (G.LiteralVertex.of_vertex root) leaf
-  |> find_longest_path
+  Array.map
+    ~f:(fun (root, leaf) ->
+      let all_paths =
+        PathUtils.find_paths_from_source_to_dest df_only_graph (G.LiteralVertex.of_vertex root) leaf
+      in
+      find_longest_path all_paths )
+    reachable_root_and_leaf_pairs
 
 
 let find_trunks_containing_vertex (graph : G.t) (vertex : G.V.t) =
   let all_trunks = identify_longest_trunks graph in
-  List.filter ~f:(fun trunk -> List.mem ~equal:Vertex.equal trunk vertex) all_trunks
-
-
-(** 어떤 root로부터 시작하는 trunk 중 가장 먼 곳에 있는 leaf *)
-let find_longest_trunk_from_leaf_to_sink ~(root : G.V.t) ~(leaf : G.V.t) (graph : G.t) : t =
-  let all_trunks = identify_longest_trunks graph in
-  let trunks_in_question =
-    List.filter all_trunks ~f:(fun trunk ->
-        let root_match = Vertex.equal (List.hd_exn trunk) root in
-        let leaf_match = Vertex.equal (List.last_exn trunk) leaf in
-        root_match && leaf_match )
-  in
-  List.hd_exn
-  @@ List.sort trunks_in_question ~compare:(fun trunk1 trunk2 ->
-         -Int.compare (List.length trunk1) (List.length trunk2) )
+  Array.filter ~f:(fun trunk -> Array.mem ~equal:Vertex.equal trunk vertex) all_trunks

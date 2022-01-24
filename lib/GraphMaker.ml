@@ -48,6 +48,7 @@ module VertexMaker = struct
       >>| vertex_of_chain_slice
     in
     intermediate |> VertexSet.of_list |> VertexSet.elements
+    |> List.filter ~f:(not << Method.is_frontend << Vertex.get_method)
 end
 
 module ChainRefiners = struct
@@ -184,7 +185,11 @@ let batch_add_vertex (raw_json : json) (graph : G.t) =
 let sequential_add_edge (graph : G.t ref) (all_edges : G.E.t list) =
   let all_edges_arr = Array.of_list all_edges in
   for i = 0 to List.length all_edges - 1 do
-    graph := G.add_edge_e !graph all_edges_arr.(i)
+    let v1, _, v2 = all_edges_arr.(i) in
+    if
+      (not @@ Method.is_frontend (Vertex.get_method v1))
+      && (not @@ Method.is_frontend (Vertex.get_method v2))
+    then graph := G.add_edge_e !graph all_edges_arr.(i)
   done
 
 
@@ -198,13 +203,9 @@ let batch_add_edge (raw_json : json) (graph : G.t) =
   let acc = ref graph in
   let all_edges_arr = Array.of_list all_edges in
   let deduped = ref [] in
-  (* ================================================== *)
   sequential_dedup_edge all_edges_arr deduped ;
-  print_endline "deduping edge done." ;
   sequential_add_edge acc !deduped ;
-  print_endline "adding edge done." ;
   let edge_added = !acc in
-  (* ================================================== *)
   let out_channel = Out_channel.create "void_calls.lisp" in
   Sexp.output out_channel (Sexp.List (List.map ~f:G.LiteralVertex.sexp_of_t all_void_calls)) ;
   Out_channel.close out_channel ;
@@ -219,32 +220,7 @@ let graph_to_dot (graph : G.t) ?(filename = "initial_graph.dot") : unit =
   Out_channel.close out_channel
 
 
-let graph_already_serialized (suffix : String.t) : String.t option =
-  Array.find (Sys.readdir ".") ~f:(fun str ->
-      (not @@ String.is_prefix str ~prefix:".") && String.is_substring str ~substring:suffix )
-
-
-let init_graph (json : json) ~(debug : bool) : G.t =
-  let df_edges_added =
-    match graph_already_serialized "df_edges" with
-    | None ->
-        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
-        G.serialize_to_bin result ~suffix:"df_edges" ;
-        result
-    | Some filename ->
-        Deserializer.deserialize_graph filename
-  in
-  print_endline "\nDF edges established.\n" ;
-  let nodewise_sim_edges_added =
-    match graph_already_serialized "ns_edges" with
-    | None ->
-        let result = EstablishSimEdges.make_nodewise_sim_edge df_edges_added in
-        G.serialize_to_bin result ~suffix:"ns_edges" ;
-        result
-    | Some filename ->
-        Deserializer.deserialize_graph filename
-  in
-  print_endline "\nNS edges established.\n" ;
-  let out = EstablishSimEdges.make_contextual_sim_edge nodewise_sim_edges_added in
-  if debug then graph_to_dot out ~filename:(make_now_string 9 ^ ".dot") ;
-  out
+let graph_already_serialized ~(comp_unit : String.t) ~(suffix : String.t) : String.t option =
+  Array.find (Sys.readdir ".") ~f:(fun filename ->
+      (not @@ String.is_prefix filename ~prefix:".")
+      && String.is_substring filename ~substring:(F.asprintf "%s_%s" comp_unit suffix) )

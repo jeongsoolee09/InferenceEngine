@@ -6,12 +6,8 @@ module Hashtbl = Caml.Hashtbl
 module CompUnit = struct
   type t = Known of string | Unknown [@@deriving equal]
 
-  let to_string (comp_unit: t) =
-    match comp_unit with
-    | Known unit_ -> unit_
-    | Unknown -> "Unknown"
+  let to_string (comp_unit : t) = match comp_unit with Known unit_ -> unit_ | Unknown -> "Unknown"
 end
-
 
 let get_comp_unit =
   let cache = Hashtbl.create 777 in
@@ -85,5 +81,7 @@ let split_graph_by_comp_unit (graph : G.t) : G.t list =
   let all_comp_units =
     DirectoryManager.get_compilation_unit_subdirs (Deserializer.deserialize_config ())
   in
+  List.iter ~f:(fun comp_unit ->
+      Out_channel.print_endline @@ F.asprintf "comp_unit %s identified." comp_unit ) all_comp_units ;
   let lookup_table = create_comp_unit_lookup_table (G.all_methods_of_graph graph) in
   all_comp_units >>| split_graph_by_single_comp_unit graph lookup_table

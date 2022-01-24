@@ -108,6 +108,9 @@ module ProbQuadruple = struct
 
   let is_indeterminate (dist : t) : bool =
     TaintLabel.equal (determine_label dist) TaintLabel.Indeterminate
+
+
+  let dist_is_flat (dist : t) : bool = equal dist initial
 end
 
 module LocationSet = struct
@@ -431,7 +434,9 @@ module G = struct
   let pp_edge (v1, v2) = F.asprintf "\"(%s, %s)\"" (vertex_name v1) (vertex_name v2)
 
   let serialize_to_bin ?(suffix = "") (graph : t) : unit =
-    let out_chan = Out_channel.create (make_now_string 9 ^ "_" ^ suffix ^ ".bin") in
+    let out_chan =
+      Out_channel.create (F.asprintf "%s_%s_%s.bin" (make_now_string 9) graph.comp_unit suffix)
+    in
     Out_channel.set_binary_mode out_chan true ;
     Marshal.to_channel out_chan graph [] ;
     Out_channel.close out_chan
@@ -508,18 +513,25 @@ module G = struct
 
 
   let is_df_root (vertex : LiteralVertex.t) (df_only_graph : t) : bool =
-    Int.equal (in_degree df_only_graph (LiteralVertex.to_vertex_cheap vertex)) 0
-    && Int.( > ) (out_degree df_only_graph (LiteralVertex.to_vertex_cheap vertex)) 0
+    try
+      Int.equal (in_degree df_only_graph (LiteralVertex.to_vertex vertex df_only_graph.graph)) 0
+      && Int.( > ) (out_degree df_only_graph (LiteralVertex.to_vertex vertex df_only_graph.graph)) 0
+    with _ -> failwith @@ F.asprintf "is_df_root failed for %s" @@ LiteralVertex.to_string vertex
 
 
   let is_df_leaf (vertex : LiteralVertex.t) (df_only_graph : t) : bool =
-    Int.equal (out_degree df_only_graph (LiteralVertex.to_vertex_cheap vertex)) 0
-    && Int.( > ) (in_degree df_only_graph (LiteralVertex.to_vertex_cheap vertex)) 0
+    try
+      Int.equal (out_degree df_only_graph (LiteralVertex.to_vertex vertex df_only_graph.graph)) 0
+      && Int.( > ) (in_degree df_only_graph (LiteralVertex.to_vertex vertex df_only_graph.graph)) 0
+    with _ -> failwith @@ F.asprintf "is_df_leaf failed for %s" @@ LiteralVertex.to_string vertex
 
 
   let is_df_internal (vertex : LiteralVertex.t) (df_only_graph : t) : bool =
-    Int.( > ) (out_degree df_only_graph (LiteralVertex.to_vertex_cheap vertex)) 0
-    && Int.( > ) (in_degree df_only_graph (LiteralVertex.to_vertex_cheap vertex)) 0
+    try
+      Int.( > ) (out_degree df_only_graph (LiteralVertex.to_vertex vertex df_only_graph.graph)) 0
+      && Int.( > ) (in_degree df_only_graph (LiteralVertex.to_vertex vertex df_only_graph.graph)) 0
+    with _ ->
+      failwith @@ F.asprintf "is_df_internal failed for %s" @@ LiteralVertex.to_string vertex
 
 
   let collect_df_roots (graph : t) : V.t list =

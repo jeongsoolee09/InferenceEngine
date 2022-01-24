@@ -117,64 +117,6 @@ module PropagationRules = struct
 
   type t = {rule: rule; label: string}
 
-  let is_internal_udf_vertex (vertex : LV.t) (graph : G.t) =
-    let data_flows_in =
-      Int.( >= ) (List.length @@ G.get_preds graph vertex ~label:EdgeLabel.DataFlow) 1
-    and data_flows_out =
-      Int.( >= ) (List.length @@ G.get_succs graph vertex ~label:EdgeLabel.DataFlow) 1
-    and is_udf =
-      let meth = fst vertex in
-      let all_udfs = Deserializer.deserialize_method_txt () in
-      List.exists
-        ~f:(fun str ->
-          let open NodeWiseFeatures.SingleFeature in
-          let classname = Method.get_class_name meth in
-          let methname = Method.get_method_name meth in
-          String.is_substring ~substring:(classname ^ "." ^ methname) str )
-        all_udfs
-    in
-    data_flows_in && data_flows_out && is_udf
-
-
-  let internal_udf_vertex_is_none : rule =
-   fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ~(dry_run : bool) :
-       (G.t * Vertex.t list) ->
-    let new_fact_method = Response.get_method new_fact in
-    let new_fact_method_vertices =
-      G.all_vertices_of_graph graph
-      |> List.filter ~f:(fun (meth, _, _) -> Method.equal meth new_fact_method)
-    in
-    let df_succs =
-      new_fact_method_vertices
-      >>= fun vertex -> G.get_succs graph (LV.of_vertex vertex) ~label:EdgeLabel.DataFlow
-    in
-    assert (Int.( >= ) (List.length df_succs) 1) ;
-    Out_channel.output_string Out_channel.stdout "internal_udf_vertex_is_none chosen" ;
-    Out_channel.newline Out_channel.stdout ;
-    let propagated =
-      List.fold
-        ~f:(fun acc succ ->
-          let succ_meth, succ_loc, succ_dist = succ in
-          if not @@ is_internal_udf_vertex (LV.of_vertex succ) graph then acc
-          else
-            let new_dist =
-              { ProbQuadruple.src= succ_dist.src -. 0.4
-              ; ProbQuadruple.sin= succ_dist.sin -. 0.4
-              ; ProbQuadruple.san= succ_dist.san -. 0.4
-              ; ProbQuadruple.non= succ_dist.non +. 0.8 }
-            in
-            (* if not dry_run then *)
-            (*   Out_channel.fprintf Out_channel.stdout *)
-            (*     "%s propagated its info to %s (internal_vertex_none), its dist is now %s\n" *)
-            (*     new_fact_method *)
-            (*     (LV.to_string (LV.of_vertex succ)) *)
-            (*     (ProbQuadruple.to_string new_dist) ; *)
-            G.strong_update_dist succ new_dist acc )
-        ~init:graph df_succs
-    in
-    (propagated, df_succs)
-
-
   (** propagating to contextually similar vertices: requires that the new_fact's method have
       successors with contextual similarity edge *)
   let contextual_similarity_rule : rule =
@@ -371,9 +313,9 @@ module PropagationRules = struct
     let new_fact_vertices = G.this_method_vertices graph new_fact_method in
     if not @@ TaintLabel.equal TaintLabel.Sink new_fact_label then
       let trunks_containing_vertices =
-        new_fact_vertices >>= Trunk.find_trunks_containing_vertex graph
+        new_fact_vertices >>= (Array.to_list << Trunk.find_trunks_containing_vertex graph)
       in
-      let trunk_leaves = trunks_containing_vertices >>| List.last_exn in
+      let trunk_leaves = trunks_containing_vertices >>| Array.last in
       (* if all of trunk_leaves are sinks, then this may be a source! *)
       if
         List.exists
@@ -384,7 +326,7 @@ module PropagationRules = struct
       then
         List.fold
           ~f:(fun big_acc trunk ->
-            List.fold
+            Array.fold
               ~f:(fun ((graph_acc, affected) as smol_acc) vertex ->
                 let vertex_meth, vertex_loc, vertex_dist = vertex in
                 let ns_clusters_vertices = List.join @@ all_ns_clusters graph in
@@ -420,7 +362,7 @@ module PropagationRules = struct
     then (graph, []) (* Do nothing *)
     else
       let trunks_containing_vertices =
-        new_fact_vertices >>= Trunk.find_trunks_containing_vertex graph
+        new_fact_vertices >>= (Array.to_list << Trunk.find_trunks_containing_vertex graph)
       in
       let new_fact_propagated =
         List.fold
@@ -437,7 +379,7 @@ module PropagationRules = struct
       in
       List.fold
         ~f:(fun big_acc trunk ->
-          List.fold
+          Array.fold
             ~f:(fun ((graph_acc, affected) as smol_acc) vertex ->
               let vertex_meth, vertex_loc, vertex_dist = vertex in
               let ns_clusters_vertices = List.join @@ all_ns_clusters graph in
@@ -604,7 +546,6 @@ module PropagationRules = struct
   let all_rules =
     [ {rule= contextual_similarity_rule; label= "contextual_similarity_rule"}
     ; {rule= nodewise_similarity_propagation_rule; label= "nodewise_similarity_propagation_rule"}
-    ; {rule= internal_udf_vertex_is_none; label= "internal_udf_vertex_is_none"}
     ; { rule= internal_nonbidirectional_library_node_is_a_src_if_leaf_is_sink
       ; label= "internal_nonbidirectional_library_node_is_a_src_if_leaf_is_sink" }
     ; { rule= if_method_is_none_once_then_it's_none_everywhere
@@ -615,13 +556,13 @@ end
 (* Use Random.int_incl for making a random integer. *)
 
 module AskingRules = struct
-  type rule = G.t -> Response.t list -> FeatureMaps.NodeWiseFeatureMap.t -> Question.t
+  type rule = G.t -> Response.t list -> NodeWiseFeatures.NodeWiseFeatureMap.t -> Question.t
 
   type t = {rule: rule; label: string}
 
   let ask_if_leaf_is_sink : rule =
    fun (snapshot : G.t) (received_responses : Response.t list)
-       (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) : Question.t ->
+       (nfeaturemap : NodeWiseFeatures.NodeWiseFeatureMap.t) : Question.t ->
     (* TODO: consider featuremaps *)
     let all_non_sus_leaves =
       G.collect_df_leaves snapshot
@@ -655,7 +596,7 @@ module AskingRules = struct
 
   let ask_if_root_is_source : rule =
    fun (snapshot : G.t) (received_responses : Response.t list)
-       (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) : Question.t ->
+       (nfeaturemap : NodeWiseFeatures.NodeWiseFeatureMap.t) : Question.t ->
     (* TODO consider featuremaps *)
     let all_roots_are_determined =
       List.for_all (G.collect_df_roots snapshot) ~f:(fun root ->
@@ -673,7 +614,7 @@ module AskingRules = struct
   (** ask a method from a foreign package of its label. *)
   let ask_foreign_package_label : rule =
    fun (snapshot : G.t) (received_responses : Response.t list)
-       (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) : Question.t ->
+       (nfeaturemap : NodeWiseFeatures.NodeWiseFeatureMap.t) : Question.t ->
     let all_foreign_codes_are_determined =
       let all_foreign_codes =
         G.fold_vertex
@@ -702,7 +643,7 @@ module AskingRules = struct
   let ask_indeterminate : rule =
    (* NOTE this should *NOT* be run at the first round of Loop. *)
    fun (snapshot : G.t) (received_responses : Response.t list)
-       (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) : Question.t ->
+       (nfeaturemap : NodeWiseFeatures.NodeWiseFeatureMap.t) : Question.t ->
     let all_indeterminates =
       List.filter (G.all_vertices_of_graph snapshot) ~f:(fun vertex ->
           ProbQuadruple.is_indeterminate (Vertex.get_dist vertex) )
@@ -714,7 +655,7 @@ module AskingRules = struct
 
   let ask_from_ns_cluster_if_it_contains_internal_src_or_sink : rule =
    fun (snapshot : G.t) (received_responses : Response.t list)
-       (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) : Question.t ->
+       (nfeaturemap : NodeWiseFeatures.NodeWiseFeatureMap.t) : Question.t ->
     let there_is_some_cluster_that_has_internal_src_or_sink =
       List.for_all (all_ns_clusters snapshot) ~f:(fun ns_cluster ->
           List.exists ns_cluster ~f:(fun vertex ->
@@ -794,7 +735,7 @@ module MetaRules = struct
   (** the priority of asking rules represent their current adequacy of application. *)
   module ForAsking = struct
     let take_subset_of_applicable_asking_rules (snapshot : G.t) (responses : Response.t list)
-        (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) (asking_rules : AskingRules.t list) =
+        (nfeaturemap : NodeWiseFeatures.NodeWiseFeatureMap.t) (asking_rules : AskingRules.t list) =
       (* rule R is applicable to vertex V iff (def) V has successor with labeled edge required by rule R
                                           iff (def) the embedded assertion succeeds *)
       List.rev
@@ -829,7 +770,7 @@ module MetaRules = struct
 
     (** choose the most applicable asking rule. *)
     let asking_rules_selector (graph : G.t) (responses : Response.t list)
-        (nfeaturemap : FeatureMaps.NodeWiseFeatureMap.t) : AskingRules.t =
+        (nfeaturemap : NodeWiseFeatures.NodeWiseFeatureMap.t) : AskingRules.t =
       let priority_assigned =
         assign_priority_on_asking_rules
           (take_subset_of_applicable_asking_rules graph responses nfeaturemap AskingRules.all_rules)
