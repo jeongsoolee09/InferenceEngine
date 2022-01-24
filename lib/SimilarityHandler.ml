@@ -117,26 +117,14 @@ module TrunkSimilarityMap = struct
 
   let threshold = 1 (* TEMP *)
 
-  let init (all_trunks : trunk list) : t =
+  let make_empty (all_trunks : trunk array) : t =
     let trunk_pairs =
-      let* trunk1 = all_trunks in
-      let* trunk2 = all_trunks in
-      if not @@ Trunk.equal trunk1 trunk2 then return (trunk1, trunk2) else []
+      let raw_carpro = Array.cartesian_product all_trunks all_trunks in
+      Array.filter ~f:(fun (trunk1, trunk2) -> not @@ Trunk.equal trunk1 trunk2) raw_carpro
     in
-    List.fold
+    Array.fold
       ~f:(fun acc pair -> WithTrunkPairDomain.add pair 0 acc)
       trunk_pairs ~init:WithTrunkPairDomain.empty
-
-
-  let pair_with_max_value (map : t) : TrunkPair.t =
-    (* for debugging purposes *)
-    fst
-    @@ fold
-         (fun key value (current_max_key, current_max_value) ->
-           if value > current_max_value then (key, value) else (current_max_key, current_max_value)
-           )
-         map
-         (([], []), Int.min_value)
 end
 
 module ContextualSimilarityMap = struct
@@ -212,8 +200,9 @@ module SimilarVertexPairExtractor = struct
                          (not << Method.is_frontend) m1 && (not << Method.is_frontend) m2 )
                   |> Array.of_list
                 in
-                (* Out_channel.print_endline *)
-                (* @@ Format.asprintf "length is %d\n" (Array.length map_array) ; *)
+                Out_channel.print_endline
+                @@ Format.asprintf "domain size of nodewise sim map is %d\n"
+                     (Array.length map_array) ;
                 let mapped =
                   Array.map ~f:(fun pair -> (pair, get_nodewise_similarity pair)) map_array
                 in
@@ -250,8 +239,8 @@ module SimilarVertexPairExtractor = struct
 
     (** main functionality: calculate the simliarity of each trunk pairs and organize those in a
         table. *)
-    let update_trunk_similarity_map (all_trunks : trunk list) : TrunkSimilarityMap.t =
-      let initial_map = TrunkSimilarityMap.init all_trunks in
+    let init_trunk_similarity_map (all_trunks : trunk array) : TrunkSimilarityMap.t =
+      let initial_map = TrunkSimilarityMap.make_empty all_trunks in
       TrunkSimilarityMap.fold
         (fun ((t1, t2) as pair) _ acc ->
           let trunk_similarity = get_trunk_similarity pair in
@@ -294,9 +283,9 @@ module SimilarVertexPairExtractor = struct
     let identify_similar_method_from_similar_trunk ((trunk1, trunk2) : trunk * trunk) (graph : G.t)
         : (Method.t * Method.t) list =
       (* 1. trunk's roots are similar *)
-      let trunk1_root = List.hd_exn trunk1 and trunk2_root = List.hd_exn trunk2 in
+      let trunk1_root = trunk1.(0) and trunk2_root = trunk2.(0) in
       (* 2. trunk's leaves are similar *)
-      let trunk1_leaf = List.last_exn trunk1 and trunk2_leaf = List.last_exn trunk2 in
+      let trunk1_leaf = Array.last trunk1 and trunk2_leaf = Array.last trunk2 in
       let open NodeWiseFeatures.SingleFeature in
       let root_pair_list =
         if
@@ -322,17 +311,19 @@ module SimilarVertexPairExtractor = struct
         RedefineHandler.collect_redefines @@ Deserializer.deserialize_json ()
       in
       let trunk1_redefines =
-        List.filter ~f:(RedefineHandler.is_redefine_vertex all_redefine_slices) trunk1
+        Array.filter ~f:(RedefineHandler.is_redefine_vertex all_redefine_slices) trunk1
       and trunk2_redefines =
-        List.filter ~f:(RedefineHandler.is_redefine_vertex all_redefine_slices) trunk2
+        Array.filter ~f:(RedefineHandler.is_redefine_vertex all_redefine_slices) trunk2
       in
       (* we can make redefine pairs: make a carpro of redefines *)
       (* TODO: making a carpro is naive. The logic should be refined *)
       let redefines_carpro =
-        let* redefine1 = trunk1_redefines in
-        let* redefine2 = trunk2_redefines in
-        if not @@ Vertex.equal redefine1 redefine2 then return (fst3 redefine1, fst3 redefine2)
-        else []
+        let raw_carpro =
+          Array.cartesian_product
+            (Array.map ~f:Vertex.get_method trunk1_redefines)
+            (Array.map ~f:Vertex.get_method trunk2_redefines)
+        in
+        Array.filter ~f:(fun (v1, v2) -> not @@ Method.equal v1 v2) raw_carpro |> Array.to_list
       in
       (* what if redefine is missing on one side? *)
       (* 4. trunks's method with bidirectional edges are similar *)
@@ -363,15 +354,15 @@ module SimilarVertexPairExtractor = struct
         List.rev @@ List.foldi ~f:(fun index acc elem -> (index, elem) :: acc) ~init:[] lst
       in
       let trunk_a_processed =
-        trunk_a
+        Array.to_list trunk_a
         |> List.filter ~f:(fun vertex -> Method.equal trunk_a_similar (Vertex.get_method vertex))
         |> List.stable_dedup |> with_list_index
       and trunk_b_processed =
-        trunk_b
+        Array.to_list trunk_b
         |> List.filter ~f:(fun vertex -> Method.equal trunk_b_similar (Vertex.get_method vertex))
         |> List.stable_dedup |> with_list_index
       in
-      if Int.( >= ) (List.length trunk_a) (List.length trunk_b) then
+      if Int.( >= ) (Array.length trunk_a) (Array.length trunk_b) then
         (* loop on trunk_b *)
         List.fold
           ~f:(fun acc ((b_index, b_elem) as b_tuple) ->
@@ -405,10 +396,20 @@ end
 module EstablishSimEdges = struct
   let make_nodewise_sim_edge (graph : G.t) : G.t =
     let open SimilarVertexPairExtractor in
-    let all_vertices = G.all_vertices_of_graph graph in
+    (* use only unmarked vertices; only they are relevant *)
+    let unmarked_vertices =
+      G.fold_vertex
+        (fun vertex acc ->
+          if ProbQuadruple.is_indeterminate (Vertex.get_dist vertex) then vertex :: acc else acc )
+        graph []
+    in
+    let unmarked_methods = unmarked_vertices >>| Vertex.get_method |> List.stable_dedup in
+    print_endline
+    @@ F.asprintf "There are %d vertices, of which %d are unmarked \n"
+         (List.length (G.all_vertices_of_graph graph))
+         (List.length unmarked_vertices) ;
     let nodewise_similarity_map =
-      NodewisePairExtractor.init_nodewise_similarity_map graph.comp_unit
-        (G.all_non_frontend_methods_of_graph graph)
+      NodewisePairExtractor.init_nodewise_similarity_map graph.comp_unit unmarked_methods
     in
     let above_threshold_entries =
       NodeWiseSimilarityMap.filter
@@ -418,9 +419,9 @@ module EstablishSimEdges = struct
     NodeWiseSimilarityMap.fold
       (fun (method1, method2) _ acc ->
         let method1_vertices =
-          List.filter ~f:(fun (meth, _, _) -> Method.equal meth method1) all_vertices
+          List.filter ~f:(fun (meth, _, _) -> Method.equal meth method1) unmarked_vertices
         and method2_vertices =
-          List.filter ~f:(fun (meth, _, _) -> Method.equal meth method2) all_vertices
+          List.filter ~f:(fun (meth, _, _) -> Method.equal meth method2) unmarked_vertices
         in
         (* we'll use smart_pairup_vertices to ensure we don't connect two distant vertices. *)
         let smart_pairedup : (Vertex.t * Vertex.t) list =
@@ -441,8 +442,17 @@ module EstablishSimEdges = struct
   let make_contextual_sim_edge (graph : G.t) : G.t =
     (* we use smart_pairup here, to translate method simliarity to vertex similarity. *)
     let open SimilarVertexPairExtractor in
-    let all_trunks = Trunk.identify_longest_trunks graph in
-    let trunk_similarity_map = TrunkPairExtractor.update_trunk_similarity_map all_trunks in
+    (* use only relevant trunks, which contains unmarked vertices *)
+    let all_relevant_trunks =
+      let all_trunks = Trunk.identify_longest_trunks graph in
+      Array.filter
+        ~f:(fun trunk ->
+          Array.exists
+            ~f:(fun vertex -> ProbQuadruple.is_indeterminate (Vertex.get_dist vertex))
+            trunk )
+        all_trunks
+    in
+    let trunk_similarity_map = TrunkPairExtractor.init_trunk_similarity_map all_relevant_trunks in
     TrunkSimilarityMap.fold
       (fun ((trunk1, trunk2) as trunk_pair) similarity acc ->
         if similarity >= TrunkSimilarityMap.threshold then
@@ -451,8 +461,7 @@ module EstablishSimEdges = struct
           in
           let smart_pairedup =
             contextually_similar_methods
-            >>= fun (method1, method2) ->
-            ContextualPairExtractor.smart_pairup_vertices trunk1 trunk2 (method1, method2)
+            >>= ContextualPairExtractor.smart_pairup_vertices trunk1 trunk2
           in
           List.fold
             ~f:(fun smol_acc (v1, v2) ->

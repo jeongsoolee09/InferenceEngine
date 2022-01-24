@@ -9,10 +9,13 @@ exception TODO
 module F = Format
 module Hashtbl = Caml.Hashtbl
 
-module SingleFeature = struct
-  type feature = FeatureMaps.NodeWiseFeatureMap.feature
+type feature = Int of int | String of string | Bool of bool | Annotation of Annotations.t
+[@@deriving equal]
 
-  type t = Method.t -> feature
+module SingleFeature = struct
+  type rule = Method.t -> feature
+
+  type t = {label: string; rule: rule}
 
   let this_project_package_name : string =
     let skip_methods = Deserializer.deserialize_skip_func ()
@@ -184,14 +187,17 @@ module SingleFeature = struct
 
 
   let all_features : t array =
-    [| (fun m -> String (get_return_type m))
-     ; (fun m -> String (get_class_name m))
-     ; (fun m -> String (get_method_name m))
-     ; (fun m -> Bool (is_framework_method m))
-     ; (fun m -> Bool (is_library_code m))
-     ; (fun m -> Bool (returnval_not_used_in_caller m))
-     ; (fun m -> Bool (is_initializer m))
-     ; (fun m -> Annotation (Annotations.get_annots m)) |]
+    [| {label= "return_type"; rule= (fun m -> String (get_return_type m))}
+     ; {label= "class_name"; rule= (fun m -> String (get_class_name m))}
+     ; {label= "method_name"; rule= (fun m -> String (get_method_name m))}
+     ; {label= "package_name"; rule= (fun m -> String (get_package_name m))}
+     ; {label= "is_framework_method"; rule= (fun m -> Bool (is_framework_method m))}
+     ; {label= "is_java_builtin_method"; rule= (fun m -> Bool (is_java_builtin_method m))}
+     ; {label= "is_library_code"; rule= (fun m -> Bool (is_library_code m))}
+     ; { label= "returnval_not_used_in_caller"
+       ; rule= (fun m -> Bool (returnval_not_used_in_caller m)) }
+     ; {label= "is_initializer"; rule= (fun m -> Bool (is_initializer m))}
+     ; {label= "annots"; rule= (fun m -> Annotation (Annotations.get_annots m))} |]
 end
 
 module PairwiseFeature = struct
@@ -249,19 +255,61 @@ module PairwiseFeature = struct
      ; has_same_annots |]
 end
 
-let run_all_single_features (method_ : Method.t) : SingleFeature.feature list =
-  (* TODO: change this to a dataframe *)
+let run_all_single_features (method_ : Method.t) : feature list =
   List.rev
   @@ Array.fold
        ~f:(fun acc feature ->
-         let feature_value = feature method_ in
+         let feature_value = feature.rule method_ in
          feature_value :: acc )
        SingleFeature.all_features ~init:[]
 
 
-let init_feature_map (graph : G.t) : FeatureMaps.NodeWiseFeatureMap.t =
-  List.fold
-    ~f:(fun acc meth ->
-      FeatureMaps.NodeWiseFeatureMap.strong_update acc meth (run_all_single_features meth) )
-    (G.all_non_frontend_methods_of_graph graph)
-    ~init:(FeatureMaps.NodeWiseFeatureMap.init graph)
+module NodeWiseFeatureMap = struct
+  module WithMethodDomain = Caml.Map.Make (Method)
+  include WithMethodDomain
+
+  type t = feature list WithMethodDomain.t
+
+  let string_of_feature (feature : feature) : string =
+    match feature with
+    | Int int ->
+        Int.to_string int
+    | String string ->
+        string
+    | Bool bool ->
+        Bool.to_string bool
+    | Annotation annots ->
+        "["
+        ^ List.fold
+            ~f:(fun acc single_annot -> acc ^ F.asprintf "%s, " single_annot.name)
+            annots ~init:""
+        ^ "]"
+
+
+  let init (methods : Method.t list) : t =
+    List.fold
+      ~f:(fun current_map method_ -> add method_ (run_all_single_features method_) current_map)
+      ~init:empty methods
+
+
+  module CSVSerializer = struct
+    let headers : string list =
+      "methname"
+      :: ( Array.to_list
+         @@ Array.map ~f:(fun single_feature -> single_feature.label) SingleFeature.all_features )
+
+
+    let serialize (featuremap : t) ~(filename : string) : unit =
+      let csv_repr =
+        headers
+        :: ( List.rev
+           @@ fold
+                (fun method_ features acc -> (method_ :: (features >>| string_of_feature)) :: acc)
+                featuremap [] )
+      in
+      let out_chan = Out_channel.create filename in
+      let csv_out_chan = Csv.to_channel ~quote_all:true out_chan in
+      Csv.output_all csv_out_chan csv_repr ;
+      Out_channel.close out_chan
+  end
+end
