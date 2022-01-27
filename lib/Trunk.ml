@@ -1,6 +1,7 @@
 open GraphRepr
 open InfixOperators
 open ListMonad
+open Yojson.Basic
 
 type t = G.V.t array [@@deriving compare, equal]
 
@@ -98,3 +99,32 @@ let identify_longest_trunks (graph : G.t) : t array =
 let find_trunks_containing_vertex (graph : G.t) (vertex : G.V.t) =
   let all_trunks = identify_longest_trunks graph in
   Array.filter ~f:(fun trunk -> Array.mem ~equal:Vertex.equal trunk vertex) all_trunks
+
+
+module Serializer = struct
+  type json = Yojson.Basic.t
+
+  let to_json (index : int) (trunk : t) : string * json =
+    let trunk_json_repr =
+      `List
+        ( trunk
+        |> Array.map ~f:(fun vertex ->
+               G.LiteralVertex.of_vertex vertex |> G.LiteralVertex.to_string
+               |> fun string -> `String string )
+        |> Array.to_list )
+    in
+    (string_of_int index, trunk_json_repr)
+
+
+  let all_longest_trunks_to_json (graph : G.t) : json =
+    let all_longest_trunks = identify_longest_trunks graph in
+    `Assoc (Array.to_list @@ Array.mapi ~f:to_json all_longest_trunks)
+
+
+  let serialize_graph_trunks_to_json (graph : G.t) : unit =
+    let filename = F.asprintf "%s_all_longest_trunks.json" graph.comp_unit in
+    let out_chan = Out_channel.create filename in
+    pretty_to_channel out_chan (all_longest_trunks_to_json graph) ;
+    Out_channel.flush out_chan ;
+    Out_channel.close out_chan
+end

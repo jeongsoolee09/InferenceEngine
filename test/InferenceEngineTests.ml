@@ -1351,3 +1351,80 @@ module Notebook66 = struct
 
   let _ = End
 end
+
+module Notebook67 = struct
+  let df_edges_added =
+    match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" with
+    | None ->
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
+
+
+  let all_udfs = df_edges_added |> G.all_methods_of_graph |> List.filter ~f:Method.is_udf
+
+  let all_apis =
+    df_edges_added |> G.all_methods_of_graph |> List.filter ~f:Method.is_api
+    |> List.filter ~f:(not << Method.is_dunder)
+
+
+  let _ = List.length all_udfs
+
+  let _ = List.length all_apis
+
+  let all_methods = G.all_methods_of_graph df_edges_added
+
+  let _ = List.length all_methods
+
+  let splitted = split_graph_by_comp_unit df_edges_added
+
+  let renderer_graph = List.nth_exn splitted 0
+
+  let renderer_udfs = renderer_graph |> G.all_methods_of_graph |> List.filter ~f:Method.is_udf
+
+  let renderer_apis =
+    renderer_graph |> G.all_methods_of_graph |> List.filter ~f:Method.is_api
+    |> List.filter ~f:(not << Method.is_dunder)
+
+
+  let site_graph = List.nth_exn splitted 1
+
+  let site_udfs = site_graph |> G.all_methods_of_graph |> List.filter ~f:Method.is_udf
+
+  let site_apis =
+    site_graph |> G.all_methods_of_graph |> List.filter ~f:Method.is_api
+    |> List.filter ~f:(not << Method.is_dunder)
+
+
+  let _ = End
+end
+
+module Notebook68 = struct
+  let df_edges_added =
+    match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" with
+    | None ->
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
+
+
+  let splitted = split_graph_by_comp_unit df_edges_added
+
+  let renderer_graph = List.nth_exn splitted 0
+
+  let site_graph = List.nth_exn splitted 1
+
+  let renderer_trunks = identify_longest_trunks renderer_graph
+
+  let site_trunks = identify_longest_trunks site_graph
+
+  let _ = Trunk.Serializer.serialize_graph_trunks_to_json renderer_graph
+
+  let _ = Trunk.Serializer.serialize_graph_trunks_to_json site_graph
+
+  let _ = End
+end
