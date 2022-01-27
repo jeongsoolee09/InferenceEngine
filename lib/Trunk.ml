@@ -101,10 +101,15 @@ let find_trunks_containing_vertex (graph : G.t) (vertex : G.V.t) =
   Array.filter ~f:(fun trunk -> Array.mem ~equal:Vertex.equal trunk vertex) all_trunks
 
 
+let make_trunk_dictionary (graph : G.t) : (string * t) array =
+  let all_trunks = identify_longest_trunks graph in
+  Array.mapi ~f:(fun index trunk -> (F.asprintf "id%d" index, trunk)) all_trunks
+
+
 module Serializer = struct
   type json = Yojson.Basic.t
 
-  let to_json (index : int) (trunk : t) : string * json =
+  let to_json (trunk : t) : json =
     let trunk_json_repr =
       `List
         ( trunk
@@ -113,12 +118,12 @@ module Serializer = struct
                |> fun string -> `String string )
         |> Array.to_list )
     in
-    (string_of_int index, trunk_json_repr)
+    trunk_json_repr
 
 
   let all_longest_trunks_to_json (graph : G.t) : json =
-    let all_longest_trunks = identify_longest_trunks graph in
-    `Assoc (Array.to_list @@ Array.mapi ~f:to_json all_longest_trunks)
+    let trunk_dict = make_trunk_dictionary graph in
+    `Assoc (Array.to_list @@ Array.map ~f:(fun (id, trunk) -> (id, to_json trunk)) trunk_dict)
 
 
   let serialize_graph_trunks_to_json (graph : G.t) : unit =
