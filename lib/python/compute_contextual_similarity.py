@@ -84,7 +84,7 @@ class ContextualFeature:
             fillers = ["filler" for _ in range(length_offset)]
             trunk2 = fillers + trunk2
         if length_offset < 0:
-            fillers = ["filler" for _ in range(length_offset)]
+            fillers = ["filler" for _ in range(-length_offset)]
             trunk1 = fillers + trunk1
         for i in range(len(trunk1)-1, -1, -1):
             if trunk1[i] == trunk2[i]:
