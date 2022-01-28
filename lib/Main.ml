@@ -21,6 +21,7 @@ let main () =
         Deserializer.deserialize_graph filename
   in
   Out_channel.print_endline "df_graph initialized." ;
+  RedefineHandler.make_and_output_redefine_dict json ;
   let axiom_applied = Axioms.apply_axioms df_edges_added in
   (* split, mark and serialize *)
   let splitted = split_graph_by_comp_unit axiom_applied in
@@ -35,16 +36,17 @@ let main () =
       let this_fragment_unmarked_apis_featuremap, this_fragment_unmarked_udfs_featuremap =
         init_for_graph graph_fragment
       in
+      (* ===== prepare data for python processes ===== *)
       CSVSerializer.serialize this_fragment_unmarked_apis_featuremap
         ~filename:(F.asprintf "NodeWiseFeatures_%s_apis.csv" graph_fragment.comp_unit) ;
       CSVSerializer.serialize this_fragment_unmarked_udfs_featuremap
         ~filename:(F.asprintf "NodeWiseFeatures_%s_udfs.csv" graph_fragment.comp_unit) ;
-      (* ======================================== *)
+      (* ========= spawn python process 1 ======= *)
       Out_channel.print_endline "spawning python process compute_nodewise_similarity.py..." ;
       SpawnPython.spawn_python ~pyfile:"./lib/python/compute_nodewise_similarity.py" ~args:[] ;
       Out_channel.print_string "done" ;
       Out_channel.flush stdout ;
-      (* ======================================== *)
+      (* ======== spawn python process 2 ======== *)
       Out_channel.print_endline "spawning python process compute_contextual_similarity.py..." ;
       SpawnPython.spawn_python ~pyfile:"./lib/python/compute_contextual_similarity.py" ~args:[] ;
       Out_channel.print_string "done" ;

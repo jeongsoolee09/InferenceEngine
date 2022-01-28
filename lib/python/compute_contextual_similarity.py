@@ -9,40 +9,23 @@ cs_threshold = 1
 
 # Port of Contextual Similarity handler of InferenceEngine.
 
-# unused for now
-def read_graph():
-    # return nk.readGraph("jot.dot", nk.Format.GML)
-    pass
-
-
-# unused for now
-def read_ns_pairs():
-    # all_csvs = list(map(lambda csvfile: pd.read_csv(csvfile), glob(".csv")))
-    # return pd.concat(all_csvs)
-    pass
-
-
 def read_trunks():
     with open("sagan-renderer_all_longest_trunks.json", "r+") as jsonfile:
         trunks = json.load(jsonfile)
     return pd.DataFrame(trunks.items(), columns=["index", "trunk"])
 
 
-def make_carpro_of_dataframe(dataframe):
-    # prepare lhs
-    dataframe1 = dataframe.copy()
-    dataframe1 = dataframe1.rename(columns={
-        "index": "index",
-        "trunk": "trunk1",
-    })
-    # prepare rhs
-    dataframe2 = dataframe.copy()
-    dataframe2 = dataframe2.rename(columns={
-        "index": "index",
-        "trunk": "trunk2",
-    })
-    carpro = pd.merge(dataframe1, dataframe2, how="cross")
-    return carpro
+def read_redefines():
+    with open("Redefines.txt", "r+") as redefines:
+        lines_read = list(map(lambda method: method.rstrip(),
+                              redefines.readlines()))
+    acc = dict()
+    for redefine_method in lines_read:
+        acc[redefine_method] = True
+    return acc
+
+
+redefine_dict = read_redefines()
 
 
 class ContextualFeature:
@@ -92,6 +75,24 @@ class ContextualFeature:
         return acc
 
 
+def make_carpro_of_dataframe(dataframe):
+    # prepare lhs
+    dataframe1 = dataframe.copy()
+    dataframe1 = dataframe1.rename(columns={
+        "index": "index",
+        "trunk": "trunk1",
+    })
+    # prepare rhs
+    dataframe2 = dataframe.copy()
+    dataframe2 = dataframe2.rename(columns={
+        "index": "index",
+        "trunk": "trunk2",
+    })
+    carpro = pd.merge(dataframe1, dataframe2, how="cross")
+    return carpro
+
+
+
 def no_reflexive(dataframe):
     cond1 = dataframe["index_x"] != dataframe["index_y"]
     cond2 = dataframe["trunk1"] != dataframe["trunk2"]
@@ -116,17 +117,66 @@ def leave_only_most_similar_pairs(carpro):
     return pd.concat(acc)
 
 
+def is_initializer(method):
+    return "<init>" in method
+
+
+def is_redefine(method):
+    try:
+        return redefine_dict[method]
+    except KeyError:
+        return False
+
+
+def find_methods_to_connect(carpro_row):
+    "port of SimilarityHandler.identify_similar_method_from_similar_trunk:\
+     we determine which methods to connect"
+    trunk1 = carpro_row.trunk1
+    trunk2 = carpro_row.trunk2
+    cs_score = carpro_row.cs_score
+    assert cs_score > cs_threshold
+    # computing root_pair_list
+    trunk1_root = trunk1[0]
+    trunk2_root = trunk2[0]
+    if not (trunk1_root == trunk2_root) and\
+       not (is_initializer(trunk1_root) and is_initializer(trunk2_root)):
+        root_pair_list = [(trunk1_root, trunk2_root),
+                          (trunk2_root, trunk1_root)]
+    else:
+        root_pair_list = []
+    # computing leaf_pair_list
+    trunk1_leaf = trunk1[-1]
+    trunk2_leaf = trunk2[-1]
+    if not (trunk1_leaf == trunk2_leaf) and\
+       not (is_initializer(trunk1_leaf) and is_initializer(trunk2_leaf)):
+        leaf_pair_list = [(trunk1_leaf, trunk2_leaf),
+                          (trunk2_leaf, trunk1_leaf)]
+    else:
+        leaf_pair_list = []
+    redefines_carpro = []
+    for method1 in trunk1:
+        for method2 in trunk2:
+            if is_redefine(method1) and is_redefine(method2)\
+               and (method1 != method2):
+                redefines_carpro.append((method1, method2))
+    return root_pair_list + leaf_pair_list + redefines_carpro
+
+
 def main():
-    for jsonfile in glob("../../*.json"):
+    for jsonfile in glob("*.json"):
         dataframe = read_trunks()
         carpro = make_carpro_of_dataframe(dataframe)
+
         contextual_sim_column = carpro.apply(get_trunk_similarity, axis=1)
         carpro["cs_score"] = contextual_sim_column
         # filter rows based on cs_score
         filtered_above_threshold = carpro[carpro.cs_score > cs_threshold]
         filtered = leave_only_most_similar_pairs(no_reflexive(filtered_above_threshold))
+
+        methods_to_connect_columns = filtered.apply(find_methods_to_connect, axis=1)
+
         filename = os.path.split(jsonfile)[-1]
-        filtered.to_csv(f"{filename}_filtered.csv")
+        methods_to_connect_columns.to_csv(f"{filename}_filtered.csv")
 
 
 if __name__ == "__main__":
