@@ -221,7 +221,7 @@ def leave_only_most_similar_pairs(carpro):
 
 
 def main():
-    for csvfile in glob("../../*.csv"):
+    for csvfile in glob("../*.csv"):
         dataframe = deserialize_csv(csvfile)
         carpro = make_carpro_of_dataframe(dataframe)
         nodewise_sim_column = carpro.apply(run_all_pairwise_feature, axis=1)
