@@ -490,20 +490,6 @@ module G = struct
       g []
 
 
-  (* let get_preds (vertex : LiteralVertex.t) (g : t) ~(label : EdgeLabel.t) : Vertex.t list = *)
-  (*   fold_edges_e List.cons g [] *)
-  (*   |> List.filter ~f:(fun (_, target_label, v2) -> *)
-  (*          Vertex.equal (LiteralVertex.to_vertex vertex g.graph) v2 *)
-  (*          && EdgeLabel.equal label target_label ) *)
-  (*   >>| fst3 *)
-
-  (* let get_succs (vertex : LiteralVertex.t) (g : t) ~(label : EdgeLabel.t) : Vertex.t list = *)
-  (*   fold_edges_e List.cons g [] *)
-  (*   |> List.filter ~f:(fun (v, target_label, _) -> *)
-  (*          Vertex.equal (LiteralVertex.to_vertex vertex g.graph) v *)
-  (*          && EdgeLabel.equal label target_label ) *)
-  (*   >>| fst3 *)
-
   let get_preds_any (vertex : LiteralVertex.t) (g : t) : Vertex.t list =
     fold_pred List.cons g (LiteralVertex.to_vertex vertex g.graph) []
 
@@ -546,6 +532,24 @@ module G = struct
       (fun vertex acc ->
         if is_df_leaf (LiteralVertex.of_vertex vertex) graph then vertex :: acc else acc )
       graph []
+
+
+  let get_unmarked_vertices (graph : t) : V.t list =
+    fold_vertex
+      (fun vertex acc ->
+        if ProbQuadruple.is_indeterminate (Vertex.get_dist vertex) then vertex :: acc else acc )
+      graph []
+
+
+  let get_unmarked_udfs (graph : t) : Method.t list =
+    get_unmarked_vertices graph >>| Vertex.get_method |> List.stable_dedup
+    |> List.filter ~f:Method.is_udf
+
+
+  let get_unmarked_apis (graph : t) : Method.t list =
+    get_unmarked_vertices graph >>| Vertex.get_method |> List.stable_dedup
+    |> List.filter ~f:Method.is_api
+    |> List.filter ~f:(not << Method.is_frontend)
 
 
   let get_edges (graph : t) ~(label : EdgeLabel.t) : E.t list =

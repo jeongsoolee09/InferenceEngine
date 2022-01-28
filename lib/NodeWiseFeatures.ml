@@ -1,6 +1,7 @@
 open ListMonad
 open InfixOperators
 open GraphRepr
+
 (* open FeatureMaps *)
 open Method
 
@@ -312,4 +313,47 @@ module NodeWiseFeatureMap = struct
       Csv.output_all csv_out_chan csv_repr ;
       Out_channel.close out_chan
   end
+
+  let is_already_serialized filename =
+    Array.exists ~f:(fun dir -> String.equal dir filename) @@ Sys.readdir "."
+
+
+  let serialize_to_bin (featuremap : t) ~(filename : string) : unit =
+    let out_chan = Out_channel.create filename in
+    Marshal.to_channel out_chan featuremap [] ;
+    Out_channel.close out_chan
+
+
+  let deserialize_bin (filename : string) : t =
+    let in_chan = In_channel.create filename in
+    let out = Marshal.from_channel in_chan in
+    In_channel.close in_chan;
+    out
+
+
+  let init_for_graph_udfs (graph : G.t) =
+    let filename = F.asprintf "NodeWiseFeatures_%s_apis.bin" graph.comp_unit in
+    match is_already_serialized filename with
+    | true ->
+        deserialize_bin filename
+    | false ->
+        let unmarked_udfs_of_graph = G.get_unmarked_udfs graph in
+        let out = init unmarked_udfs_of_graph in
+        serialize_to_bin out ~filename ;
+        out
+
+
+  let init_for_graph_apis (graph : G.t) =
+    let filename = F.asprintf "NodeWiseFeatures_%s_apis.bin" graph.comp_unit in
+    match is_already_serialized filename with
+    | true ->
+        deserialize_bin filename
+    | false ->
+        let unmarked_apis_of_graph = G.get_unmarked_apis graph in
+        let out = init unmarked_apis_of_graph in
+        serialize_to_bin out ~filename ;
+        out
+
+
+  let init_for_graph (graph : G.t) : t * t = (init_for_graph_udfs graph, init_for_graph_apis graph)
 end

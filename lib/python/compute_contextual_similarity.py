@@ -117,7 +117,7 @@ def leave_only_most_similar_pairs(carpro):
 
 
 def main():
-    for jsonfile in glob("*.json"):
+    for jsonfile in glob("../../*.json"):
         dataframe = read_trunks()
         carpro = make_carpro_of_dataframe(dataframe)
         contextual_sim_column = carpro.apply(get_trunk_similarity, axis=1)

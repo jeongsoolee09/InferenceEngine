@@ -28,27 +28,27 @@ let main () =
     ~f:(fun graph_fragment ->
       Out_channel.print_endline
       @@ F.asprintf "building nodewise maps for %s..." graph_fragment.comp_unit ;
-      let unmarked_vertices =
-        G.fold_vertex
-          (fun vertex acc ->
-            if ProbQuadruple.is_indeterminate (Vertex.get_dist vertex) then vertex :: acc else acc
-            )
-          graph_fragment []
-      in
-      let unmarked_methods = unmarked_vertices >>| Vertex.get_method |> List.stable_dedup in
-      let this_fragment_unmarked_apis =
-        unmarked_vertices >>| Vertex.get_method |> List.stable_dedup |> List.filter ~f:Method.is_api
-        |> List.filter ~f:(not << Method.is_frontend)
-      and this_fragment_unmarked_udfs =
-        unmarked_vertices >>| Vertex.get_method |> List.stable_dedup |> List.filter ~f:Method.is_udf
-      in
+      let unmarked_vertices = G.get_unmarked_vertices graph_fragment in
+      let this_fragment_unmarked_apis = G.get_unmarked_apis graph_fragment
+      and this_fragment_unmarked_udfs = G.get_unmarked_udfs graph_fragment in
       let open NodeWiseFeatures.NodeWiseFeatureMap in
-      let this_fragment_unmarked_apis_featuremap = init this_fragment_unmarked_apis
-      and this_fragment_unmarked_udfs_featuremap = init this_fragment_unmarked_udfs in
+      let this_fragment_unmarked_apis_featuremap, this_fragment_unmarked_udfs_featuremap =
+        init_for_graph graph_fragment
+      in
       CSVSerializer.serialize this_fragment_unmarked_apis_featuremap
         ~filename:(F.asprintf "NodeWiseFeatures_%s_apis.csv" graph_fragment.comp_unit) ;
       CSVSerializer.serialize this_fragment_unmarked_udfs_featuremap
-        ~filename:(F.asprintf "NodeWiseFeatures_%s_udfs.csv" graph_fragment.comp_unit) )
+        ~filename:(F.asprintf "NodeWiseFeatures_%s_udfs.csv" graph_fragment.comp_unit) ;
+      (* ======================================== *)
+      Out_channel.print_endline "spawning python process compute_nodewise_similarity.py..." ;
+      SpawnPython.spawn_python ~pyfile:"./lib/python/compute_nodewise_similarity.py" ~args:[] ;
+      Out_channel.print_string "done" ;
+      Out_channel.flush stdout ;
+      (* ======================================== *)
+      Out_channel.print_endline "spawning python process compute_contextual_similarity.py..." ;
+      SpawnPython.spawn_python ~pyfile:"./lib/python/compute_contextual_similarity.py" ~args:[] ;
+      Out_channel.print_string "done" ;
+      Out_channel.flush stdout )
     splitted ;
   (* TODO: Loop.loop *)
   ()
