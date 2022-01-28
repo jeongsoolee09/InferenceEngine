@@ -578,3 +578,20 @@ module Notebook70 = struct
 
   let _ = End
 end
+
+module Notebook71 = struct
+  let make_nodewise_sim_edge (graph : G.t) : G.t =
+    Out_channel.print_string "spawning python process compute_nodewise_similarity.py..." ;
+    SpawnPython.spawn_python ~pyfile:"./lib/python/compute_nodewise_similarity.py" ~args:[] ;
+    Out_channel.print_endline "done" ;
+    let regex = Re2.create_exn "NodeWiseFeatures_.*\.csv" in
+    let sim_csvs =
+      Array.filter ~f:(fun directory -> Re2.matches regex directory) @@ Sys.readdir "."
+    in
+    Array.fold ~f:(fun acc csvfile ->
+        raise TODO
+      ) ~init:graph sim_csvs
+
+
+  let _ = End
+end

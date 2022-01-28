@@ -5,10 +5,15 @@ import os
 import re
 import modin.pandas as pd
 from functools import reduce
+import argparse
+from rich import print
 
 # NOTE KEEP THIS SCRIPT SIMPLE
 
 ns_threshold = 14                # TEMP
+
+parser = argparse.ArgumentParser()
+parser.add_argument("comp_unit", nargs=1)
 
 
 def deserialize_csv(csv_directory):
@@ -215,20 +220,27 @@ def leave_only_most_similar_pairs(carpro):
     for method in lhs_unique_values:
         rows_with_this_method_as_lhs = carpro[carpro.methname_x == method]
         rows_with_max_similarity_with_lhs =\
-            rows_with_this_method_as_lhs[rows_with_this_method_as_lhs.ns_score == rows_with_this_method_as_lhs.ns_score.max()]
+            rows_with_this_method_as_lhs[rows_with_this_method_as_lhs.ns_score ==
+                                         rows_with_this_method_as_lhs.ns_score.max()]
         acc.append(rows_with_max_similarity_with_lhs)
     return pd.concat(acc)
 
 
 def main():
-    for csvfile in glob("../*.csv"):
+    print(f"Python is spawn on {os.getcwd()}")
+    args = parser.parse_args()
+    comp_unit = args.comp_unit[0]
+    for csvfile in (f"NodeWiseFeatures_{comp_unit}_apis.csv",
+                    f"NodeWiseFeatures_{comp_unit}_udfs.csv"):
+        print(f"working on {csvfile}...")
         dataframe = deserialize_csv(csvfile)
         carpro = make_carpro_of_dataframe(dataframe)
         nodewise_sim_column = carpro.apply(run_all_pairwise_feature, axis=1)
         carpro["ns_score"] = nodewise_sim_column
         # filter rows based on ns_score
         filtered_above_threshold = carpro[carpro.ns_score > ns_threshold]
-        filtered = leave_only_most_similar_pairs(no_reflexive(filtered_above_threshold))
+        filtered = leave_only_most_similar_pairs(
+            no_reflexive(filtered_above_threshold))
         filename = os.path.split(csvfile)[-1]
         filtered.to_csv(f"{filename}_filtered.csv")
 

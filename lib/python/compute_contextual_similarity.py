@@ -1,12 +1,17 @@
 import modin.pandas as pd
 import json
 import os
+import argparse
 from glob import glob
 from functools import reduce
 
 cs_threshold = 1
 
+parser = argparse.ArgumentParser()
+parser.add_argument("comp_unit", nargs=1)
+
 # Port of Contextual Similarity handler of InferenceEngine.
+
 
 def read_trunks(json_filename):
     with open(json_filename, "r+") as jsonfile:
@@ -51,7 +56,7 @@ class ContextualFeature:
             for i in range(len(trunk2_methods)):
                 if trunk1_methods[i] == trunk2_methods[i]:
                     acc += 1
-        if len(trunk1_methods) < len(trunk2_methods) :
+        if len(trunk1_methods) < len(trunk2_methods):
             for i in range(len(trunk1_methods)):
                 if trunk1_methods[i] == trunk2_methods[i]:
                     acc += 1
@@ -93,7 +98,6 @@ def make_carpro_of_dataframe(dataframe):
     return carpro
 
 
-
 def no_reflexive(dataframe):
     cond1 = dataframe["index_x"] != dataframe["index_y"]
     cond2 = dataframe["trunk1"] != dataframe["trunk2"]
@@ -113,7 +117,8 @@ def leave_only_most_similar_pairs(carpro):
     for index in lhs_unique_values:
         rows_with_this_index_as_lhs = carpro[carpro.index_x == index]
         rows_with_max_similarity_with_lhs =\
-            rows_with_this_index_as_lhs[rows_with_this_index_as_lhs.cs_score == rows_with_this_index_as_lhs.cs_score.max()]
+            rows_with_this_index_as_lhs[rows_with_this_index_as_lhs.cs_score ==
+                                        rows_with_this_index_as_lhs.cs_score.max()]
         acc.append(rows_with_max_similarity_with_lhs)
     return pd.concat(acc)
 
@@ -130,8 +135,8 @@ def is_redefine(method):
 
 
 def find_methods_to_connect(carpro_row):
-    "port of SimilarityHandler.identify_similar_method_from_similar_trunk:\
-     we determine which methods to connect"
+    """port of SimilarityHandler.identify_similar_method_from_similar_trunk:
+     we determine which methods to connect"""
     trunk1 = carpro_row.trunk1
     trunk2 = carpro_row.trunk2
     cs_score = carpro_row.cs_score
@@ -164,25 +169,29 @@ def find_methods_to_connect(carpro_row):
 
 
 def main():
-    for jsonfile in glob("*.json"):
-        dataframe = read_trunks(jsonfile)
-        carpro = make_carpro_of_dataframe(dataframe)
+    print(f"Python is spawn on {os.getcwd()}")
+    args = parser.parse_args()
+    comp_unit = args.comp_unit[0]
+    jsonfile = f"{comp_unit}_all_longest_trunks.json"
+    dataframe = read_trunks(jsonfile)
+    carpro = make_carpro_of_dataframe(dataframe)
 
-        contextual_sim_column = carpro.apply(get_trunk_similarity, axis=1)
-        carpro["cs_score"] = contextual_sim_column
-        # filter rows based on cs_score
-        filtered_above_threshold = carpro[carpro.cs_score > cs_threshold]
-        filtered = leave_only_most_similar_pairs(no_reflexive(filtered_above_threshold))
+    contextual_sim_column = carpro.apply(get_trunk_similarity, axis=1)
+    carpro["cs_score"] = contextual_sim_column
+    # filter rows based on cs_score
+    filtered_above_threshold = carpro[carpro.cs_score > cs_threshold]
+    filtered = leave_only_most_similar_pairs(
+        no_reflexive(filtered_above_threshold))
 
-        # TODO: flatten this thing!!!!!
-        methods_to_connect_columns = filtered.apply(find_methods_to_connect, axis=1)
-        acc = []
-        for row in methods_to_connect_columns.itertuples():
-            acc += row[1]
-        methods_to_connect_df = pd.DataFrame(acc)
+    methods_to_connect_columns = filtered.apply(
+        find_methods_to_connect, axis=1)
+    acc = []
+    for row in methods_to_connect_columns.itertuples():
+        acc += row[1]
+    methods_to_connect_df = pd.DataFrame(acc)
 
-        filename = os.path.split(jsonfile)[-1]
-        methods_to_connect_df.to_csv(f"{filename}_filtered.csv")
+    filename = os.path.split(jsonfile)[-1]
+    methods_to_connect_df.to_csv(f"{filename}_filtered.csv")
 
 
 if __name__ == "__main__":
