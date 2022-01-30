@@ -25,13 +25,11 @@ let one_pass (graph_fragment : G.t) : unit =
   CSVSerializer.serialize this_fragment_unmarked_udfs_featuremap
     ~filename:(F.asprintf "NodeWiseFeatures_%s_udfs.csv" graph_fragment.comp_unit) ;
   (* ======================================== *)
-  Out_channel.print_string "spawning python process compute_nodewise_similarity.py..." ;
-  SpawnPython.spawn_python ~pyfile:"./lib/python/compute_nodewise_similarity.py" ~args:[graph_fragment.comp_unit] ;
-  Out_channel.print_endline "done" ;
-  (* ======================================== *)
-  Out_channel.print_string "spawning python process compute_contextual_similarity.py..." ;
-  SpawnPython.spawn_python ~pyfile:"./lib/python/compute_contextual_similarity.py" ~args:[graph_fragment.comp_unit] ;
-  Out_channel.print_endline "done"
+  let finished_graph =
+    graph_fragment |> SimilarityHandler.make_nodewise_sim_edge
+    |> SimilarityHandler.make_contextual_sim_edge
+  in
+  raise TODO
 
 
 let main () =
