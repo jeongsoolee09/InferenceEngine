@@ -78,3 +78,7 @@ let json = Deserializer.deserialize_json ()
                      all_trunks *)
 
 (* let vis () = Visualizer.visualize_snapshot graph ~autoopen:true ~micro:false *)
+
+let () = Sys.chdir ".."
+
+let () = print_endline @@ Format.asprintf "Utop is spawned on %s" @@ Sys.getcwd ()
