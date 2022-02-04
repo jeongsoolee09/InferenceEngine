@@ -1,5 +1,3 @@
-(** module that extracts similar vertex pairs. *)
-
 open ListMonad
 open InfixOperators
 open GraphRepr
@@ -7,65 +5,52 @@ open Chain
 open NodeWiseFeatures
 open ContextualFeatures
 
-let ns_table_from_csv csv_filename =
-  let acc = Hashtbl.create 777 in
-  let in_chan = In_channel.create csv_filename in
-  let csv_array = Csv.to_array @@ Csv.load_in in_chan in
-  In_channel.close in_chan ;
-  for i = 1 to Array.length csv_array - 1 do
-    let method1 = csv_array.(i).(1)
-    and method2 = csv_array.(i).(12)
-    and ns_score = int_of_string @@ csv_array.(i).(23) in
-    Hashtbl.add acc (method1, method2) ns_score
-  done ;
-  acc
-
-
-let cs_table_from_csv csv_filename =
-  let acc = Hashtbl.create 777 in
-  let in_chan = In_channel.create csv_filename in
-  List.iter ~f:(fun array -> raise TODO) (Csv.load_in in_chan) ;
-  In_channel.close in_chan ;
-  acc
-
-
 let make_nodewise_sim_edge (graph : G.t) : G.t =
   Out_channel.print_string "spawning python process compute_nodewise_similarity.py..." ;
-  SpawnPython.spawn_python ~pyfile:"./lib/python/compute_nodewise_similarity.py" ~args:[] ;
+  SpawnPython.spawn_python ~pyfile:"./lib/python/compute_nodewise_similarity.py"
+    ~args:[graph.comp_unit] ;
   Out_channel.print_endline "done" ;
-  let ns_table =
-    ns_table_from_csv @@ F.asprintf "NodeWiseFeatures_%s_udfs.csv_filtered.csv" graph.comp_unit
+  let udf_csv_filename = F.asprintf "NodeWiseFeatures_%s_udfs.csv_filtered.csv" graph.comp_unit
+  and api_csv_filename = F.asprintf "NodeWiseFeatures_%s_apis.csv_filtered.csv" graph.comp_unit in
+  let udf_in_chan = In_channel.create udf_csv_filename
+  and api_in_chan = In_channel.create api_csv_filename in
+  let csv_array =
+    let udf_array = Array.slice (Csv.to_array @@ Csv.load_in udf_in_chan) 1 0
+    and api_array = Array.slice (Csv.to_array @@ Csv.load_in api_in_chan) 1 0 in
+    Array.append udf_array api_array
   in
-  Hashtbl.fold
-    (fun (m1, m2) _ current_graph ->
-      let m1_vertices = G.this_method_vertices current_graph m1
-      and m2_vertices = G.this_method_vertices current_graph m2 in
-      List.fold
-        ~f:(fun big_acc m1_vertex ->
-          List.fold
-            ~f:(fun smol_acc m2_vertex ->
-              G.add_edge_e smol_acc (m1_vertex, EdgeLabel.NodeWiseSimilarity, m2_vertex) )
-            ~init:big_acc m2_vertices )
-        ~init:graph m1_vertices )
-    ns_table graph
+  In_channel.close udf_in_chan ;
+  In_channel.close api_in_chan ;
+  let acc = ref graph in
+  for i = 0 to Array.length csv_array - 1 do
+    let method1 = csv_array.(i).(1) and method2 = csv_array.(i).(12) in
+    let m1_vertices = G.this_method_vertices graph method1
+    and m2_vertices = G.this_method_vertices graph method2 in
+    List.iter
+      ~f:(fun m1_vertex ->
+        List.iter
+          ~f:(fun m2_vertex ->
+            acc := G.add_edge_e !acc (m1_vertex, EdgeLabel.NodeWiseSimilarity, m2_vertex) )
+          m2_vertices )
+      m1_vertices
+  done ;
+  !acc
 
 
 let make_contextual_sim_edge (graph : G.t) : G.t =
   Out_channel.print_string "spawning python process compute_contextual_similarity.py..." ;
-  SpawnPython.spawn_python ~pyfile:"./lib/python/compute_contextual_similarity.py" ~args:[] ;
+  SpawnPython.spawn_python ~pyfile:"./lib/python/compute_contextual_similarity.py"
+    ~args:[graph.comp_unit] ;
   Out_channel.print_endline "done" ;
-  let cs_table =
-    cs_table_from_csv @@ F.asprintf "%s_all_longest_trunks.json_filtered.csv" graph.comp_unit
-  in
-  Hashtbl.fold
-    (fun (m1, m2) _ current_graph ->
-       let m1_vertices = G.this_method_vertices current_graph m1
-       and m2_vertices = G.this_method_vertices current_graph m2 in
-       List.fold
-         ~f:(fun big_acc m1_vertex ->
-             List.fold
-               ~f:(fun smol_acc m2_vertex ->
-                   G.add_edge_e smol_acc (m1_vertex, EdgeLabel.NodeWiseSimilarity, m2_vertex) )
-               ~init:big_acc m2_vertices )
-         ~init:graph m1_vertices )
-    cs_table graph
+  let csv_filename = F.asprintf "%s_all_longest_trunks.json_filtered.csv" graph.comp_unit in
+  let in_chan = In_channel.create csv_filename in
+  let csv_array = Csv.to_array @@ Csv.load_in in_chan in
+  In_channel.close in_chan ;
+  let acc = ref graph in
+  for i = 1 to Array.length csv_array - 1 do
+    let vertex1 = csv_array.(i).(1) and vertex2 = csv_array.(i).(2) in
+    let vertex1 = G.LiteralVertex.to_vertex (G.LiteralVertex.of_string vertex1) !acc.graph
+    and vertex2 = G.LiteralVertex.to_vertex (G.LiteralVertex.of_string vertex2) !acc.graph in
+    acc := G.add_edge_e !acc (vertex1, EdgeLabel.ContextualSimilarity, vertex2)
+  done ;
+  !acc

@@ -114,7 +114,7 @@ module ProbQuadruple = struct
 end
 
 module LocationSet = struct
-  type t = LocationSet of String.t [@@deriving compare, equal, sexp]
+  type t = String.t [@@deriving compare, equal, sexp]
 
   let of_string (string : String.t) : t =
     (* this doesn't have to be so stringent, does it? Let's not use regexp! *)
@@ -122,12 +122,12 @@ module LocationSet = struct
     and ends_with_closing_curly_brace = String.is_suffix ~suffix:"}" string
     and has_line_as_substring = String.is_substring ~substring:"line" string in
     assert (starts_with_open_curly_brace && ends_with_closing_curly_brace && has_line_as_substring) ;
-    LocationSet string
+    string
 
 
-  let to_string (LocationSet str : t) : string = str
+  let to_string : t -> string = ident
 
-  let dummy = LocationSet "{ line -1 }"
+  let dummy = "{ line -1 }"
 end
 
 module Vertex = struct
@@ -296,6 +296,19 @@ module G = struct
 
 
     let of_vertex ((str1, str2, _) : Vertex.t) : t = (str1, str2)
+
+    let of_string (string : String.t) : t =
+      let regex = Re2.create_exn "('(.*)', '(.*)')" in
+      let method_, locset =
+        match
+          ((Re2.find_submatches_exn regex string).(2), (Re2.find_submatches_exn regex string).(3))
+        with
+        | Some str1, Some str2 ->
+            (str1, str2)
+        | _, _ ->
+            failwithf "converting of_string failed: %s" string ()
+      in
+      (method_, locset)
   end
 
   module Saturation = struct

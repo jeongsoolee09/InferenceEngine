@@ -2,7 +2,6 @@ import modin.pandas as pd
 import json
 import os
 import argparse
-from glob import glob
 from functools import reduce
 
 cs_threshold = 1
@@ -31,15 +30,36 @@ def read_redefines():
     return acc
 
 
+def read_apis():
+    with open("skip_func.txt", "r+") as f:
+        return list(map(lambda string: string.rstrip(),
+                        f.readlines()))
+
+
+def read_udfs():
+    with open("Methods.txt", "r+") as f:
+        return list(map(lambda string: string.rstrip(),
+                        f.readlines()))
+
+# constant params
 redefine_dict = read_redefines()
+apis = read_apis()
+udfs = read_udfs()
+
+
+def get_only_classname_and_method(method_name):
+    """void RelationalDataAccessApplication.printer(Map)
+    to RelationalDataAccessApplication.printer"""
+    without_rtntype = method_name.split(" ")
+    return without_rtntype[-1].split("(")[0]
 
 
 class ContextualFeature:
     @staticmethod
     def same_callee_in_trunk_count(row):
         "counts the same callee in the trunks"
-        trunk1_methods = list(map(lambda tup: tup[0], row.trunk1))
-        trunk2_methods = list(map(lambda tup: tup[0], row.trunk2))
+        trunk1_methods = list(map(lambda tup: get_only_classname_and_method(tup[0]), row.trunk1))
+        trunk2_methods = list(map(lambda tup: get_only_classname_and_method(tup[0]), row.trunk2))
         acc = 0
         for method1 in trunk1_methods:
             if method1 in trunk2_methods:
@@ -80,6 +100,48 @@ class ContextualFeature:
                 acc += 1
         return acc
 
+    @staticmethod
+    def both_starts_and_ends_with_apis(row):
+        trunk1_methods = list(map(lambda tup: tup[0], row.trunk1))
+        trunk2_methods = list(map(lambda tup: tup[0], row.trunk2))
+        trunk1_head, trunk1_end = trunk1_methods[0], trunk1_methods[-1]
+        trunk2_head, trunk2_end = trunk2_methods[0], trunk2_methods[-1]
+
+        trunk1_head_classname_and_method = get_only_classname_and_method(trunk1_head)
+        trunk1_end_classname_and_method = get_only_classname_and_method(trunk1_end)
+        trunk2_head_classname_and_method = get_only_classname_and_method(trunk2_head)
+        trunk2_end_classname_and_method = get_only_classname_and_method(trunk2_end)
+
+        trunk1_head_is_api = any(list(map(lambda line: trunk1_head_classname_and_method in line, apis)))
+        trunk1_end_is_api = any(list(map(lambda line: trunk1_end_classname_and_method in line, apis)))
+        trunk2_head_is_api = any(list(map(lambda line: trunk2_head_classname_and_method in line, apis)))
+        trunk2_end_is_api = any(list(map(lambda line: trunk2_end_classname_and_method in line, apis)))
+
+        if trunk1_head_is_api and trunk1_end_is_api and trunk2_head_is_api and trunk2_end_is_api:
+            return 10
+        else:
+            return 0
+
+    @staticmethod
+    def both_starts_and_ends_with_resp_same_method(row):
+        trunk1_methods = list(map(lambda tup: tup[0], row.trunk1))
+        trunk2_methods = list(map(lambda tup: tup[0], row.trunk2))
+        trunk1_head, trunk1_end = trunk1_methods[0], trunk1_methods[-1]
+        trunk2_head, trunk2_end = trunk2_methods[0], trunk2_methods[-1]
+
+        trunk1_head_classname_and_method = get_only_classname_and_method(trunk1_head)
+        trunk1_end_classname_and_method = get_only_classname_and_method(trunk1_end)
+        trunk2_head_classname_and_method = get_only_classname_and_method(trunk2_head)
+        trunk2_end_classname_and_method = get_only_classname_and_method(trunk2_end)
+
+        trunk1_head_matches_trunk1_end = trunk1_head_classname_and_method == trunk1_end_classname_and_method
+        trunk2_head_matches_trunk2_end = trunk2_head_classname_and_method == trunk2_end_classname_and_method
+
+        if trunk1_head_matches_trunk1_end and trunk2_head_matches_trunk2_end:
+            return 10
+        else:
+            return 0
+
 
 def make_carpro_of_dataframe(dataframe):
     # prepare lhs
@@ -108,7 +170,9 @@ def get_trunk_similarity(row):
     return reduce(lambda acc, feature: acc + feature(row),
                   [ContextualFeature.same_callee_in_trunk_count,
                    ContextualFeature.trunks_share_same_prefixes_length,
-                   ContextualFeature.trunks_share_same_suffixes_length], 0)
+                   ContextualFeature.trunks_share_same_suffixes_length,
+                   ContextualFeature.both_starts_and_ends_with_apis,
+                   ContextualFeature.both_starts_and_ends_with_resp_same_method], 0)
 
 
 def leave_only_most_similar_pairs(carpro):
@@ -139,8 +203,6 @@ def find_methods_to_connect(carpro_row):
      we determine which methods to connect"""
     trunk1 = carpro_row.trunk1
     trunk2 = carpro_row.trunk2
-    cs_score = carpro_row.cs_score
-    assert cs_score > cs_threshold
     # computing root_pair_list
     trunk1_root = trunk1[0]
     trunk2_root = trunk2[0]
@@ -179,9 +241,15 @@ def main():
     contextual_sim_column = carpro.apply(get_trunk_similarity, axis=1)
     carpro["cs_score"] = contextual_sim_column
     # filter rows based on cs_score
-    filtered_above_threshold = carpro[carpro.cs_score > cs_threshold]
-    filtered = leave_only_most_similar_pairs(
-        no_reflexive(filtered_above_threshold))
+    filtered_above_threshold = carpro[carpro.cs_score >= cs_threshold]
+
+    # TEMP
+    filtered_above_threshold.to_csv("debug.csv")
+
+    # filtered = leave_only_most_similar_pairs(
+    #     no_reflexive(filtered_above_threshold))
+
+    filtered = no_reflexive(filtered_above_threshold)
 
     methods_to_connect_columns = filtered.apply(
         find_methods_to_connect, axis=1)

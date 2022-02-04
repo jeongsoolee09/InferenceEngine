@@ -5,8 +5,6 @@ open GraphRepr
 (* open FeatureMaps *)
 open Method
 
-exception TODO
-
 module F = Format
 module Hashtbl = Caml.Hashtbl
 
@@ -327,12 +325,12 @@ module NodeWiseFeatureMap = struct
   let deserialize_bin (filename : string) : t =
     let in_chan = In_channel.create filename in
     let out = Marshal.from_channel in_chan in
-    In_channel.close in_chan;
+    In_channel.close in_chan ;
     out
 
 
   let init_for_graph_udfs (graph : G.t) =
-    let filename = F.asprintf "NodeWiseFeatures_%s_apis.bin" graph.comp_unit in
+    let filename = F.asprintf "NodeWiseFeatures_%s_udfs.bin" graph.comp_unit in
     match is_already_serialized filename with
     | true ->
         deserialize_bin filename
@@ -355,5 +353,8 @@ module NodeWiseFeatureMap = struct
         out
 
 
-  let init_for_graph (graph : G.t) : t * t = (init_for_graph_udfs graph, init_for_graph_apis graph)
+  let init_for_graph (graph : G.t) : t * t = (init_for_graph_apis graph, init_for_graph_udfs graph)
+
+  let merge_two_maps (map1 : t) (map2 : t) : t =
+    fold (fun k v current_map -> add k v current_map) map2 map1
 end

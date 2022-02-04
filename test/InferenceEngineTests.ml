@@ -580,18 +580,224 @@ module Notebook70 = struct
 end
 
 module Notebook71 = struct
-  let make_nodewise_sim_edge (graph : G.t) : G.t =
-    Out_channel.print_string "spawning python process compute_nodewise_similarity.py..." ;
-    SpawnPython.spawn_python ~pyfile:"./lib/python/compute_nodewise_similarity.py" ~args:[] ;
-    Out_channel.print_endline "done" ;
-    let regex = Re2.create_exn "NodeWiseFeatures_.*\.csv" in
-    let sim_csvs =
-      Array.filter ~f:(fun directory -> Re2.matches regex directory) @@ Sys.readdir "."
-    in
-    Array.fold ~f:(fun acc csvfile ->
-        raise TODO
-      ) ~init:graph sim_csvs
+  let _ =
+    DirectoryManager.get_compilation_unit_subdirs
+      "/Users/jslee/Taint-Analysis/Code/benchmarks/realworld/relational-data-access"
 
 
+  (* this is not the problem *)
+
+  let df_edges_added =
+    match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" with
+    | None ->
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
+
+
+  let _ = G.all_methods_of_graph df_edges_added
+
+  let _ = split_graph_by_comp_unit df_edges_added
+
+  let _ = get_comp_unit "int[] JdbcTemplate.batchUpdate(String,List)"
+
+  let _ = Trunk.identify_longest_trunks df_edges_added
+
+  let _ = Trunk.Serializer.all_longest_trunks_to_json df_edges_added
+
+  let _ = Trunk.Serializer.serialize_graph_trunks_to_json df_edges_added
+
+  let _ = End
+end
+
+module Notebook72 = struct
+  let df_edges_added =
+    match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" with
+    | None ->
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
+
+
+  let _ = G.all_methods_of_graph df_edges_added
+
+  let graph = List.hd_exn @@ split_graph_by_comp_unit df_edges_added
+
+  let unmarked_apis = G.get_unmarked_apis graph
+
+  let unmarked_udfs = G.get_unmarked_udfs graph
+
+  open NodeWiseFeatures.NodeWiseFeatureMap
+
+  let api_map, udf_map = init_for_graph graph
+
+  let _ =
+    CSVSerializer.serialize api_map
+      ~filename:(F.asprintf "NodeWiseFeatures_%s_apis.csv" graph.comp_unit)
+
+
+  let _ =
+    CSVSerializer.serialize udf_map
+      ~filename:(F.asprintf "NodeWiseFeatures_%s_udfs.csv" graph.comp_unit)
+
+
+  let _ = G.get_unmarked_udfs graph
+
+  let _ = End
+end
+
+module Notebook73 = struct
+  (* debugging Propagation *)
+
+  (* first and foremost, we initialize the graph *)
+
+  let df_edges_added =
+    match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" with
+    | None ->
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
+
+
+  let relational =
+    {df_edges_added with comp_unit= "src"}
+    |> SimilarityHandler.make_nodewise_sim_edge |> SimilarityHandler.make_contextual_sim_edge
+
+
+  let _ = Visualizer.visualize_snapshot relational ~micro:false ~autoopen:true
+
+  let _ = Loop.loop relational [] NodeWiseFeatureMap.empty 0
+
+  let _ = End
+end
+
+module Notebook74 = struct
+  (* debugging SimilarityHandler.make_nodewise_sim_edge *)
+
+  let df_edges_added =
+    match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" with
+    | None ->
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
+
+
+  let splitted = split_graph_by_comp_unit df_edges_added
+
+  let df_edges_added = List.hd_exn splitted
+
+  let ns_edges_added = SimilarityHandler.make_nodewise_sim_edge df_edges_added
+
+  let _ = Visualizer.visualize_snapshot ns_edges_added ~autoopen:true ~micro:false
+
+  (* ============ debugging ============ *)
+
+  let graph = ns_edges_added
+
+  let udf_csv_filename = F.asprintf "NodeWiseFeatures_%s_udfs.csv_filtered.csv" graph.comp_unit
+
+  and api_csv_filename = F.asprintf "NodeWiseFeatures_%s_apis.csv_filtered.csv" graph.comp_unit
+
+  let udf_in_chan = In_channel.create udf_csv_filename
+
+  and api_in_chan = In_channel.create api_csv_filename
+
+  let csv_array =
+    let udf_array = Array.slice (Csv.to_array @@ Csv.load_in udf_in_chan) 1 0
+    and api_array = Array.slice (Csv.to_array @@ Csv.load_in api_in_chan) 1 0 in
+    Array.append udf_array api_array
+
+
+  let _ =
+    In_channel.close udf_in_chan ;
+    In_channel.close api_in_chan
+
+
+  let acc = ref graph
+
+  let _ =
+    for i = 0 to Array.length csv_array - 1 do
+      let method1 = csv_array.(i).(1) and method2 = csv_array.(i).(12) in
+      print_endline method1 ;
+      print_endline method2 ;
+      let m1_vertices = G.this_method_vertices df_edges_added method1
+      and m2_vertices = G.this_method_vertices df_edges_added method2 in
+      List.iter
+        ~f:(fun m1_vertex ->
+          List.iter
+            ~f:(fun m2_vertex ->
+              acc := G.add_edge_e !acc (m1_vertex, EdgeLabel.NodeWiseSimilarity, m2_vertex) )
+            m2_vertices )
+        m1_vertices
+    done
+
+
+  let _ = !acc
+
+  let _ = Visualizer.visualize_snapshot !acc ~autoopen:true ~micro:false
+
+  let _ = End
+end
+
+module Notebook75 = struct
+  (* debugging SimilarityHandler.make_contextual_sim_edge *)
+
+  let df_edges_added =
+    match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" with
+    | None ->
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
+
+
+  let splitted = split_graph_by_comp_unit df_edges_added
+
+  let df_edges_added = List.hd_exn splitted
+
+  let ns_edges_added = SimilarityHandler.make_nodewise_sim_edge df_edges_added
+
+  (* ============ debugging ============ *)
+
+  let graph = ns_edges_added
+
+  let csv_filename = F.asprintf "%s_all_longest_trunks.json_filtered.csv" graph.comp_unit
+
+  let in_chan = In_channel.create csv_filename
+
+  let csv_array = Csv.to_array @@ Csv.load_in in_chan
+
+  let _ = In_channel.close in_chan
+
+  let acc = ref graph
+
+  let _ =
+    for i = 1 to Array.length csv_array - 1 do
+      let vertex1 = csv_array.(i).(1) and vertex2 = csv_array.(i).(2) in
+      let vertex1 = G.LiteralVertex.to_vertex (G.LiteralVertex.of_string vertex1) !acc.graph
+      and vertex2 = G.LiteralVertex.to_vertex (G.LiteralVertex.of_string vertex2) !acc.graph in
+      acc := G.add_edge_e !acc (vertex1, EdgeLabel.ContextualSimilarity, vertex2)
+    done
+
+
+  let _ = !acc
+
+  (* ============ debugging end ============ *)
+
+  let _ = Visualizer.visualize_snapshot !acc ~autoopen:true ~micro:false
+
+  let _ = End
+end
+
+module Notebook76 = struct
   let _ = End
 end

@@ -5,9 +5,8 @@ open SimilarityHandler
 open GraphSplitter
 open SpawnPython
 open GraphRepr
+open Loop
 module F = Format
-
-exception TODO
 
 let one_pass (graph_fragment : G.t) : unit =
   Out_channel.print_endline
@@ -24,12 +23,17 @@ let one_pass (graph_fragment : G.t) : unit =
     ~filename:(F.asprintf "NodeWiseFeatures_%s_apis.csv" graph_fragment.comp_unit) ;
   CSVSerializer.serialize this_fragment_unmarked_udfs_featuremap
     ~filename:(F.asprintf "NodeWiseFeatures_%s_udfs.csv" graph_fragment.comp_unit) ;
+  (* Trunk.Serializer.serialize_graph_trunks_to_json graph_fragment; *)
   (* ======================================== *)
   let finished_graph =
     graph_fragment |> SimilarityHandler.make_nodewise_sim_edge
     |> SimilarityHandler.make_contextual_sim_edge
   in
-  raise TODO
+  Visualizer.visualize_snapshot finished_graph ~autoopen:false ~micro:false;
+  ignore
+  @@ loop graph_fragment []
+       (merge_two_maps this_fragment_unmarked_udfs_featuremap this_fragment_unmarked_apis_featuremap)
+       0
 
 
 let main () =

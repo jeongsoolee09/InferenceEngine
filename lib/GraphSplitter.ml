@@ -4,9 +4,10 @@ open GraphRepr
 module Hashtbl = Caml.Hashtbl
 
 module CompUnit = struct
-  type t = Known of string | Unknown [@@deriving equal]
+  type t = Known of string | Unknown | Default [@@deriving equal]
 
-  let to_string (comp_unit : t) = match comp_unit with Known unit_ -> unit_ | Unknown -> "Unknown"
+  let to_string (comp_unit : t) =
+    match comp_unit with Known unit_ -> unit_ | Unknown -> "Unknown" | Default -> "Default"
 end
 
 let get_comp_unit =
@@ -19,17 +20,19 @@ let get_comp_unit =
           let abs_dirs_and_classnames =
             DirectoryManager.Classnames.classnames_by_compilation_unit root_dir
           in
-          let out =
-            List.find
-              ~f:(fun (abs_dir, classnames) ->
-                List.mem classnames (Method.get_class_name method_) ~equal:String.equal )
-              abs_dirs_and_classnames
-          in
-          match out with
-          | None ->
-              Unknown
-          | Some (abs_dir, _) ->
-              Known (List.last_exn @@ String.split ~on:'/' abs_dir)
+          if List.is_empty abs_dirs_and_classnames then Default
+          else
+            let res =
+              List.find
+                ~f:(fun (abs_dir, classnames) ->
+                  List.mem classnames (Method.get_class_name method_) ~equal:String.equal )
+                abs_dirs_and_classnames
+            in
+            match res with
+            | None ->
+                Unknown
+            | Some (abs_dir, _) ->
+                Known (List.last_exn @@ String.split ~on:'/' abs_dir)
         in
         Hashtbl.add cache method_ out ;
         out
@@ -55,6 +58,8 @@ let split_graph_by_single_comp_unit (df_graph : G.t)
         match Hashtbl.find lookup_table method_ with
         | Known comp_unit ->
             String.equal comp_unit comp_unit_name
+        | Default ->
+            true
         | Unknown ->
             false )
       all_methods
@@ -71,7 +76,7 @@ let split_graph_by_single_comp_unit (df_graph : G.t)
         || List.mem ~equal:Vertex.equal this_comp_unit_vertices v2 )
       all_edges
   in
-  {G.empty with comp_unit= comp_unit_name}
+  {G.empty with comp_unit= (if String.is_empty comp_unit_name then "default" else comp_unit_name)}
   |> fun graph ->
   List.fold this_comp_unit_vertices ~f:G.add_vertex ~init:graph
   |> fun graph -> List.fold edges_involving_this_comp_unit_udfs ~f:G.add_edge_e ~init:graph
@@ -81,7 +86,9 @@ let split_graph_by_comp_unit (graph : G.t) : G.t list =
   let all_comp_units =
     DirectoryManager.get_compilation_unit_subdirs (Deserializer.deserialize_config ())
   in
-  List.iter ~f:(fun comp_unit ->
-      Out_channel.print_endline @@ F.asprintf "comp_unit %s identified." comp_unit ) all_comp_units ;
+  List.iter
+    ~f:(fun comp_unit ->
+      Out_channel.print_endline @@ F.asprintf "comp_unit %s identified." comp_unit )
+    all_comp_units ;
   let lookup_table = create_comp_unit_lookup_table (G.all_methods_of_graph graph) in
   all_comp_units >>| split_graph_by_single_comp_unit graph lookup_table

@@ -69,7 +69,7 @@ let collect_redefines (json : json) : ChainSlice.t list =
       failwith "Type Error4"
 
 
-(** serialize the list of methods into a txt file. *)
+(** serialize the list of redefine methods into a txt file. *)
 let make_and_output_redefine_dict (json : json) : unit =
   let redefine_methods = collect_redefines json >>| ChainSlice.get_current_method in
   let module MethodSet = Caml.Set.Make (Method) in

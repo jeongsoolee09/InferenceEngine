@@ -3,8 +3,6 @@ open InfixOperators
 module F = Format
 module Hashtbl = Caml.Hashtbl
 
-exception TODO
-
 let is_directory (abs_dir : string) : bool =
   match Sys.is_directory abs_dir with `Yes -> true | _ -> false
 

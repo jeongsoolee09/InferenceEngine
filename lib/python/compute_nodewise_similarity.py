@@ -215,15 +215,18 @@ def no_reflexive(dataframe):
 
 
 def leave_only_most_similar_pairs(carpro):
-    lhs_unique_values = carpro.methname_x.unique()
-    acc = []
-    for method in lhs_unique_values:
-        rows_with_this_method_as_lhs = carpro[carpro.methname_x == method]
-        rows_with_max_similarity_with_lhs =\
-            rows_with_this_method_as_lhs[rows_with_this_method_as_lhs.ns_score ==
-                                         rows_with_this_method_as_lhs.ns_score.max()]
-        acc.append(rows_with_max_similarity_with_lhs)
-    return pd.concat(acc)
+    if len(carpro) == 0:
+        return carpro
+    else:
+        lhs_unique_values = carpro.methname_x.unique()
+        acc = []
+        for method in lhs_unique_values:
+            rows_with_this_method_as_lhs = carpro[carpro.methname_x == method]
+            rows_with_max_similarity_with_lhs =\
+                rows_with_this_method_as_lhs[rows_with_this_method_as_lhs.ns_score ==
+                                            rows_with_this_method_as_lhs.ns_score.max()]
+            acc.append(rows_with_max_similarity_with_lhs)
+        return pd.concat(acc)
 
 
 def main():
