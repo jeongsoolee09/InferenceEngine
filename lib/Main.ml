@@ -8,7 +8,7 @@ open GraphRepr
 open Loop
 module F = Format
 
-let one_pass (graph_fragment : G.t) : unit =
+let build_graph (graph_fragment : G.t) : G.t =
   Out_channel.print_endline
   @@ F.asprintf "building nodewise maps for %s..." graph_fragment.comp_unit ;
   let unmarked_vertices = G.get_unmarked_vertices graph_fragment in
@@ -23,17 +23,19 @@ let one_pass (graph_fragment : G.t) : unit =
     ~filename:(F.asprintf "NodeWiseFeatures_%s_apis.csv" graph_fragment.comp_unit) ;
   CSVSerializer.serialize this_fragment_unmarked_udfs_featuremap
     ~filename:(F.asprintf "NodeWiseFeatures_%s_udfs.csv" graph_fragment.comp_unit) ;
-  (* Trunk.Serializer.serialize_graph_trunks_to_json graph_fragment; *)
+  Trunk.Serializer.serialize_graph_trunks_to_json graph_fragment ;
   (* ======================================== *)
   let finished_graph =
     graph_fragment |> SimilarityHandler.make_nodewise_sim_edge
     |> SimilarityHandler.make_contextual_sim_edge
   in
-  Visualizer.visualize_snapshot finished_graph ~autoopen:false ~micro:false;
-  ignore
-  @@ loop graph_fragment []
-       (merge_two_maps this_fragment_unmarked_udfs_featuremap this_fragment_unmarked_apis_featuremap)
-       0
+  finished_graph
+
+
+let one_pass (graph_fragment : G.t) : unit =
+  let finished_graph = build_graph graph_fragment in
+  Visualizer.visualize_snapshot finished_graph ~autoopen:false ~micro:false ;
+  ignore @@ loop graph_fragment [] NodeWiseFeatures.NodeWiseFeatureMap.empty
 
 
 let main () =

@@ -65,7 +65,7 @@ def check(subgraphs):
 
 
 def serialize_to_csv(edges, filename):
-    with open("filename", "w+") as csvfile:
+    with open(filename, "w+") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerows(edges)
 

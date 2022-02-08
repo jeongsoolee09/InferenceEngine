@@ -1,12 +1,11 @@
-import csv
-import networkx
-from glob import glob
+import networkx as nx
 import os
 import re
 import modin.pandas as pd
 from functools import reduce
 import argparse
 from rich import print
+import weakly
 
 # NOTE KEEP THIS SCRIPT SIMPLE
 
@@ -229,6 +228,13 @@ def leave_only_most_similar_pairs(carpro):
         return pd.concat(acc)
 
 
+def build_ns_graph(dataframe):
+    acc = nx.DiGraph()
+    for tup in dataframe.itertuples():
+        acc.add_edge(tup[2], tup[13])
+    return acc
+
+
 def main():
     print(f"Python is spawn on {os.getcwd()}")
     args = parser.parse_args()
@@ -244,8 +250,8 @@ def main():
         filtered_above_threshold = carpro[carpro.ns_score > ns_threshold]
         filtered = leave_only_most_similar_pairs(
             no_reflexive(filtered_above_threshold))
-        filename = os.path.split(csvfile)[-1]
-        filtered.to_csv(f"{filename}_filtered.csv")
+        bidigraph = build_ns_graph(filtered)
+        weakly.main(bidigraph, f"{csvfile}_filtered.csv")
 
 
 if __name__ == "__main__":

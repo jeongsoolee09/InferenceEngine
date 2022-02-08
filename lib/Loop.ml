@@ -33,8 +33,9 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t) (previous_sn
   if List.is_empty rules_to_propagate then
     (* if we can't propagate any further, terminate *)
     (current_snapshot, [])
-  else if List.mem (history >>| Vertex.get_method) (Response.get_method new_fact) ~equal:Method.equal then
-    (current_snapshot, history)
+  else if
+    List.mem (history >>| Vertex.get_method) (Response.get_method new_fact) ~equal:Method.equal
+  then (current_snapshot, history)
   else (
     Out_channel.print_endline "==============================" ;
     Out_channel.print_endline
@@ -108,7 +109,7 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t) (previous_sn
     out )
 
 
-let rec loop (current_snapshot : G.t) (received_responses : Response.t list)
+let rec loop_inner (current_snapshot : G.t) (received_responses : Response.t list)
     (nodewise_featuremap : NodeWiseFeatures.NodeWiseFeatureMap.t) (count : int) : G.t =
   if G.Saturation.all_dists_in_graph_are_saturated current_snapshot then current_snapshot
   else
@@ -151,4 +152,10 @@ let rec loop (current_snapshot : G.t) (received_responses : Response.t list)
       let propagated' = Axioms.apply_axioms propagated in
       Visualizer.visualize_snapshot propagated' ~micro:false ~autoopen:true ;
       G.serialize_to_bin propagated' ;
-      loop propagated' (response :: received_responses) nodewise_featuremap (count + 1)
+      loop_inner propagated' (response :: received_responses) nodewise_featuremap (count + 1)
+
+
+let loop (current_snapshot : G.t) (received_responses : Response.t list)
+    (nodewise_featuremap : NodeWiseFeatures.NodeWiseFeatureMap.t) =
+  print_endline "Starting question-&-answer loop.";
+  loop_inner current_snapshot received_responses nodewise_featuremap 0

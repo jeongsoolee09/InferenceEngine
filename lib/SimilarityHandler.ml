@@ -21,9 +21,12 @@ let make_nodewise_sim_edge (graph : G.t) : G.t =
   in
   In_channel.close udf_in_chan ;
   In_channel.close api_in_chan ;
+  Out_channel.print_string "Now adding NS edges...";
+  Out_channel.flush stdout;
   let acc = ref graph in
   for i = 0 to Array.length csv_array - 1 do
-    let method1 = csv_array.(i).(1) and method2 = csv_array.(i).(12) in
+    (* let method1 = csv_array.(i).(1) and method2 = csv_array.(i).(12) in *)
+    let method1 = csv_array.(i).(1) and method2 = csv_array.(i).(2) in
     let m1_vertices = G.this_method_vertices graph method1
     and m2_vertices = G.this_method_vertices graph method2 in
     List.iter
@@ -34,6 +37,7 @@ let make_nodewise_sim_edge (graph : G.t) : G.t =
           m2_vertices )
       m1_vertices
   done ;
+  Out_channel.print_endline "done";
   !acc
 
 
@@ -47,10 +51,13 @@ let make_contextual_sim_edge (graph : G.t) : G.t =
   let csv_array = Csv.to_array @@ Csv.load_in in_chan in
   In_channel.close in_chan ;
   let acc = ref graph in
+  Out_channel.print_string "Now adding CS edges...";
+  Out_channel.flush stdout;
   for i = 1 to Array.length csv_array - 1 do
-    let vertex1 = csv_array.(i).(1) and vertex2 = csv_array.(i).(2) in
+    let vertex1 = csv_array.(i).(0) and vertex2 = csv_array.(i).(1) in
     let vertex1 = G.LiteralVertex.to_vertex (G.LiteralVertex.of_string vertex1) !acc.graph
     and vertex2 = G.LiteralVertex.to_vertex (G.LiteralVertex.of_string vertex2) !acc.graph in
     acc := G.add_edge_e !acc (vertex1, EdgeLabel.ContextualSimilarity, vertex2)
   done ;
+  Out_channel.print_endline "done";
   !acc

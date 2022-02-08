@@ -672,7 +672,7 @@ module Notebook73 = struct
 
   let _ = Visualizer.visualize_snapshot relational ~micro:false ~autoopen:true
 
-  let _ = Loop.loop relational [] NodeWiseFeatureMap.empty 0
+  let _ = Loop.loop relational [] NodeWiseFeatureMap.empty
 
   let _ = End
 end
@@ -799,5 +799,113 @@ module Notebook75 = struct
 end
 
 module Notebook76 = struct
+  let df_edges_added =
+    match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" with
+    | None ->
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
+
+
+  let splitted = split_graph_by_comp_unit df_edges_added
+
+  (* ============ renderer ============ *)
+  let renderer_graph = List.nth_exn splitted 0
+
+  let axiom_applied = Axioms.apply_axioms renderer_graph
+
+  let _ = Trunk.Serializer.serialize_graph_trunks_to_json axiom_applied
+
+  let _ = End
+end
+
+module Notebook77 = struct
+  let df_edges_added =
+    match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" with
+    | None ->
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
+
+
+  let splitted = split_graph_by_comp_unit df_edges_added
+
+  (* ============ renderer ============ *)
+  let renderer_graph = List.nth_exn splitted 0
+
+  let renderer_finished = Main.build_graph renderer_graph
+
+  let ns_clusters = all_ns_clusters renderer_finished
+
+  let _ = End
+end
+
+module Notebook78 = struct
+  let df_edges_added =
+    match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" with
+    | None ->
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
+
+
+  let splitted = split_graph_by_comp_unit df_edges_added
+
+  let renderer_graph = List.nth_exn splitted 0
+
+  let renderer_finished = SimilarityHandler.make_nodewise_sim_edge renderer_graph
+
+  let graph = renderer_graph
+
+  let udf_csv_filename = F.asprintf "NodeWiseFeatures_%s_udfs.csv_filtered.csv" graph.comp_unit
+
+  and api_csv_filename = F.asprintf "NodeWiseFeatures_%s_apis.csv_filtered.csv" graph.comp_unit
+
+  let udf_in_chan = In_channel.create udf_csv_filename
+
+  and api_in_chan = In_channel.create api_csv_filename
+
+  let csv_array =
+    let udf_array = Array.slice (Csv.to_array @@ Csv.load_in udf_in_chan) 1 0
+    and api_array = Array.slice (Csv.to_array @@ Csv.load_in api_in_chan) 1 0 in
+    Array.append udf_array api_array
+
+
+  let _ = In_channel.close udf_in_chan
+
+  let _ = In_channel.close api_in_chan
+
+  let _ = Out_channel.print_string "Now adding NS edges..."
+
+  let _ = Out_channel.flush stdout
+
+  let acc = ref graph
+
+  let _ =
+    for i = 0 to Array.length csv_array - 1 do
+      (* let method1 = csv_array.(i).(1) and method2 = csv_array.(i).(12) in *)
+      let method1 = csv_array.(i).(1) and method2 = csv_array.(i).(2) in
+      let m1_vertices = G.this_method_vertices graph method1
+      and m2_vertices = G.this_method_vertices graph method2 in
+      List.iter
+        ~f:(fun m1_vertex ->
+          List.iter
+            ~f:(fun m2_vertex ->
+              acc := G.add_edge_e !acc (m1_vertex, EdgeLabel.NodeWiseSimilarity, m2_vertex) )
+            m2_vertices )
+        m1_vertices
+    done
+
+
+  let _ = Out_channel.print_endline "done"
+
+  let _ = !acc
+
   let _ = End
 end

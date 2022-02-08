@@ -29,9 +29,10 @@ end
 
 module UPrim = Graph.Prim.Make (U) (Weight)
 
-let run_prim (undigraph : U.t) = UPrim.spanningtree undigraph
+let run_prim (undigraph : U.t) : Weight.edge list = UPrim.spanningtree undigraph
 
 let prune_to_mst (digraph : G.t) : G.t =
+  (* mst stands for minimum spanning tree *)
   let undirected_of_digraph = to_undirected digraph in
   let mst = run_prim undirected_of_digraph in
   G.empty

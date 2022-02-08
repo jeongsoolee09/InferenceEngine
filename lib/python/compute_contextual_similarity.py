@@ -1,7 +1,9 @@
+import networkx as nx
 import modin.pandas as pd
 import json
 import os
 import argparse
+import weakly
 from functools import reduce
 
 cs_threshold = 1
@@ -198,6 +200,13 @@ def is_redefine(method):
         return False
 
 
+def build_cs_graph(edges):
+    acc = nx.DiGraph()
+    for tup in edges:
+        acc.add_edge(tup[0], tup[1])
+    return acc
+
+
 def find_methods_to_connect(carpro_row):
     """port of SimilarityHandler.identify_similar_method_from_similar_trunk:
      we determine which methods to connect"""
@@ -246,6 +255,7 @@ def main():
     # TEMP
     filtered_above_threshold.to_csv("debug.csv")
 
+    # KLUDGE
     # filtered = leave_only_most_similar_pairs(
     #     no_reflexive(filtered_above_threshold))
 
@@ -253,13 +263,14 @@ def main():
 
     methods_to_connect_columns = filtered.apply(
         find_methods_to_connect, axis=1)
-    acc = []
+    all_edges = []
     for row in methods_to_connect_columns.itertuples():
-        acc += row[1]
-    methods_to_connect_df = pd.DataFrame(acc)
+        all_edges += row[1]
 
+    # HERE
+    bidigraph = build_cs_graph(all_edges)
     filename = os.path.split(jsonfile)[-1]
-    methods_to_connect_df.to_csv(f"{filename}_filtered.csv")
+    weakly.main(bidigraph, f"{filename}_filtered.csv" )
 
 
 if __name__ == "__main__":

@@ -6,6 +6,7 @@ type json = Yojson.Basic.t
 
 module Set = Caml.Set
 module F = Format
+module Hashtbl = Caml.Hashtbl
 
 let make_now_string (gmt_diff : int) : string =
   let open CalendarLib in
@@ -273,7 +274,7 @@ module G = struct
   module LiteralVertex = struct
     type t = Method.t * LocationSet.t [@@deriving compare, equal, sexp]
 
-    let to_vertex ((meth, loc) : t) (graph : BiDiGraph.t) : Vertex.t =
+    let to_vertex_inner ((meth, loc) : t) (graph : BiDiGraph.t) : Vertex.t =
       let res_opt =
         BiDiGraph.fold_vertex
           (fun ((target_meth, target_loc, dist) as vertex) acc ->
@@ -289,6 +290,16 @@ module G = struct
             (LocationSet.to_string loc) ()
 
 
+    let to_vertex =
+      let cache = Hashtbl.create 777 in
+      fun ((meth, loc) : t) (graph : BiDiGraph.t) : Vertex.t ->
+        match Hashtbl.find_opt cache (meth, loc) with
+        | None ->
+            to_vertex_inner (meth, loc) graph
+        | Some res ->
+            res
+
+
     let to_vertex_cheap ((meth, loc) : t) : Vertex.t = (meth, loc, ProbQuadruple.initial)
 
     let to_string ((meth, loc) : t) : string =
@@ -298,17 +309,19 @@ module G = struct
     let of_vertex ((str1, str2, _) : Vertex.t) : t = (str1, str2)
 
     let of_string (string : String.t) : t =
-      let regex = Re2.create_exn "('(.*)', '(.*)')" in
-      let method_, locset =
-        match
-          ((Re2.find_submatches_exn regex string).(2), (Re2.find_submatches_exn regex string).(3))
-        with
-        | Some str1, Some str2 ->
-            (str1, str2)
-        | _, _ ->
-            failwithf "converting of_string failed: %s" string ()
-      in
-      (method_, locset)
+      try
+        let regex = Re2.create_exn "('(.*)', '(.*)')" in
+        let method_, locset =
+          match
+            ((Re2.find_submatches_exn regex string).(2), (Re2.find_submatches_exn regex string).(3))
+          with
+          | Some str1, Some str2 ->
+              (str1, str2)
+          | _, _ ->
+              failwithf "converting of_string failed: %s" string ()
+        in
+        (method_, locset)
+      with _ -> failwithf "of_string failed on %s" string ()
   end
 
   module Saturation = struct

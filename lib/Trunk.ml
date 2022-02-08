@@ -28,17 +28,17 @@ module PathUtils = struct
         (big_acc : Vertex.t list list) : G.V.t list list =
       if G.is_leaf current g then List.rev smol_acc :: big_acc
       else
-        let children = G.succ g (G.LiteralVertex.to_vertex_cheap current) in
+        let children = G.succ g (G.LiteralVertex.to_vertex current g.graph) in
         List.fold
           ~f:(fun acc child ->
             let havebeen_num =
-              Hashtbl.find havebeenmap (G.LiteralVertex.to_vertex_cheap current, child)
+              Hashtbl.find havebeenmap (G.LiteralVertex.to_vertex current g.graph, child)
             in
             if havebeen_num >= 1 then acc
             else
               let current_alist_updated =
                 Hashtbl.replace havebeenmap
-                  (G.LiteralVertex.to_vertex_cheap current, child)
+                  (G.LiteralVertex.to_vertex current g.graph, child)
                   (havebeen_num + 1)
               in
               inner (G.LiteralVertex.of_vertex child) (child :: smol_acc) acc )
