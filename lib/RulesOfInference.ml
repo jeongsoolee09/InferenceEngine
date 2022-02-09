@@ -143,7 +143,7 @@ module PropagationRules = struct
           let succ_meth, succ_label, succ_dist = succ in
           let is_inside_ns_cluster_containing_df_internals =
             let containing_cluster_opt =
-              List.find (all_ns_clusters graph) ~f:(fun cluster ->
+              List.find (SimilarityHandler.all_ns_clusters graph) ~f:(fun cluster ->
                   List.mem cluster succ ~equal:Vertex.equal )
             in
             match containing_cluster_opt with
@@ -329,7 +329,7 @@ module PropagationRules = struct
             Array.fold
               ~f:(fun ((graph_acc, affected) as smol_acc) vertex ->
                 let vertex_meth, vertex_loc, vertex_dist = vertex in
-                let ns_clusters_vertices = List.join @@ all_ns_clusters graph in
+                let ns_clusters_vertices = List.join @@ SimilarityHandler.all_ns_clusters graph in
                 if
                   NodeWiseFeatures.SingleFeature.is_library_code vertex_meth
                   && (not @@ G.is_df_leaf (LV.of_vertex vertex) graph)
@@ -382,7 +382,7 @@ module PropagationRules = struct
           Array.fold
             ~f:(fun ((graph_acc, affected) as smol_acc) vertex ->
               let vertex_meth, vertex_loc, vertex_dist = vertex in
-              let ns_clusters_vertices = List.join @@ all_ns_clusters graph in
+              let ns_clusters_vertices = List.join @@ SimilarityHandler.all_ns_clusters graph in
               if
                 NodeWiseFeatures.SingleFeature.is_library_code vertex_meth
                 && (not @@ G.is_df_leaf (LV.of_vertex vertex) graph)
@@ -568,7 +568,7 @@ module AskingRules = struct
       G.collect_df_leaves snapshot
       |> List.filter ~f:(fun leaf ->
              let containing_cluster_opt =
-               List.find (all_ns_clusters snapshot) ~f:(fun cluster ->
+               List.find (SimilarityHandler.all_ns_clusters snapshot) ~f:(fun cluster ->
                    List.mem cluster leaf ~equal:Vertex.equal )
              in
              match containing_cluster_opt with
@@ -657,7 +657,7 @@ module AskingRules = struct
    fun (snapshot : G.t) (received_responses : Response.t list)
        (nfeaturemap : NodeWiseFeatures.NodeWiseFeatureMap.t) : Question.t ->
     let there_is_some_cluster_that_has_internal_src_or_sink =
-      List.for_all (all_ns_clusters snapshot) ~f:(fun ns_cluster ->
+      List.for_all (SimilarityHandler.all_ns_clusters snapshot) ~f:(fun ns_cluster ->
           List.exists ns_cluster ~f:(fun vertex ->
               G.is_df_internal (LV.of_vertex vertex) snapshot
               && ( ProbQuadruple.is_source (Vertex.get_dist vertex)
@@ -665,7 +665,7 @@ module AskingRules = struct
     in
     assert there_is_some_cluster_that_has_internal_src_or_sink ;
     let not_asked_clusters =
-      List.filter (all_ns_clusters snapshot) ~f:(fun cluster ->
+      List.filter (SimilarityHandler.all_ns_clusters snapshot) ~f:(fun cluster ->
           not
           @@ List.exists received_responses ~f:(fun received_response ->
                  List.mem ~equal:Method.equal

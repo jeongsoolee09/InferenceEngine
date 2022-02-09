@@ -909,3 +909,108 @@ module Notebook78 = struct
 
   let _ = End
 end
+
+module Notebook79 = struct
+  (* profiling Loop.loop *)
+
+  let df_edges_added =
+    match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" with
+    | None ->
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
+
+
+  let splitted = split_graph_by_comp_unit df_edges_added
+
+  let renderer_graph = List.nth_exn splitted 0
+
+  let renderer_finished = Main.build_graph renderer_graph
+
+  let current_snapshot = renderer_finished
+
+  let nodewise_featuremap = NodeWiseFeatureMap.empty
+
+  let received_responses = []
+
+  let question_maker =
+    MetaRules.ForAsking.asking_rules_selector current_snapshot received_responses
+      nodewise_featuremap
+
+
+  open MetaRules.ForAsking
+
+  let graph = current_snapshot
+
+  let responses = received_responses
+
+  let nfeaturemap = nodewise_featuremap
+
+  let priority_assigned =
+    assign_priority_on_asking_rules
+      (take_subset_of_applicable_asking_rules graph responses nfeaturemap AskingRules.all_rules)
+      graph
+
+
+  let _ = take_subset_of_applicable_asking_rules graph responses nfeaturemap AskingRules.all_rules
+
+  open AskingRules
+
+  let all_rules : t array =
+    [| {label= "ask_if_leaf_is_sink"; rule= ask_if_leaf_is_sink}
+     ; {label= "ask_if_root_is_source"; rule= ask_if_root_is_source}
+     ; {label= "ask_foreign_package_label"; rule= ask_foreign_package_label}
+     ; {label= "ask_indeterminate"; rule= ask_indeterminate}
+     ; { label= "ask_from_ns_cluster_if_it_contains_internal_src_or_sink"
+       ; rule= ask_from_ns_cluster_if_it_contains_internal_src_or_sink } |]
+
+
+  let snapshot = current_snapshot
+
+  let _ = ask_if_leaf_is_sink snapshot received_responses nfeaturemap
+
+  let _ = End
+end
+
+(* all_ns_clusters was the culprit!!!
+   also, it's being used at lots of places in
+   RulesOfInference.ml. *)
+
+module Notebook80 = struct
+  exception End
+
+  let graph_comp_unit = "sagan-renderer"
+
+  type json = Yojson.Basic.t
+
+  module Json = Yojson.Basic
+
+  (* ============ *)
+
+  let udf_json_filename = F.asprintf "NodeWiseFeatures_%s_udfs.csv_filtered.json" graph_comp_unit
+
+  and api_json_filename = F.asprintf "NodeWiseFeatures_%s_apis.csv_filtered.json" graph_comp_unit
+
+  let parse_mst_json filename =
+    let udf_json =
+      let in_chan = In_channel.create udf_json_filename in
+      let json = Json.from_channel in_chan in
+      In_channel.close in_chan ;
+      json
+    in
+    Util.to_list udf_json
+    >>| fun lst -> Util.to_list lst >>| fun l -> Util.to_list l |> Util.filter_string
+
+
+  let udf_parsed = parse_mst_json udf_json_filename
+
+  let api_parsed = parse_mst_json api_json_filename
+
+  let _ = udf_parsed >>| fun tuplist -> tuplist >>= ident |> List.stable_dedup
+
+  (* ============ *)
+
+  let _ = End
+end

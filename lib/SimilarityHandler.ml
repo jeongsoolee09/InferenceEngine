@@ -4,6 +4,7 @@ open GraphRepr
 open Chain
 open NodeWiseFeatures
 open ContextualFeatures
+module Json = Yojson.Basic
 
 let make_nodewise_sim_edge (graph : G.t) : G.t =
   Out_channel.print_string "spawning python process compute_nodewise_similarity.py..." ;
@@ -65,6 +66,23 @@ let make_contextual_sim_edge (graph : G.t) : G.t =
   !acc
 
 
-(** really, really cheap version of G.all_ns_clusters **)
-(* let all_ns_clusters (graph : G.t) : G.V.t list list = *)
-(*   let ns_cluster =  *)
+let parse_mst_json (filename : string) =
+  let udf_json =
+    let in_chan = In_channel.create filename in
+    let json = Json.from_channel in_chan in
+    In_channel.close in_chan ;
+    json
+  in
+  Json.Util.to_list udf_json
+  >>| fun lst -> Json.Util.to_list lst >>| fun l -> Json.Util.to_list l |> Json.Util.filter_string
+
+
+(** cheap version of GraphRepr.all_ns_clusters *)
+let all_ns_clusters (graph : G.t) : G.V.t list list =
+  let udf_json_filename = F.asprintf "NodeWiseFeatures_%s_udfs.csv_filtered.json" graph.comp_unit
+  and api_json_filename = F.asprintf "NodeWiseFeatures_%s_apis.csv_filtered.json" graph.comp_unit in
+  let udf_parsed = parse_mst_json udf_json_filename
+  and api_parsed = parse_mst_json api_json_filename in
+  let udf_mst_vertices = udf_parsed >>| fun tuplist -> tuplist >>= ident |> List.stable_dedup
+  and api_mst_vertices = api_parsed >>| fun tuplist -> tuplist >>= ident |> List.stable_dedup in
+  udf_mst_vertices @ api_mst_vertices >>| fun cluster -> cluster >>= G.this_method_vertices graph
