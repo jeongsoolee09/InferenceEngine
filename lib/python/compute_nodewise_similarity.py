@@ -231,7 +231,7 @@ def leave_only_most_similar_pairs(carpro):
 def build_ns_graph(dataframe):
     acc = nx.DiGraph()
     for tup in dataframe.itertuples():
-        acc.add_edge(tup[2], tup[13])
+        acc.add_edge(tup[1], tup[12])
     return acc
 
 
