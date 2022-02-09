@@ -21,8 +21,8 @@ let make_nodewise_sim_edge (graph : G.t) : G.t =
   in
   In_channel.close udf_in_chan ;
   In_channel.close api_in_chan ;
-  Out_channel.print_string "Now adding NS edges...";
-  Out_channel.flush stdout;
+  Out_channel.print_string "Now adding NS edges..." ;
+  Out_channel.flush stdout ;
   let acc = ref graph in
   for i = 0 to Array.length csv_array - 1 do
     (* let method1 = csv_array.(i).(1) and method2 = csv_array.(i).(12) in *)
@@ -33,11 +33,12 @@ let make_nodewise_sim_edge (graph : G.t) : G.t =
       ~f:(fun m1_vertex ->
         List.iter
           ~f:(fun m2_vertex ->
-            acc := G.add_edge_e !acc (m1_vertex, EdgeLabel.NodeWiseSimilarity, m2_vertex) )
+            acc := G.add_edge_e !acc (m1_vertex, EdgeLabel.NodeWiseSimilarity, m2_vertex) ;
+            acc := G.add_edge_e !acc (m2_vertex, EdgeLabel.NodeWiseSimilarity, m1_vertex) )
           m2_vertices )
       m1_vertices
   done ;
-  Out_channel.print_endline "done";
+  Out_channel.print_endline "done" ;
   !acc
 
 
@@ -51,13 +52,19 @@ let make_contextual_sim_edge (graph : G.t) : G.t =
   let csv_array = Csv.to_array @@ Csv.load_in in_chan in
   In_channel.close in_chan ;
   let acc = ref graph in
-  Out_channel.print_string "Now adding CS edges...";
-  Out_channel.flush stdout;
+  Out_channel.print_string "Now adding CS edges..." ;
+  Out_channel.flush stdout ;
   for i = 1 to Array.length csv_array - 1 do
     let vertex1 = csv_array.(i).(0) and vertex2 = csv_array.(i).(1) in
     let vertex1 = G.LiteralVertex.to_vertex (G.LiteralVertex.of_string vertex1) !acc.graph
     and vertex2 = G.LiteralVertex.to_vertex (G.LiteralVertex.of_string vertex2) !acc.graph in
-    acc := G.add_edge_e !acc (vertex1, EdgeLabel.ContextualSimilarity, vertex2)
+    acc := G.add_edge_e !acc (vertex1, EdgeLabel.ContextualSimilarity, vertex2) ;
+    acc := G.add_edge_e !acc (vertex2, EdgeLabel.ContextualSimilarity, vertex1)
   done ;
-  Out_channel.print_endline "done";
+  Out_channel.print_endline "done" ;
   !acc
+
+
+(** really, really cheap version of G.all_ns_clusters **)
+(* let all_ns_clusters (graph : G.t) : G.V.t list list = *)
+(*   let ns_cluster =  *)
