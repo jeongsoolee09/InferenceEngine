@@ -8,3 +8,4 @@ Chain.json.*
 *.json
 *.txt
 *.csv
+__pycache__

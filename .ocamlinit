@@ -14,6 +14,9 @@ in Sys.chdir root;;
 #require "yojson";;
 (* #directory "_build";; *)
 
+open Core;;
+open Core_kernel;;
+
 module List = Core_kernel.List;;
 module Option = Core_kernel.Option;;
 module In_channel = Core_kernel.In_channel;;
