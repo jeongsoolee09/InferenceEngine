@@ -251,7 +251,7 @@ def main():
         filtered = leave_only_most_similar_pairs(
             no_reflexive(filtered_above_threshold))
         bidigraph = build_ns_graph(filtered)
-        weakly.main(bidigraph, f"{csvfile}_filtered.csv")
+        weakly.main(bidigraph, f"{csvfile}_filtered")
 
 
 if __name__ == "__main__":

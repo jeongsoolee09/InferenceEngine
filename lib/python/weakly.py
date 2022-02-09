@@ -1,3 +1,4 @@
+import json
 import csv
 import networkx as nx
 import pygraphviz as pgv
@@ -70,9 +71,15 @@ def serialize_to_csv(edges, filename):
         writer.writerows(edges)
 
 
+def serialize_to_json(edges, filename):
+    with open(filename, "w+") as jsonfile:
+        json.dump(edges, jsonfile)
+
+
 def main(bidigraph, filename):
     subgraph_nodesets = weakly_connected_components(bidigraph)
     subgraphs = set(map(lambda nodeset: node_set_to_undigraph(nodeset, bidigraph), subgraph_nodesets))
     mst_edges = list(map(run_prim, subgraphs))
+    serialize_to_json(mst_edges, f"{filename}.json")
     all_edges = flatten(mst_edges)
-    serialize_to_csv(all_edges, filename)
+    serialize_to_csv(all_edges, f"{filename}.csv")

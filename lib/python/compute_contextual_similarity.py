@@ -270,7 +270,7 @@ def main():
     # HERE
     bidigraph = build_cs_graph(all_edges)
     filename = os.path.split(jsonfile)[-1]
-    weakly.main(bidigraph, f"{filename}_filtered.csv" )
+    weakly.main(bidigraph, f"{filename}_filtered" )
 
 
 if __name__ == "__main__":
