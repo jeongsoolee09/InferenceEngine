@@ -16,8 +16,8 @@ let make_nodewise_sim_edge (graph : G.t) : G.t =
   let udf_in_chan = In_channel.create udf_csv_filename
   and api_in_chan = In_channel.create api_csv_filename in
   let csv_array =
-    let udf_array = Array.slice (Csv.to_array @@ Csv.load_in udf_in_chan) 1 0
-    and api_array = Array.slice (Csv.to_array @@ Csv.load_in api_in_chan) 1 0 in
+    let udf_array = Csv.to_array @@ Csv.load_in udf_in_chan
+    and api_array = Csv.to_array @@ Csv.load_in api_in_chan in
     Array.append udf_array api_array
   in
   In_channel.close udf_in_chan ;
@@ -27,7 +27,7 @@ let make_nodewise_sim_edge (graph : G.t) : G.t =
   let acc = ref graph in
   for i = 0 to Array.length csv_array - 1 do
     (* let method1 = csv_array.(i).(1) and method2 = csv_array.(i).(12) in *)
-    let method1 = csv_array.(i).(1) and method2 = csv_array.(i).(2) in
+    let method1 = csv_array.(i).(0) and method2 = csv_array.(i).(1) in
     let m1_vertices = G.this_method_vertices graph method1
     and m2_vertices = G.this_method_vertices graph method2 in
     List.iter

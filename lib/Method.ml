@@ -220,7 +220,25 @@ let is_java_method (method_ : t) : bool =
   String.is_prefix ~prefix:"java." (get_package_name method_)
 
 
+let rtntype_is_void (method_ : t) : bool =
+  String.equal "void" (get_return_type  method_)
+
+
 let is_main_method (method_ : t) : bool = String.is_substring ~substring:"main(" (to_string method_)
+
+let is_well_known_java_method =
+  let cache = Hashtbl.create 777 in
+  fun (method_ : t) : bool ->
+    match Hashtbl.find_opt cache method_ with
+    | None ->
+        Array.exists
+          ~f:(fun (classname, methname) ->
+            String.equal classname (get_class_name method_)
+            && String.equal methname (get_method_name method_) )
+          JavaExpert.all_well_known_methods
+    | Some res ->
+        res
+
 
 let is_well_known_java_source_method =
   let cache = Hashtbl.create 777 in

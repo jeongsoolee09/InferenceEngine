@@ -62,14 +62,27 @@ module ChainRefiners = struct
 
   let delete_inner_deads (chain_slices : ChainSlice.t list) : ChainSlice.t list =
     let all_but_last = List.drop_last_exn chain_slices in
+    (* let exception_condition = *)
+    (*   (\* JavaExpert에 있지 않고, rtntype이 void가 아니라면 dead slice를 없애지 말 것 *\) *)
+    (*   let second_last_slice = List.nth_exn (List.rev chain_slices) 1 in *)
+    (*   let current_method_right_before_dead_not_well_known = *)
+    (*     not @@ Method.is_well_known_java_method (ChainSlice.get_current_method second_last_slice) *)
+    (*   and current_method_right_before_dead_not_void = *)
+    (*     not @@ Method.rtntype_is_void (ChainSlice.get_current_method second_last_slice) *)
+    (*   in *)
+    (*   current_method_right_before_dead_not_well_known || current_method_right_before_dead_not_void *)
+    (* in *)
     let dead_filtered =
       List.filter
         ~f:(fun chain_slice ->
           (not @@ ChainSlice.is_dead chain_slice) && (not @@ ChainSlice.is_deadbycycle chain_slice)
           )
-        all_but_last
+        chain_slices
     in
-    dead_filtered
+    (* if exception_condition then dead_filtered @ [List.last_exn chain_slices] else dead_filtered *)
+    if ChainSlice.is_dead @@ List.last_exn chain_slices then
+      dead_filtered @ [List.last_exn chain_slices]
+    else dead_filtered
 
 
   (** make a stub slice in front of the define slice of the chain. *)
@@ -118,7 +131,7 @@ module EdgeMaker = struct
       | DefineSlice (_, ap, loc, using) as void_call_slice ->
           let is_frontend_tmp_var_ap = String.is_prefix ~prefix:"($" in
           if is_frontend_tmp_var_ap ap then
-            ( List.slice bicycle_chain 0 (List.length bicycle_chain - 1)
+            ( (* List.slice bicycle_chain 0 (List.length bicycle_chain - 1) *) bicycle_chain
             , Some (Method.of_string using, LocationSet.of_string loc) )
           else (bicycle_chain, None)
       | _ ->
@@ -146,7 +159,9 @@ module EdgeMaker = struct
       refine_bicycle_chain bicycle_chain_of_chain_slices
     in
     let edge_list =
-      refined_bicycle_chain
+      let last_elem = List.last_exn refined_bicycle_chain in
+      ( if ChainSlice.is_voidcall (fst last_elem) then refined_bicycle_chain
+      else List.drop_last_exn @@ refined_bicycle_chain )
       >>| fun (cs1, cs2) ->
       ( VertexMaker.vertex_of_chain_slice cs1
       , EdgeLabel.DataFlow

@@ -566,3 +566,7 @@ let java_none_methods = Array.concat [java_none_methods_datastructure; java_none
 
 let all_well_known_methods =
   Array.concat [java_source_methods; java_sink_methods; java_sanitizer_methods; java_none_methods]
+
+
+let stringpair_equal (s11, s12) (s21, s22) = String.equal s11 s21 && String.equal s12 s22
+

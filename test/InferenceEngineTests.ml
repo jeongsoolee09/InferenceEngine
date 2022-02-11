@@ -1014,3 +1014,175 @@ module Notebook80 = struct
 
   let _ = End
 end
+
+module Notebook81 = struct
+  exception End
+
+  let df_edges_added =
+    match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" with
+    | None ->
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
+
+
+  let splitted = split_graph_by_comp_unit df_edges_added
+
+  let renderer_graph = List.nth_exn splitted 0
+
+  let renderer_finished = Main.build_graph renderer_graph
+
+  let ns_edges = G.get_edges ~label:EdgeLabel.NodeWiseSimilarity renderer_finished
+
+  let graph = renderer_graph
+
+  let udf_csv_filename = F.asprintf "NodeWiseFeatures_%s_udfs.csv_filtered.csv" graph.comp_unit
+
+  and api_csv_filename = F.asprintf "NodeWiseFeatures_%s_apis.csv_filtered.csv" graph.comp_unit
+
+  let udf_in_chan = In_channel.create udf_csv_filename
+
+  and api_in_chan = In_channel.create api_csv_filename
+
+  let csv_array =
+    let udf_array = Csv.to_array @@ Csv.load_in udf_in_chan
+    and api_array = Csv.to_array @@ Csv.load_in api_in_chan in
+    Array.append udf_array api_array
+
+
+  let acc = ref graph
+
+  let sample_row = csv_array.(3)
+
+  let _ =
+    for i = 0 to Array.length csv_array - 1 do
+      (* let method1 = csv_array.(i).(1) and method2 = csv_array.(i).(12) in *)
+      let method1 = csv_array.(i).(0) and method2 = csv_array.(i).(1) in
+      let m1_vertices = G.this_method_vertices graph method1
+      and m2_vertices = G.this_method_vertices graph method2 in
+      List.iter
+        ~f:(fun m1_vertex ->
+          List.iter
+            ~f:(fun m2_vertex ->
+              acc := G.add_edge_e !acc (m1_vertex, EdgeLabel.NodeWiseSimilarity, m2_vertex) ;
+              acc := G.add_edge_e !acc (m2_vertex, EdgeLabel.NodeWiseSimilarity, m1_vertex) )
+            m2_vertices )
+        m1_vertices
+    done
+
+
+  let _ = G.equal !acc graph
+
+  let _ = End
+end
+
+module Notebook82 = struct
+  exception End
+
+  let df_edges_added =
+    match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" with
+    | None ->
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
+
+
+  let splitted = split_graph_by_comp_unit df_edges_added
+
+  let renderer_graph = List.nth_exn splitted 0
+
+  let renderer_finished = Main.build_graph renderer_graph
+
+  let _ = Visualizer.visualize_snapshot renderer_graph ~autoopen:true ~micro:false
+
+  let _ = Visualizer.visualize_snapshot renderer_finished ~autoopen:true ~micro:false
+  (* taking too much! *)
+
+  let _ = End
+end
+
+module Notebook83 = struct
+  exception End
+
+  let df_edges_added =
+    match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" with
+    | None ->
+        let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+        G.serialize_to_bin result ~suffix:"df_edges" ;
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
+
+
+  let splitted = split_graph_by_comp_unit df_edges_added
+
+  let renderer_graph = List.nth_exn splitted 0
+
+  let df_leaves = G.collect_df_leaves renderer_graph
+
+  let _ = Visualizer.visualize_snapshot renderer_graph ~autoopen:true ~micro:false
+
+  (* JavaExpert에 있지 않고, rtntype이 void가 아니라면 dead slice를 없애지 말 것 *)
+
+  let _ = End
+end
+
+module Notebook84 = struct
+  exception End
+
+  let mini_json =
+    let in_channel = In_channel.create "test-chain.json" in
+    let out = Json.from_channel in_channel in
+    In_channel.close in_channel ;
+    out
+
+
+  let mini_graph = G.empty |> batch_add_vertex mini_json |> batch_add_edge mini_json
+
+  let _ = Visualizer.visualize_snapshot mini_graph ~micro:false ~autoopen:true
+
+  let _ = EdgeMaker.get_all_edges_and_frontend_defines mini_json
+
+  let edge_list_and_frontend_define_vertex_opt_list =
+    wrapped_chain_list_of_raw_json mini_json
+    >>| chain_slice_list_of_wrapped_chain >>= EdgeMaker.edge_list_of_chain_slice_list
+
+
+  let chain_slices =
+    List.hd_exn @@ (wrapped_chain_list_of_raw_json mini_json >>| chain_slice_list_of_wrapped_chain)
+
+
+  let _ = End
+end
+
+module Notebook85 = struct
+  exception End
+
+  let mini_json =
+    let in_channel = In_channel.create "test-chain2.json" in
+    let out = Json.from_channel in_channel in
+    In_channel.close in_channel ;
+    out
+
+
+  let mini_graph = G.empty |> batch_add_vertex mini_json |> batch_add_edge mini_json
+
+  let _ = Visualizer.visualize_snapshot mini_graph ~micro:false ~autoopen:true
+
+  let _ = EdgeMaker.get_all_edges_and_frontend_defines mini_json
+
+  let edge_list_and_frontend_define_vertex_opt_list =
+    wrapped_chain_list_of_raw_json mini_json
+    >>| chain_slice_list_of_wrapped_chain >>= EdgeMaker.edge_list_of_chain_slice_list
+
+
+  let chain_slices =
+    List.hd_exn @@ (wrapped_chain_list_of_raw_json mini_json >>| chain_slice_list_of_wrapped_chain)
+
+
+  let _ = End
+end
