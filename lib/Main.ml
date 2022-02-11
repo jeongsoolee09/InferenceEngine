@@ -34,7 +34,7 @@ let build_graph (graph_fragment : G.t) : G.t =
 
 let one_pass (graph_fragment : G.t) : unit =
   let finished_graph = build_graph graph_fragment in
-  Visualizer.visualize_snapshot finished_graph ~autoopen:false ~micro:false ;
+  Visualizer.visualize_snapshot graph_fragment ~autoopen:false ~micro:false ;
   ignore @@ loop graph_fragment [] NodeWiseFeatures.NodeWiseFeatureMap.empty
 
 
