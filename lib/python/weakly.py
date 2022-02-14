@@ -73,7 +73,7 @@ def serialize_to_csv(edges, filename):
 
 def serialize_to_json(edges, filename):
     with open(filename, "w+") as jsonfile:
-        json.dump(edges, jsonfile)
+        json.dump(edges, jsonfile, indent=2)
 
 
 def main(bidigraph, filename):
