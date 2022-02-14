@@ -50,6 +50,8 @@ open Annotations
 open Trunk
 module Json = Yojson.Basic
 
+exception End
+
 let fst3 (a, b, c) = a
 
 let snd3 (a, b, c) = b
@@ -60,24 +62,7 @@ type json = Json.t
 
 let json = Deserializer.deserialize_json ()
 
-(* let graph = GraphMaker.init_graph json ~debug:false *)
-
-(* let received_responses = [] *)
-
-(* let nodewise_featuremap = NodeWiseFeatures.init_feature_map graph *)
-
-(* let demo () = loop graph received_responses nodewise_featuremap 1 *)
-
-(* let trunk_finder ~(start : G.LiteralVertex.t) ~(end_ : G.LiteralVertex.t) (graph : G.t) : trunk list
-     =
-           let all_trunks = identify_trunks graph in
-             List.filter
-                 ~f:(fun trunk ->
-       Vertex.equal (G.LiteralVertex.to_vertex start graph.graph) (List.hd_exn trunk)
-             && Vertex.equal (G.LiteralVertex.to_vertex end_ graph.graph) (List.last_exn trunk) )
-                     all_trunks *)
-
-(* let vis () = Visualizer.visualize_snapshot graph ~autoopen:true ~micro:false *)
+let received_responses = []
 
 let () = Sys.chdir ".."
 
