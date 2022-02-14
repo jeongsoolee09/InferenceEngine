@@ -1,0 +1,301 @@
+#+TITLE: REPL Codes
+#+PROPERTY: header-args :tangle /dev/null
+
+* Notebooks!
+
+** 알짜배기 states
+
+#+begin_src tuareg
+  let df_edges_added =
+    match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" with
+    | None ->
+      let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+      G.serialize_to_bin result ~suffix:"df_edges" ;
+      result
+    | Some filename ->
+      Deserializer.deserialize_graph filename
+
+
+  let splitted = split_graph_by_comp_unit df_edges_added
+
+  let renderer_graph = List.nth_exn splitted 0
+
+  let renderer_finished = Main.build_graph renderer_graph
+
+  let site_graph = List.nth_exn splitted 1
+#+end_src
+
+** Notebooks
+
+*** WORKING Notebook89
+
+제일 중요한 거 두 가지를 봅시다.
+
+Controller의 GetMapping/PostMapping annotation이 달린 메소드들을 일단 모아보쟈.
+
+**** renderer 안에 있는 annotation
+
+#+begin_src tuareg
+  let renderer_methods = G.all_methods_of_graph renderer_graph
+
+  let renderer_udfs = List.filter ~f:Method.is_udf renderer_methods
+
+  let renderer_udf_with_mapping = List.filter ~f:(fun udf ->
+      let annots = Annotations.get_annots udf in
+      List.exists ~f:(fun annot ->
+          String.is_substring annot.name ~substring:"Mapping") annots
+    ) renderer_udfs
+#+end_src
+
+찾았당:
+
+#+begin_src tuareg
+  let renderer_udf_with_mapping = ["ResourceSupport IndexController.index()";
+                                   "Resources GuidesController.listGuides()";
+                                   "ResponseEntity GuidesController.renderGuide(String,String)";
+                                   "ResponseEntity GuidesController.showGuide(String,String)";
+                                   "ResponseEntity MarkupController.renderMarkup(MediaType,String)"]
+#+end_src
+
+이 중 하나에 대해 물어보면, 나머지를 전부 분류해 내야 한다. 🤔
+
+이게 현재 되는지를 봅시당. 어떻게 보지?
+
+1. 각각에 대해 테인트 레이블을 기억해 두자.
+2. 하나에 대해 물어보자.
+3. 그 다음에 이것들의 테인트 레이블들이 전부 제대로 업데이트되었는지 보자.
+
+***** 하나에 대해서 물어보는 방법: Loop.loop
+
+기본적으로, REPL!
+
+- question object 만들고,
+- response object 만들고.
+
+그럼 나머지는 이것들을 dependency로 해서 계산될 거임. 룰루랄라
+
+#+begin_src tuareg
+  let question = Question.AskingForLabel
+      "Resources GuidesController.listGuides()"
+
+  let response = Response.ForLabel ("Resources GuidesController.listGuides()", TaintLabel.Source)
+#+end_src
+
+그리고 파라미터도 입력시켜줍시다.
+
+#+begin_src tuareg
+  let current_snapshot = renderer_finished
+
+  let received_responses = []
+
+  let nodewise_featuremap = NodeWiseFeatureMap.empty
+
+  let count = 0
+#+end_src
+
+잠만... 근데 axiom은 언제 적용되지??
+--> 희한하게도, NS/CS edge 만들어지기 전에 적용된다. 걱정 노노
+
+어쩄든 요렇게 만들고, 코드를 갖고오자.
+
+#+begin_src tuareg
+  (* sort applicable Propagation Rules by adequacy. *)
+  let propagation_rules_to_apply =
+    MetaRules.ForPropagation.sort_propagation_rules_by_priority current_snapshot response
+      received_responses
+  in
+  let propagated =
+    List.fold
+      ~f:(fun acc prop_rule ->
+          fst
+          @@ propagator response acc None propagation_rules_to_apply received_responses []
+            PropagationRules.all_rules )
+      ~init:current_snapshot propagation_rules_to_apply
+  in
+  let propagated' = Axioms.apply_axioms propagated in
+  G.snapshot_to_json propagated' ;
+#+end_src
+
+왤케 오래걸리지... 많아서 그런가;; 되게 많네
+
+**** TODO 이거이거
+
+규칙 중에 ~internal_nonbidirectional_library_node_is_a_src_if_leaf_is_sink~ 이거가 있는데, 이거 때문에 ~ZipFile.close()~ 가 source로 잘못 분류되고 있음.
+
+아 근데 이거 엄청 오래 걸리네. 원래 이렇게 오래 걸렸나?
+
+--> 지금 보면, nodewise Similarity가 너무 많은데??
+
+#+begin_src tuareg :tangle no
+  current_visiting_vertices: [("ResponseEntity GuidesController.showGuide(String,String)", "{ line 79 }"); ("ResponseEntity GuidesController.showGuide(String,String)", "{ line 75 }"); ("ResponseEntity GuidesController.showGuide(String,String)", "{ line 74 }"); ("ResponseEntity GuidesController.showGuide(String,String)", "{ line 73 }"); ("ResponseEntity GuidesController.showGuide(String,String)", "{ line 70 }"); ("ResponseEntity GuidesController.showGuide(String,String)", "{ line 69 }"); ("ResponseEntity GuidesController.showGuide(String,String)", "{ line 68 }"); ]
+#+end_src
+
+중간에 있는 거까지 생기네.
+
+****** TODO 개선방안
+
+우리가 결국 하고 싶은 말은:
+
+"GetMapping을 달고 있는 udf f가 root와 leaf를 모두 차지하고 있고, 각각 source, sink이다. 그럼 GetMapping을 달고 있고, root와 leaf를 모두 차지하고 있는 다른 udf들 역시 source와 sink이다."
+
+그리고 "각각 source, sink이다." 라는 사실에 이르게 된 것은: "GetMapping을 달고 있는 udf f가 root와 leaf를 모두 차지하고 있다면, 둘 다 source이고 sink인지 물어봐라" 라는 askingrule이 필요하다.
+
+--> 이거 가지고 연산량을 줄일 수 없을까???
+--> 글쎄. 잘 모르겠다.
+
+아 이거 근데 어디서 이렇게 멈칫멈칫하는 거지? ~nodewise_similarity_propagation_rule chosen~ 여기서 자꾸 멈추는데.
+
+근데 한 가지 짚이는 건... history가 업데이트되고 있지 않다는 것이다. 그래서 무한재귀 도는 것같이 보임. 이 가설이 맞는지 보기 위해 한번 Loop.propagator를 봐야겠음. *물론 REPL에서*.
+
+#+begin_src tuareg
+  let question = Question.AskingForLabel "ResponseEntity GuidesController.showGuide(String,String)"
+
+  let response = Response.ForLabel ("ResponseEntity GuidesController.showGuide(String,String)", TaintLabel.Source)
+
+  let question = Question.AskingForLabel
+      "Resources GuidesController.listGuides()"
+
+  let response = Response.ForLabel ("Resources
+  GuidesController.listGuides()", TaintLabel.Source)
+
+  let current_snapshot = renderer_finished
+
+  (* Loop.propagator 파라미터들 *)
+
+  let new_fact = response
+
+  let current_snapshot = (* acc *) current_snapshot
+
+  let previous_snapshot = None
+
+  let rules_to_propagate = [{RulesOfInference.PropagationRules.rule= RulesOfInference.PropagationRules.nodewise_similarity_propagation_rule; label= "nodewise_similarity_propagation_rule"}]
+
+  let prev_facts = received_responses
+
+  let history = []
+
+  let prop_rule_pool = PropagationRules.all_rules
+#+end_src
+
+입력 완료.
+
+알게 된 사실:
+
+- [X] 사실 history는 업데이트되고 있었다: current_visiting_vertices @ history.
+- [X] 그럼 termination condition이 이상하다는 것. 🤔
+
+--> 그래서 termination condition 약간 바꿔봄: Vertex가 history에 들어있으면 끝내는 게 아니라 Method가 history에 들어있으면 끝내도록.
+
+아니;;; 이제는 또 왜 reproduce가 안되냐 대체 아오오오오
+
+** WORKING Notebook90
+
+NS 엣지가 갯매핑 컨트롤러들 사이에 어떻게 되어있는지 보고싶은데
+
+#+begin_src tuareg
+  let renderer_udf_with_mapping = ["ResourceSupport IndexController.index()";
+                                   "Resources GuidesController.listGuides()";
+                                   "ResponseEntity GuidesController.renderGuide(String,String)";
+                                   "ResponseEntity GuidesController.showGuide(String,String)";
+                                   "ResponseEntity MarkupController.renderMarkup(MediaType,String)"]
+#+end_src
+
+쿼리를 어떻게 날려야되나
+
+#+begin_src tuareg
+  let all_ns_edges = G.get_edges renderer_finished
+      ~label:EdgeLabel.NodeWiseSimilarity
+
+  let edges_containing_mapping = List.filter ~f:(fun (v1, _, v2) ->
+      List.mem renderer_udf_with_mapping (Vertex.get_method v1) ~equal:Method.equal && List.mem renderer_udf_with_mapping (Vertex.get_method v2) ~equal:Method.equal
+    ) all_ns_edges
+#+end_src
+
+쿼리만 가지고선 잘 모르겠다. 한번 visualize를 해보고 싶은데.
+
+# debugging is a very well defined problem. Enjoy!
+
+**** DONE Visualizing
+CLOSED: [2022-02-14 Mon 13:12]
+
+#+begin_src tuareg
+  let empty = G.empty
+
+  let constructed =
+    List.fold ~f:(fun acc edge ->
+        G.add_edge_e acc edge
+      ) ~init:empty edges_containing_mapping
+
+  let _ = Visualizer.visualize_snapshot constructed ~autoopen:true ~micro:false
+#+end_src
+
+두 가지 문제가 있다:
+- index랑 listGuides가 NS 클러스터에 없다.
+  - compute_nodewise_similarity 스크립트에서 확인해볼 일이다.
+- NS 엣지가 너무너무 많다. 스패닝트리로 다이어트가 안 되어있다.
+  - 이건 어뜨케 한담ㄷㄷ
+    - SpanningTree.ml을 부활시켜야겠는데?? 으으으 엔지니어링 시러ㅓㅓ
+    - 어 뭐야 나 이거 안지웠었네ㅋㅋㅋㅋ
+
+**** TODO index랑 listGuides가 왜 NS 클러스터에 없는지?
+
+**** TODO 스패닝트리로 다이어트 시키기
+
+****** 요걸 하면 뭐가 좋은데??
+
+- 연산량을 (많이) 아낀다. 얼마나 아끼는지 좀 볼까?
+
+#+begin_src tuareg
+  let constructed =
+    List.fold ~f:(fun acc edge ->
+        G.add_edge_e acc edge
+      ) ~init:empty edges_containing_mapping
+
+  let dieted = SpanningTree.prune_to_mst constructed
+
+  let _ = List.length @@ G.all_edges_of_graph constructed
+  (* 128 *)
+
+  let _ = List.length @@ G.all_edges_of_graph dieted
+  (* 30 *)
+#+end_src
+
+25퍼로 떨어진다!!
+
+***** 어떻게 하는데?
+
+#+begin_src tuareg
+  let mst_edges = [
+    ("ResponseEntity GuidesController.renderGuide(String,String)",
+     "GuideContentResource GuideRenderer.render(GuideType,String)");
+    ("ResponseEntity GuidesController.renderGuide(String,String)",
+     "ResponseEntity GuidesController.showGuide(String,String)");
+    ("ResponseEntity GuidesController.renderGuide(String,String)",
+     "ResponseEntity MarkupController.renderMarkup(MediaType,String)" )
+  ]
+
+  let acc = ref G.empty
+
+  let _ = List.iter ~f:(fun (m1, m2) ->
+      let m1_vertices = G.this_method_vertices renderer_graph m1
+      and m2_vertices = G.this_method_vertices renderer_graph m2 in
+      List.iter ~f:(fun m1_vertex ->
+          List.iter ~f:(fun m2_vertex ->
+              acc := G.add_edge_e !acc (m1_vertex, EdgeLabel.NodeWiseSimilarity, m2_vertex) ;
+              acc := G.add_edge_e !acc (m2_vertex, EdgeLabel.NodeWiseSimilarity, m1_vertex)
+            ) m2_vertices
+        ) m1_vertices
+    ) mst_edges
+
+  let result = !acc
+
+  let _ = List.length @@ G.all_edges_of_graph result (* 528 *)
+
+  let dieted = SpanningTree.prune_to_mst result
+
+  let _ = List.length @@ G.all_edges_of_graph dieted (* 80 *)
+#+end_src
+
+베리굿!!! 예상보다 더 좋아졌다.
+
+이제 이걸 가져다가 어떻게 해야하남??
