@@ -38,8 +38,9 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t) (previous_sn
   then (current_snapshot, history)
   else (
     Out_channel.print_endline "==============================" ;
-    Out_channel.print_endline
-      (F.asprintf "propagator is propagating on %s" (Response.to_string new_fact)) ;
+    Out_channel.print_endline @@ F.asprintf "Current history: %s\n" (Vertex.vertex_list_to_string history) ;
+    (* Out_channel.print_endline *)
+    (*   (F.asprintf "propagator is propagating on %s" (Response.to_string new_fact)) ; *)
     let current_visiting_vertices =
       G.this_method_vertices current_snapshot (Response.get_method new_fact)
     in
@@ -52,61 +53,58 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t) (previous_sn
         ~f:(fun (snapshot_acc, affected_vertices) (rule : PropagationRules.t) ->
           let propagated, this_affected =
             let out = rule.rule snapshot_acc new_fact prev_facts ~dry_run:false in
-            Visualizer.visualize_snapshot (fst out) ~micro:true ~autoopen:false ;
+            (* Visualizer.visualize_snapshot (fst out) ~micro:true ~autoopen:false ; *)
             out
           in
           (propagated, affected_vertices @ this_affected) )
         ~init:(current_snapshot, []) rules_to_propagate
     in
-    let out =
-      List.fold
-        ~f:(fun (big_acc, big_history) target ->
-          if
-            List.mem big_history target ~equal:Vertex.equal
-            || List.mem ~equal:Vertex.equal current_visiting_vertices target
-          then (big_acc, big_history)
-          else (
-            Out_channel.print_endline
-            @@ F.asprintf "\npropagator is iterating on %s" (Vertex.to_string target) ;
-            if
-              List.mem big_history target ~equal:Vertex.equal
-              || List.mem ~equal:Vertex.equal current_visiting_vertices target
-            then (big_acc, big_history)
-            else
-              let target_meth, target_loc, target_dist = target in
-              (* summarize this node's distribution into a Response.t! *)
-              let target_rule_summary =
-                Response.response_of_dist (fst3 target)
-                  (G.lookup_dist_for_meth_and_loc target_meth target_loc propagated_snapshot)
-              in
-              (* Out_channel.print_endline *)
-              (* @@ F.asprintf "\ntarget_rule_summary of %s: %s, dist: %s\n" (fst3 target) *)
-              (*      (Response.to_string target_rule_summary) *)
-              (*      (ProbQuadruple.to_string *)
-              (*         (G.lookup_dist_for_meth_and_loc target_meth target_loc propagated_snapshot) ) ; *)
-              let applicable_rules =
-                MetaRules.ForPropagation.take_subset_of_applicable_propagation_rules
-                  current_snapshot target_rule_summary prev_facts prop_rule_pool
-              in
-              let propagated, updated_history =
-                List.fold
-                  ~f:(fun (smol_acc, smol_history) prop_rule ->
-                    let out =
-                      propagator target_rule_summary smol_acc (Some current_snapshot)
-                        applicable_rules
-                        (target_rule_summary :: new_fact :: prev_facts)
-                        smol_history prop_rule_pool
-                    in
-                    out )
-                  ~init:(big_acc, big_history) applicable_rules
-              in
-              if Option.is_some previous_snapshot then
-                G.print_snapshot_diff (Option.value_exn previous_snapshot) propagated ;
-              (propagated, updated_history) ) )
-        ~init:(propagated_snapshot, current_visiting_vertices @ history)
-        current_propagation_targets
-    in
-    out )
+    List.fold
+      ~f:(fun (big_acc, big_history) target ->
+        if
+          (* List.mem *)
+          (*   (big_history >>| Vertex.get_method) *)
+          (*   (Vertex.get_method target) ~equal:Method.equal *)
+          (* || List.mem *)
+          (*      (current_visiting_vertices >>| Vertex.get_method) *)
+          (*      (Vertex.get_method target) ~equal:Method.equal *)
+          List.mem big_history target ~equal:Vertex.equal
+          || List.mem current_visiting_vertices target ~equal:Vertex.equal
+        then (big_acc, big_history)
+        else (
+          (* Out_channel.print_endline *)
+          (* @@ F.asprintf "\npropagator is iterating on %s" (Vertex.to_string target) ; *)
+          let target_meth, target_loc, target_dist = target in
+          (* summarize this node's distribution into a Response.t! *)
+          let target_rule_summary =
+            Response.response_of_dist target_meth
+              (G.lookup_dist_for_meth_and_loc target_meth target_loc propagated_snapshot)
+          in
+          (* Out_channel.print_endline *)
+          (* @@ F.asprintf "\ntarget_rule_summary of %s: %s, dist: %s\n" (fst3 target) *)
+          (*      (Response.to_string target_rule_summary) *)
+          (*      (ProbQuadruple.to_string *)
+          (*         (G.lookup_dist_for_meth_and_loc target_meth target_loc propagated_snapshot) ) ; *)
+          let applicable_rules =
+            MetaRules.ForPropagation.take_subset_of_applicable_propagation_rules current_snapshot
+              target_rule_summary prev_facts prop_rule_pool
+          in
+          let propagated, updated_history =
+            List.fold
+              ~f:(fun (smol_acc, smol_history) prop_rule ->
+                let out =
+                  propagator target_rule_summary smol_acc (Some current_snapshot) applicable_rules
+                    (target_rule_summary :: new_fact :: prev_facts)
+                    smol_history prop_rule_pool
+                in
+                out )
+              ~init:(big_acc, big_history) applicable_rules
+          in
+          if Option.is_some previous_snapshot then
+            G.print_snapshot_diff (Option.value_exn previous_snapshot) propagated ;
+          (propagated, updated_history) ) )
+      ~init:(propagated_snapshot, current_visiting_vertices @ history)
+      current_propagation_targets )
 
 
 let rec loop_inner (current_snapshot : G.t) (received_responses : Response.t list)
@@ -152,10 +150,11 @@ let rec loop_inner (current_snapshot : G.t) (received_responses : Response.t lis
       let propagated' = Axioms.apply_axioms propagated in
       Visualizer.visualize_snapshot propagated' ~micro:false ~autoopen:true ;
       G.serialize_to_bin propagated' ;
+      G.snapshot_to_json propagated' ;
       loop_inner propagated' (response :: received_responses) nodewise_featuremap (count + 1)
 
 
-let loop (current_snapshot : G.t) (received_responses : Response.t list)
-    (nodewise_featuremap : NodeWiseFeatures.NodeWiseFeatureMap.t) =
-  print_endline "Starting question-&-answer loop.";
-  loop_inner current_snapshot received_responses nodewise_featuremap 0
+let loop (current_snapshot : G.t) (nodewise_featuremap : NodeWiseFeatures.NodeWiseFeatureMap.t) =
+  print_endline "Starting question-&-answer loop." ;
+  G.snapshot_to_json current_snapshot ;
+  loop_inner current_snapshot [] nodewise_featuremap 0
