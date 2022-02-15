@@ -26,8 +26,8 @@ let build_graph (graph_fragment : G.t) : G.t =
   Trunk.Serializer.serialize_graph_trunks_to_json graph_fragment ;
   (* ======================================== *)
   let finished_graph =
-    graph_fragment |> SimilarityHandler.make_nodewise_sim_edge
-    |> SimilarityHandler.make_contextual_sim_edge
+    graph_fragment |> SimilarityHandler.make_contextual_sim_edge
+    |> SimilarityHandler.make_nodewise_sim_edge
   in
   finished_graph
 
@@ -35,7 +35,7 @@ let build_graph (graph_fragment : G.t) : G.t =
 let one_pass (graph_fragment : G.t) : unit =
   let finished_graph = build_graph graph_fragment in
   Visualizer.visualize_snapshot graph_fragment ~autoopen:false ~micro:false ;
-  ignore @@ loop graph_fragment [] NodeWiseFeatures.NodeWiseFeatureMap.empty
+  ignore @@ loop graph_fragment NodeWiseFeatures.NodeWiseFeatureMap.empty
 
 
 let main () =
