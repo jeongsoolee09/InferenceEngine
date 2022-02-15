@@ -37,6 +37,20 @@ module TaintLabel = struct
         "indeterminate"
 
 
+  let to_string_short (label : t) : string =
+    match label with
+    | Source ->
+        "src"
+    | Sink ->
+        "sin"
+    | Sanitizer ->
+        "san"
+    | None ->
+        "non"
+    | Indeterminate ->
+        "???"
+
+
   let is_source (label : t) : bool = equal label Source
 
   let is_sink (label : t) : bool = equal label Sink
@@ -700,6 +714,30 @@ module G = struct
           remove_vertex acc vertex
         else acc )
       graph graph
+
+
+  let snapshot_to_json (snapshot : t) : unit =
+    let vertices = all_vertices_of_graph snapshot in
+    let vertices_and_labels =
+      List.map
+        ~f:(fun vertex ->
+            let label = ProbQuadruple.determine_label (Vertex.get_dist vertex) in
+            (vertex, label) )
+        vertices
+    in
+    let vertex_strs_and_label_strs =
+      List.map
+        ~f:(fun (vertex, label) -> (Vertex.to_string vertex, TaintLabel.to_string_short label))
+        vertices_and_labels
+    in
+    let json_repr = `Assoc
+        (List.map
+           ~f:(fun (vertex_str, label_str) -> (vertex_str, `String label_str))
+           vertex_strs_and_label_strs ) in
+    let json_filename = F.asprintf "%s_labels.json" @@ make_now_string 9 in
+    let out_channel = Out_channel.create json_filename in
+    pretty_to_channel out_channel json_repr;
+    Out_channel.close out_channel
 end
 
 module Dot = Graph.Graphviz.Dot (G)
