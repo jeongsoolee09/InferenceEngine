@@ -118,7 +118,7 @@ Controller의 GetMapping/PostMapping annotation이 달린 메소드들을 일단
 
 왤케 오래걸리지... 많아서 그런가;; 되게 많네
 
-**** TODO 이거이거
+**** WORKING 이거이거
 
 규칙 중에 ~internal_nonbidirectional_library_node_is_a_src_if_leaf_is_sink~ 이거가 있는데, 이거 때문에 ~ZipFile.close()~ 가 source로 잘못 분류되고 있음.
 
@@ -132,7 +132,7 @@ Controller의 GetMapping/PostMapping annotation이 달린 메소드들을 일단
 
 중간에 있는 거까지 생기네.
 
-****** TODO 개선방안
+****** WORKING 개선방안
 
 우리가 결국 하고 싶은 말은:
 
@@ -187,6 +187,9 @@ Controller의 GetMapping/PostMapping annotation이 달린 메소드들을 일단
 --> 그래서 termination condition 약간 바꿔봄: Vertex가 history에 들어있으면 끝내는 게 아니라 Method가 history에 들어있으면 끝내도록.
 
 아니;;; 이제는 또 왜 reproduce가 안되냐 대체 아오오오오
+--> reproduce했다. 어떻게 했는지는 plans2.org에 적어놨음.
+
+이제 다른 로깅 빼고 *history만* 찍어 보자.
 
 ** WORKING Notebook90
 
@@ -239,7 +242,8 @@ CLOSED: [2022-02-14 Mon 13:12]
 
 **** TODO index랑 listGuides가 왜 NS 클러스터에 없는지?
 
-**** TODO 스패닝트리로 다이어트 시키기
+**** DONE 스패닝트리로 다이어트 시키기
+CLOSED: [2022-02-14 Mon 18:17]
 
 ****** 요걸 하면 뭐가 좋은데??
 
@@ -299,3 +303,90 @@ CLOSED: [2022-02-14 Mon 13:12]
 베리굿!!! 예상보다 더 좋아졌다.
 
 이제 이걸 가져다가 어떻게 해야하남??
+
+이제 SimilarityHandler에다가 요걸 끼워넣으면 된다! 야호!!
+--> 해결!
+
+** Notebook91
+
+Controller의 Mapping들끼리 CS엣지가 생겨야 하는데, 지금 몇 개가 없는지 확인하기 위함.
+
+#+begin_src tuareg
+    let all_cs_edges = G.get_edges renderer_finished
+      ~label:EdgeLabel.ContextualSimilarity
+
+  let edges_containing_mapping = List.filter ~f:(fun (v1, _, v2) ->
+      List.mem renderer_udf_with_mapping (Vertex.get_method v1) ~equal:Method.equal && List.mem renderer_udf_with_mapping (Vertex.get_method v2) ~equal:Method.equal
+    ) all_cs_edges
+#+end_src
+
+--> 어이쿠 엄청 없네. 디버깅해야지 뭐.
+
+**** @GetMapping 딱지 붙은 트렁크들 모으기
+
+@GetMapping 딱지가 붙어서 고놈에서 시작해 고놈으로 끝나는 트렁크들 모으기
+
+#+begin_src tuareg
+  let trunk_finder ~(start : G.LiteralVertex.t) ~(end_ : G.LiteralVertex.t) (graph : G.t) : trunk list
+    =
+    let all_trunks = identify_trunks graph in
+    List.filter
+      ~f:(fun trunk ->
+          Vertex.equal (G.LiteralVertex.to_vertex start graph.graph) (List.hd_exn trunk)
+          && Vertex.equal (G.LiteralVertex.to_vertex end_ graph.graph) (List.last_exn trunk) )
+      all_trunks
+#+end_src
+
+
+#+begin_src tuareg
+  let index = "ResourceSupport IndexController.index()"
+
+  let listGuides = "Resources GuidesController.listGuides()"
+
+  let renderGuide = "ResponseEntity GuidesController.renderGuide(String,String)"
+
+  let showGuide = "ResponseEntity GuidesController.showGuide(String,String)"
+
+  let renderMarkup = "ResponseEntity MarkupController.renderMarkup(MediaType,String)"
+
+  let renderer_udf_with_mapping = [index; listGuides; renderGuide; showGuide; renderMarkup]
+#+end_src
+
+요것들에 대해서 longest_trunk를 찾아봅시다.
+
+#+begin_src tuareg
+  open Trunk
+
+  let _ = Visualizer.visualize_snapshot df_edges_added ~autoopen:true ~micro:false
+
+  let index_longest_trunk =
+    longest_trunk_finder ~start:index ~end_:index df_edges_added
+
+  let listGuides_longest_trunk =
+    longest_trunk_finder ~start:listGuides ~end_:listGuides df_edges_added
+
+  let renderGuide_longest_trunk =
+    longest_trunk_finder ~start:renderGuide ~end_:renderGuide df_edges_added
+
+  let showGuide_longest_trunk =
+    longest_trunk_finder ~start:showGuide ~end_:showGuide df_edges_added
+
+  let renderMarkup_longest_trunk =
+    longest_trunk_finder ~start:renderMarkup ~end_:renderMarkup df_edges_added
+#+end_src
+
+아 이거 왜인지 알겠다.
+(ArrayList.<init>(), { line 93 })
+-> (List GithubClient.fetchOrgRepositories(String), { line 93 }) ->
+
+이런 프리픽스가 있어서 그렇네.
+
+--> 그래도 index를 물어봤을 때 다른 controller들이 마킹되고 있지 않아, 여전히 더 많은 inspection이 필요하다.
+*한 가지 희망이 보이는 건, 어제와 같이 엄청난 재귀에 빠지지는 않는다는 것.*
+
+trunk를 뽑을 때 그냥 수동으로 뽑아도 될 거 같은데?? 뭐하러 굳이 함수를 짜나??
+
+오케이... 점점 progress에 다가가는 거 같아 좋다.
+
+toResource랑 render가 지금 sink로 오인되고 있네. 분석기 안 고치고도 여기서 해결볼 수 있을 거 같은데 (그리고 그게 덜 fragile; 즉 robust한 방법이기도 하고).
+--> 이어붙이는 방법으로.
