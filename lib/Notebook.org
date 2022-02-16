@@ -312,7 +312,7 @@ CLOSED: [2022-02-14 Mon 18:17]
 Controller의 Mapping들끼리 CS엣지가 생겨야 하는데, 지금 몇 개가 없는지 확인하기 위함.
 
 #+begin_src tuareg
-    let all_cs_edges = G.get_edges renderer_finished
+  let all_cs_edges = G.get_edges renderer_finished
       ~label:EdgeLabel.ContextualSimilarity
 
   let edges_containing_mapping = List.filter ~f:(fun (v1, _, v2) ->
@@ -390,3 +390,347 @@ trunk를 뽑을 때 그냥 수동으로 뽑아도 될 거 같은데?? 뭐하러 
 
 toResource랑 render가 지금 sink로 오인되고 있네. 분석기 안 고치고도 여기서 해결볼 수 있을 거 같은데 (그리고 그게 덜 fragile; 즉 robust한 방법이기도 하고).
 --> 이어붙이는 방법으로.
+
+** Notebook92
+
+본격 끊긴 데이터플로 이어붙이기
+
+흐아아아아
+
+*** WORKING 왜 render -> renderGuide 엣지가 없을까?
+
+샘플 json을 만들자.
+
+#+begin_src json
+  {
+      "defining_method":
+      "ResponseEntity GuidesController.renderGuide(String,String)",
+      "access_path": "(guideContentResource, [])",
+      "location": "{ line 88 }",
+      "chain": [
+          {
+          "current_method":
+          "ResponseEntity GuidesController.renderGuide(String,String)",
+          "status": "Define",
+          "access_path": "(guideContentResource, [])",
+          "location": "{ line 88 }",
+          "using":
+          "GuideContentResource GuideRenderer.render(GuideType,String)"
+      },
+          {
+          "current_method":
+          "ResponseEntity GuidesController.renderGuide(String,String)",
+          "status": "VoidCall",
+          "callee": "void ResourceSupport.add(Link)",
+          "location": "{ line 89 }",
+          "with": "(param_add_89_0, [])"
+      },
+          {
+          "current_method":
+          "ResponseEntity GuidesController.renderGuide(String,String)",
+          "status": "VoidCall",
+          "callee": "void ResourceSupport.add(Link)",
+          "location": "{ line 90 }",
+          "with": "(param_add_90_0, [])"
+      },
+          {
+          "current_method":
+          "ResponseEntity GuidesController.renderGuide(String,String)",
+          "status": "Call",
+          "callee": "ResponseEntity ResponseEntity.ok(Object)",
+          "location": "{ line 91 }",
+          "with": "(param_ok_91_0, [])"
+      },
+          {
+          "current_method":
+          "ResponseEntity GuidesController.renderGuide(String,String)",
+          "status": "Define",
+          "access_path": "($irvar15, [])",
+          "location": "{ line 91 }",
+          "using": "ResponseEntity ResponseEntity.ok(Object)"
+      },
+          {
+          "current_method":
+          "GuideResource GuideResourceAssembler.toResource(Repository)",
+          "status": "Define",
+          "access_path": "($irvar13, [])",
+          "location": "{ line 22 }",
+          "using": "ResponseEntity GuidesController.renderGuide(String,String)"
+      },
+          {
+          "current_method":
+          "GuideResource GuideResourceAssembler.toResource(Repository)",
+          "status": "Call",
+          "callee":
+          "ControllerLinkBuilder ControllerLinkBuilder.linkTo(Object)",
+          "location": "{ line 21 }",
+          "with": "(param_linkTo_21_0, [])"
+      },
+          {
+          "current_method":
+          "GuideResource GuideResourceAssembler.toResource(Repository)",
+          "status": "Define",
+          "access_path": "($irvar14, [])",
+          "location": "{ line 21 }",
+          "using": "ControllerLinkBuilder ControllerLinkBuilder.linkTo(Object)"
+      },
+          {
+          "current_method":
+          "GuideResource GuideResourceAssembler.toResource(Repository)",
+          "status": "Call",
+          "callee": "Link LinkBuilderSupport.withRel(String)",
+          "location": "{ line 22 }",
+          "with": "(param_withRel_22_0, [])"
+      },
+          {
+          "current_method":
+          "GuideResource GuideResourceAssembler.toResource(Repository)",
+          "status": "Define",
+          "access_path": "($irvar15, [])",
+          "location": "{ line 22 }",
+          "using": "Link LinkBuilderSupport.withRel(String)"
+      },
+          {
+          "current_method":
+          "GuideResource GuideResourceAssembler.toResource(Repository)",
+          "status": "VoidCall",
+          "callee": "void ResourceSupport.add(Link)",
+          "location": "{ line 21 }",
+          "with": "(param_add_21_1, [])"
+      },
+          {
+          "current_method":
+          "GuideResource GuideResourceAssembler.toResource(Repository)",
+          "status": "Dead"
+      }
+      ]
+  }
+#+end_src
+
+요거를 test_json3.json 으로 저장합시다
+
+#+begin_src tuareg
+  let mini_json =
+    let in_channel = In_channel.create "test-chain3.json" in
+    let out = Json.from_channel in_channel in
+    In_channel.close in_channel ;
+    out
+
+  let mini_graph = G.empty |> batch_add_vertex mini_json |> batch_add_edge mini_json
+
+  let _ = Visualizer.visualize_snapshot mini_graph ~micro:false ~autoopen:true
+#+end_src
+
+ㅇ0ㅇ 진짜 안 되고 있었네
+
+이건 GraphMaker.EdgeMaker.edge_list_of_chain_slice_list에다가 Define slice 처리하는 메커니즘 추가하면 댐.
+
+**** WORKING 이어붙이는 메커니즘 만들기
+
+#+begin_src json
+  {
+    "defining_method":
+      "ResponseEntity GuidesController.renderGuide(String,String)",
+    "access_path": "(guide, [])",
+    "location": "{ line 83 }",
+    "chain": [
+      {
+        "current_method":
+          "ResponseEntity GuidesController.renderGuide(String,String)",
+        "status": "Define",
+        "access_path": "(guide, [])",
+        "location": "{ line 83 }",
+        "using": "ResponseEntity GuidesController.renderGuide(String,String)"
+      },
+      {
+        "current_method":
+          "ResponseEntity GuidesController.renderGuide(String,String)",
+        "status": "Call",
+        "callee":
+          "GuideContentResource GuideRenderer.render(GuideType,String)",
+        "location": "{ line 40 }",
+        "with": "(guideName, [])"
+      },
+      {
+        "current_method":
+          "GuideContentResource GuideRenderer.render(GuideType,String)",
+        "status": "Call",
+        "callee": "StringBuilder StringBuilder.append(String)",
+        "location": "{ line 43 }",
+        "with": "(param_append_43_1, [])"
+      },
+      {
+        "current_method":
+          "GuideContentResource GuideRenderer.render(GuideType,String)",
+        "status": "Define",
+        "access_path": "($irvar3, [])",
+        "location": "{ line 43 }",
+        "using": "StringBuilder StringBuilder.append(String)"
+      },
+      {
+        "current_method":
+          "GuideContentResource GuideRenderer.render(GuideType,String)",
+        "status": "Call",
+        "callee": "String StringBuilder.toString()",
+        "location": "{ line 43 }",
+        "with": "(param_toString_43_0, [])"
+      },
+      {
+        "current_method":
+          "GuideContentResource GuideRenderer.render(GuideType,String)",
+        "status": "Define",
+        "access_path": "(repositoryName, [])",
+        "location": "{ line 43 }",
+        "using": "String StringBuilder.toString()"
+      },
+      {
+        "current_method":
+          "GuideContentResource GuideRenderer.render(GuideType,String)",
+        "status": "Call",
+        "callee": "StringBuilder StringBuilder.append(String)",
+        "location": "{ line 45 }",
+        "with": "(param_append_45_1, [])"
+      },
+      {
+        "current_method":
+          "GuideContentResource GuideRenderer.render(GuideType,String)",
+        "status": "Define",
+        "access_path": "($irvar8, [])",
+        "location": "{ line 45 }",
+        "using": "StringBuilder StringBuilder.append(String)"
+      },
+      {
+        "current_method":
+          "GuideContentResource GuideRenderer.render(GuideType,String)",
+        "status": "Call",
+        "callee": "String StringBuilder.toString()",
+        "location": "{ line 45 }",
+        "with": "(param_toString_45_0, [])"
+      },
+      {
+        "current_method":
+          "GuideContentResource GuideRenderer.render(GuideType,String)",
+        "status": "Define",
+        "access_path": "(tempFilePrefix, [])",
+        "location": "{ line 45 }",
+        "using": "String StringBuilder.toString()"
+      },
+      {
+        "current_method":
+          "GuideContentResource GuideRenderer.render(GuideType,String)",
+        "status": "Call",
+        "callee": "File File.createTempFile(String,String)",
+        "location": "{ line 52 }",
+        "with": "(param_createTempFile_52_0, [])"
+      },
+      {
+        "current_method":
+          "GuideContentResource GuideRenderer.render(GuideType,String)",
+        "status": "Define",
+        "access_path": "(zipball, [])",
+        "location": "{ line 52 }",
+        "using": "File File.createTempFile(String,String)"
+      },
+      {
+        "current_method":
+          "GuideContentResource GuideRenderer.render(GuideType,String)",
+        "status": "VoidCall",
+        "callee": "void File.deleteOnExit()",
+        "location": "{ line 53 }",
+        "with": "(param_deleteOnExit_53_0, [])"
+      },
+      {
+        "current_method":
+          "GuideContentResource GuideRenderer.render(GuideType,String)",
+        "status": "Call",
+        "callee": "boolean FileSystemUtils.deleteRecursively(File)",
+        "location": "{ line 90 }",
+        "with": "(param_deleteRecursively_90_0, [])"
+      },
+      {
+        "current_method":
+          "GuideContentResource GuideRenderer.render(GuideType,String)",
+        "status": "Define",
+        "access_path": "($irvar32, [])",
+        "location": "{ line 90 }",
+        "using": "boolean FileSystemUtils.deleteRecursively(File)"
+      },
+      {
+        "current_method":
+          "GuideContentResource GuideRenderer.render(GuideType,String)",
+        "status": "Dead"
+      }
+    ]
+  }
+#+end_src
+
+***** DONE 한쪽 끝 찾기
+
+#+begin_src tuareg
+  let mini_json =
+    let in_channel = In_channel.create "render-renderGuide.json" in
+    let out = Json.from_channel in_channel in
+    In_channel.close in_channel ;
+    out
+
+  let mini_graph = G.empty |> batch_add_vertex mini_json |> batch_add_edge mini_json
+
+  let _ = Visualizer.visualize_snapshot renderer_graph ~autoopen:true ~micro:false
+  let _ = Visualizer.visualize_snapshot mini_graph ~autoopen:true ~micro:false
+#+end_src
+
+#+begin_src tuareg
+  let return_stmt_locs = Deserializer.deserialize_return_stmts ()
+
+  let render = "GuideContentResource GuideRenderer.render(GuideType,String)"
+
+  let render_return_locs = List.Assoc.find_exn return_stmt_locs ~equal:Method.equal render
+
+  let render_vertices_with_return_locs =
+    List.hd_exn @@ G.fold_vertex (fun vertex acc ->
+        let methname = Vertex.get_method vertex
+        and locset = Vertex.get_loc vertex in
+        let match_ = Method.equal methname render &&
+                     List.exists render_return_locs ~f:(fun loc ->
+                         String.is_substring ~substring:(string_of_int loc) locset
+                       ) in
+        if match_ then vertex::acc else acc
+      ) mini_graph []
+
+  let find_vertices_with_return_locs (method_: Method.t) (graph: G.t) =
+    List.hd_exn @@ G.fold_vertex (fun vertex acc ->
+        let methname = Vertex.get_method vertex
+        and locset = Vertex.get_loc vertex in
+        let match_ = Method.equal methname render &&
+                     List.exists render_return_locs ~f:(fun loc ->
+                         String.is_substring ~substring:(string_of_int loc) locset
+                       ) in
+        if match_ then vertex::acc else acc
+      ) mini_graph []
+#+end_src
+
+아 오케이. 내 편견이 있었음. return line을 들고 있는 버텍스가 반드시 df_leaf라는 보장이 없지.
+--> +함수 작성 완료+.
+--> 함수로 포장하면 됨. 이거 GraphRepr에다가 갖다놓자.
+--> 완료.
+
+이제 이어붙일 곳의 다른 부분을 찾으면 된다.
+
+***** WORKING 다른 한 쪽 찾기
+
+render에서 시작하는 다른 그래프를 찾아내면 되지. locset이 LocationSet.dummy인 버텍스에서 시작하는 그래프를 찾아내면 됨.
+
+#+begin_src tuareg
+  let is_empty_line locset =
+    LocationSet.equal locset LocationSet.dummy2
+
+  let find_another_ends (method_: Method.t) (graph: G.t) : G.V.t list =
+    let collected = G.fold_vertex (fun vertex acc ->
+        let methname = Vertex.get_method vertex
+        and locset = Vertex.get_loc vertex in
+        if Method.equal methname method_ &&
+           LocationSet.equal locset LocationSet.dummy2 then
+          vertex::acc else acc
+      ) graph [] in
+    collected
+#+end_src
