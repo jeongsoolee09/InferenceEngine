@@ -22,9 +22,9 @@ module VertexMaker = struct
     | RedefineSlice (current, loc, _) ->
         (Method.of_string current, LocationSet.of_string loc, ProbQuadruple.initial)
     | DeadSlice current ->
-        (Method.of_string current, LocationSet.of_string "{ line }", ProbQuadruple.initial)
+        (Method.of_string current, LocationSet.dummy, ProbQuadruple.initial)
     | DeadByCycleSlice current ->
-        (Method.of_string current, LocationSet.of_string "{ line }", ProbQuadruple.initial)
+        (Method.of_string current, LocationSet.dummy, ProbQuadruple.initial)
     | Temp (current, loc) ->
         (Method.of_string current, LocationSet.of_string loc, ProbQuadruple.initial)
 
@@ -160,12 +160,38 @@ module EdgeMaker = struct
     in
     let edge_list =
       let last_elem = List.last_exn refined_bicycle_chain in
-      ( if ChainSlice.is_voidcall (fst last_elem) then refined_bicycle_chain
-      else List.drop_last_exn @@ refined_bicycle_chain )
-      >>| fun (cs1, cs2) ->
-      ( VertexMaker.vertex_of_chain_slice cs1
-      , EdgeLabel.DataFlow
-      , VertexMaker.vertex_of_chain_slice cs2 )
+      let chain_first_slice = List.hd_exn chain_slices in
+      if ChainSlice.is_define chain_first_slice then
+        let chain_first_current_method = ChainSlice.get_current_method chain_first_slice
+        and chain_first_locset = ChainSlice.get_locset chain_first_slice
+        and chain_first_callee = ChainSlice.get_callee chain_first_slice in
+        let chain_first_edge =
+          ( Vertex.make_initial chain_first_callee LocationSet.dummy2
+          , EdgeLabel.DataFlow
+          , Vertex.make_initial chain_first_current_method chain_first_locset )
+        in
+        if not @@ Method.equal chain_first_callee chain_first_current_method then
+          chain_first_edge
+          :: ( ( if ChainSlice.is_voidcall (fst last_elem) then refined_bicycle_chain
+               else List.drop_last_exn @@ refined_bicycle_chain )
+             >>| fun (cs1, cs2) ->
+             ( VertexMaker.vertex_of_chain_slice cs1
+             , EdgeLabel.DataFlow
+             , VertexMaker.vertex_of_chain_slice cs2 ) )
+        else
+          ( if ChainSlice.is_voidcall (fst last_elem) then refined_bicycle_chain
+          else List.drop_last_exn @@ refined_bicycle_chain )
+          >>| fun (cs1, cs2) ->
+          ( VertexMaker.vertex_of_chain_slice cs1
+          , EdgeLabel.DataFlow
+          , VertexMaker.vertex_of_chain_slice cs2 )
+      else
+        ( if ChainSlice.is_voidcall (fst last_elem) then refined_bicycle_chain
+        else List.drop_last_exn @@ refined_bicycle_chain )
+        >>| fun (cs1, cs2) ->
+        ( VertexMaker.vertex_of_chain_slice cs1
+        , EdgeLabel.DataFlow
+        , VertexMaker.vertex_of_chain_slice cs2 )
     in
     return
       ( edge_list
