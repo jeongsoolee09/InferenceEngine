@@ -267,3 +267,83 @@ let graph_already_serialized ~(comp_unit : String.t) ~(suffix : String.t) : Stri
   Array.find (Sys.readdir ".") ~f:(fun filename ->
       (not @@ String.is_prefix filename ~prefix:".")
       && String.is_substring filename ~substring:(F.asprintf "%s_%s" comp_unit suffix) )
+
+
+module Repair = struct
+  (** suppose we have:
+
+      - (1) renderGuide -> ... -> render,
+      - (2) render -> ... -> (3) render,
+      - (4) render -> renderGuide -> ... . we identify the four points in the following order: (3)
+        \-> (2) -> (1) -> (4). In the following code, (1), (2), (3), (4) are called first, second,
+        third, and fourth, respectively. *)
+
+  exception TODO
+
+  (* spotting (2) and (3) given a method *)
+  let find_second_and_third (method_ : Method.t) (graph : G.t) : G.V.t * G.V.t =
+    let return_stmt_locs = Deserializer.deserialize_return_stmts () in
+    let this_method_return_locs =
+      List.Assoc.find_exn return_stmt_locs method_ ~equal:Method.equal
+    in
+    let third =
+      List.hd_exn
+      @@ G.fold_vertex
+           (fun vertex acc ->
+             let methname = Vertex.get_method vertex and locset = Vertex.get_loc vertex in
+             let match_ =
+               Method.equal methname method_
+               && List.exists this_method_return_locs ~f:(fun loc ->
+                      String.is_substring ~substring:(string_of_int loc) locset )
+             in
+             if match_ then vertex :: acc else acc )
+           graph []
+    in
+    let second =
+      let all_longest_trunks = Trunk.identify_longest_trunks graph in
+      let trunks_starting_and_ending_with_this_method =
+        Array.filter all_longest_trunks ~f:(fun trunk ->
+            let root = trunk.(0) and leaf = Array.last trunk in
+            Method.equal (Vertex.get_method root) (Vertex.get_method leaf) )
+      in
+      Array.sort trunks_starting_and_ending_with_this_method ~compare:(fun trunk1 trunk2 ->
+          let root1 = trunk1.(0) and root2 = trunk2.(0) in
+          Int.compare
+            (LocationSet.earliest_location (Vertex.get_loc root1))
+            (LocationSet.earliest_location (Vertex.get_loc root2)) ) ;
+      trunks_starting_and_ending_with_this_method.(0).(0)
+    in
+    (second, third)
+
+
+  (* spotting (1) *)
+  let find_first (ending : Method.t) (graph : G.t) : G.V.t list =
+    let ending_vertices =
+      G.fold_vertex
+        (fun vertex acc ->
+          let method_ = Vertex.get_method vertex in
+          if Method.equal method_ ending then vertex :: acc else acc )
+        graph []
+    in
+    List.filter ending_vertices ~f:(fun vertex ->
+        not
+        @@ List.mem
+             (get_recursive_preds graph
+                (G.LiteralVertex.of_vertex vertex)
+                ~label:EdgeLabel.DataFlow )
+             vertex ~equal:Vertex.equal )
+
+
+  (* spotting (4) *)
+  let find_fourths (method_ : Method.t) (graph : G.t) : G.V.t list =
+    let collected =
+      G.fold_vertex
+        (fun vertex acc ->
+          let methname = Vertex.get_method vertex and locset = Vertex.get_loc vertex in
+          if Method.equal methname method_ && LocationSet.equal locset LocationSet.dummy2 then
+            vertex :: acc
+          else acc )
+        graph []
+    in
+    collected
+end
