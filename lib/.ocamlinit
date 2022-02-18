@@ -32,16 +32,15 @@ module Array = Core_kernel.Array
 open Core
 open InferenceEngineLib
 open GraphRepr
+open DataFlowEdges
 open ListMonad
 open InfixOperators
 open ContextualFeatures
-open GraphMaker
 open SimilarityHandler
 open Loop
 open RulesOfInference
 open NodeWiseFeatures
 open Yojson.Basic
-open GraphMaker
 open DirectoryManager
 open Chain
 open Method
@@ -67,3 +66,19 @@ let received_responses = []
 let () = Sys.chdir ".."
 
 let () = print_endline @@ Format.asprintf "Utop is spawned on %s" @@ Sys.getcwd ()
+
+let df_edges_added =
+  match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" with
+  | None ->
+      let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
+      G.serialize_to_bin result ~suffix:"df_edges" ;
+      result
+  | Some filename ->
+      Deserializer.deserialize_graph filename
+
+
+let splitted = split_graph_by_comp_unit df_edges_added
+
+let renderer_graph = List.nth_exn splitted 0
+
+let site_graph = List.nth_exn splitted 1
