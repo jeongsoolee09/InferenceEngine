@@ -7,7 +7,6 @@ type json = Yojson.Basic.t
 module Json = Yojson.Basic
 module F = Format
 
-exception TODO
 (* NOTE: this module will become useless when integrated, so keep it simple! *)
 
 let make_now_string (gmt_diff : int) : string =
@@ -123,10 +122,35 @@ let deserialize_annots =
   let cache = ref [] in
   fun () : (string * string) list ->
     if List.is_empty !cache then (
+      let fd = In_channel.create "Annotations.json" in
       let out =
-        let fd = In_channel.create "Annotations.json" in
         Json.from_channel fd |> Util.to_assoc >>| fun (string, json) -> (string, Util.to_string json)
       in
+      In_channel.close fd ;
+      cache := out ;
+      out )
+    else !cache
+
+
+let deserialize_return_stmts =
+  let cache = ref [] in
+  fun () : (string * int list) list ->
+    if List.is_empty !cache then (
+      let fd = In_channel.create "return_stmt_locations.json" in
+      let out =
+        let alist = Json.from_channel fd |> Util.to_assoc in
+        List.map
+          ~f:(fun (string, json_strlist) ->
+            let strlist = Util.to_list json_strlist in
+            let intlist =
+              List.map
+                ~f:(fun json_string -> json_string |> Util.to_string |> int_of_string)
+                strlist
+            in
+            (string, intlist) )
+          alist
+      in
+      In_channel.close fd ;
       cache := out ;
       out )
     else !cache
