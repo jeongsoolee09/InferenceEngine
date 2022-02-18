@@ -12,7 +12,7 @@ module Visualizer = struct
   (** (1) output a dot file of this snapshot, (2) render a svg off the dot file, and (3) show the
       svg file. *)
   let visualize_snapshot (snapshot : G.t) ~(micro : bool) ~(autoopen : bool) : unit =
-    let open GraphMaker in
+    let open DataFlowEdges in
     let now_timestring = make_now_string 9 in
     let filename_without_extension =
       if micro then F.asprintf "%s_micro" now_timestring else now_timestring
@@ -34,11 +34,16 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t) (previous_sn
     (* if we can't propagate any further, terminate *)
     (current_snapshot, [])
   else if
+    (* if we have been here before, terminate *)
+    print_endline "TERMINATING!!!!";
     List.mem (history >>| Vertex.get_method) (Response.get_method new_fact) ~equal:Method.equal
   then (current_snapshot, history)
   else (
     Out_channel.print_endline "==============================" ;
-    Out_channel.print_endline @@ F.asprintf "Current history: %s\n" (Vertex.vertex_list_to_string history) ;
+    Out_channel.print_endline
+    @@ F.asprintf "Current history: %s\n" (Vertex.vertex_list_to_string history) ;
+    Out_channel.print_endline
+    @@ F.asprintf "Current fact: %s\n" (Response.to_string new_fact) ;
     (* Out_channel.print_endline *)
     (*   (F.asprintf "propagator is propagating on %s" (Response.to_string new_fact)) ; *)
     let current_visiting_vertices =
@@ -62,16 +67,10 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t) (previous_sn
     List.fold
       ~f:(fun (big_acc, big_history) target ->
         if
-          (* List.mem *)
-          (*   (big_history >>| Vertex.get_method) *)
-          (*   (Vertex.get_method target) ~equal:Method.equal *)
-          (* || List.mem *)
-          (*      (current_visiting_vertices >>| Vertex.get_method) *)
-          (*      (Vertex.get_method target) ~equal:Method.equal *)
           List.mem big_history target ~equal:Vertex.equal
           || List.mem current_visiting_vertices target ~equal:Vertex.equal
         then (big_acc, big_history)
-        else (
+        else
           (* Out_channel.print_endline *)
           (* @@ F.asprintf "\npropagator is iterating on %s" (Vertex.to_string target) ; *)
           let target_meth, target_loc, target_dist = target in
@@ -102,7 +101,7 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t) (previous_sn
           in
           if Option.is_some previous_snapshot then
             G.print_snapshot_diff (Option.value_exn previous_snapshot) propagated ;
-          (propagated, updated_history) ) )
+          (propagated, updated_history) )
       ~init:(propagated_snapshot, current_visiting_vertices @ history)
       current_propagation_targets )
 

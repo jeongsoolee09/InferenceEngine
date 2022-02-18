@@ -96,6 +96,16 @@ let identify_longest_trunks (graph : G.t) : t array =
     reachable_root_and_leaf_pairs
 
 
+let longest_trunk_finder ~(start : G.LiteralVertex.t) ~(end_ : G.LiteralVertex.t) (graph : G.t) : t array
+  =
+  let all_trunks = identify_longest_trunks graph in
+  Array.filter
+    ~f:(fun trunk ->
+        Vertex.equal (G.LiteralVertex.to_vertex start graph.graph) trunk.(0)
+        && Vertex.equal (G.LiteralVertex.to_vertex end_ graph.graph) (Array.last trunk) )
+    all_trunks
+
+
 let find_trunks_containing_vertex (graph : G.t) (vertex : G.V.t) =
   let all_trunks = identify_longest_trunks graph in
   Array.filter ~f:(fun trunk -> Array.mem ~equal:Vertex.equal trunk vertex) all_trunks

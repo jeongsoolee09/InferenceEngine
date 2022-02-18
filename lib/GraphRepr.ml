@@ -143,6 +143,17 @@ module LocationSet = struct
   let to_string : t -> string = ident
 
   let dummy = "{ line -1 }"
+
+  let dummy2 = "{ line -2 }"
+
+  let to_int_list (locset : t) : int list =
+    let regex = Re2.create_exn "[0-9-]+" in
+    let all_matches = Re2.find_all_exn regex locset in
+    List.map all_matches ~f:int_of_string
+
+
+  let earliest_location (locset : t) : int =
+    List.hd_exn @@ List.sort (to_int_list locset) ~compare:Int.compare
 end
 
 module Vertex = struct
@@ -154,6 +165,8 @@ module Vertex = struct
     (* we ignore the quadruple in defining the identity: that's just an attribute *)
     Method.equal meth1 meth2 && LocationSet.equal locset1 locset2
 
+
+  let make_initial (meth : Method.t) (loc : String.t) : t = (meth, loc, ProbQuadruple.initial)
 
   let get_method (meth, _, _) : Method.t = meth
 
@@ -721,8 +734,8 @@ module G = struct
     let vertices_and_labels =
       List.map
         ~f:(fun vertex ->
-            let label = ProbQuadruple.determine_label (Vertex.get_dist vertex) in
-            (vertex, label) )
+          let label = ProbQuadruple.determine_label (Vertex.get_dist vertex) in
+          (vertex, label) )
         vertices
     in
     let vertex_strs_and_label_strs =
@@ -730,13 +743,15 @@ module G = struct
         ~f:(fun (vertex, label) -> (Vertex.to_string vertex, TaintLabel.to_string_short label))
         vertices_and_labels
     in
-    let json_repr = `Assoc
+    let json_repr =
+      `Assoc
         (List.map
            ~f:(fun (vertex_str, label_str) -> (vertex_str, `String label_str))
-           vertex_strs_and_label_strs ) in
+           vertex_strs_and_label_strs )
+    in
     let json_filename = F.asprintf "%s_labels.json" @@ make_now_string 9 in
     let out_channel = Out_channel.create json_filename in
-    pretty_to_channel out_channel json_repr;
+    pretty_to_channel out_channel json_repr ;
     Out_channel.close out_channel
 end
 

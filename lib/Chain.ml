@@ -56,6 +56,17 @@ module ChainSlice = struct
         raise @@ Invalid_argument (to_string otherwise)
 
 
+  let get_locset (chain_slice : t) : string =
+    match chain_slice with
+    | DefineSlice (_, _, locset, _)
+    | CallSlice (_, _, locset, _)
+    | VoidCallSlice (_, _, locset, _)
+    | RedefineSlice (_, locset, _) ->
+        locset
+    | otherwise ->
+        raise @@ Invalid_argument (to_string otherwise)
+
+
   let list_to_string (slices : t list) : string =
     let contents = List.fold ~f:(fun acc slice -> acc ^ to_string slice ^ ", ") slices ~init:"" in
     "[ " ^ contents ^ " ]"

@@ -220,9 +220,7 @@ let is_java_method (method_ : t) : bool =
   String.is_prefix ~prefix:"java." (get_package_name method_)
 
 
-let rtntype_is_void (method_ : t) : bool =
-  String.equal "void" (get_return_type  method_)
-
+let rtntype_is_void (method_ : t) : bool = String.equal "void" (get_return_type method_)
 
 let is_main_method (method_ : t) : bool = String.is_substring ~substring:"main(" (to_string method_)
 
@@ -292,5 +290,20 @@ let is_well_known_java_none_method =
             String.equal classname (get_class_name method_)
             && String.equal methname (get_method_name method_) )
           JavaExpert.java_none_methods
+    | Some res ->
+        res
+
+
+let get_return_stmt_lines =
+  let cache = Hashtbl.create 777 in
+  fun (method_ : t) : int list ->
+    match Hashtbl.find_opt cache method_ with
+    | None ->
+        let out =
+          let return_stmt_lines = Deserializer.deserialize_return_stmts () in
+          List.Assoc.find_exn return_stmt_lines method_ ~equal
+        in
+        Hashtbl.add cache method_ out ;
+        out
     | Some res ->
         res

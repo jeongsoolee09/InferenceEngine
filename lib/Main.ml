@@ -1,6 +1,6 @@
 open ListMonad
 open InfixOperators
-open GraphMaker
+open DataFlowEdges
 open SimilarityHandler
 open GraphSplitter
 open SpawnPython

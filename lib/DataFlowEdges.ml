@@ -270,68 +270,25 @@ let graph_already_serialized ~(comp_unit : String.t) ~(suffix : String.t) : Stri
 
 
 module Repair = struct
-  (** suppose we have:
-
-      - (1) renderGuide -> ... -> render,
-      - (2) render -> ... -> (3) render,
-      - (4) render -> renderGuide -> ... . we identify the four points in the following order: (3)
-        \-> (2) -> (1) -> (4). In the following code, (1), (2), (3), (4) are called first, second,
-        third, and fourth, respectively. *)
-
-  exception TODO
-
-  (* spotting (2) and (3) given a method *)
-  let find_second_and_third (method_ : Method.t) (graph : G.t) : G.V.t * G.V.t =
+  let find_return_vertex_of_method (method_ : Method.t) (graph : G.t) : G.V.t =
     let return_stmt_locs = Deserializer.deserialize_return_stmts () in
     let this_method_return_locs =
       List.Assoc.find_exn return_stmt_locs method_ ~equal:Method.equal
     in
-    let third =
+    try
       List.hd_exn
       @@ G.fold_vertex
            (fun vertex acc ->
              let methname = Vertex.get_method vertex and locset = Vertex.get_loc vertex in
              let match_ =
                Method.equal methname method_
-               && List.exists this_method_return_locs ~f:(fun loc ->
-                      String.is_substring ~substring:(string_of_int loc) locset )
+               && List.exists
+                    ~f:(fun loc -> List.mem this_method_return_locs loc ~equal:Int.equal)
+                    (LocationSet.to_int_list locset)
              in
              if match_ then vertex :: acc else acc )
            graph []
-    in
-    let second =
-      let all_longest_trunks = Trunk.identify_longest_trunks graph in
-      let trunks_starting_and_ending_with_this_method =
-        Array.filter all_longest_trunks ~f:(fun trunk ->
-            let root = trunk.(0) and leaf = Array.last trunk in
-            Method.equal (Vertex.get_method root) (Vertex.get_method leaf) )
-      in
-      Array.sort trunks_starting_and_ending_with_this_method ~compare:(fun trunk1 trunk2 ->
-          let root1 = trunk1.(0) and root2 = trunk2.(0) in
-          Int.compare
-            (LocationSet.earliest_location (Vertex.get_loc root1))
-            (LocationSet.earliest_location (Vertex.get_loc root2)) ) ;
-      trunks_starting_and_ending_with_this_method.(0).(0)
-    in
-    (second, third)
-
-
-  (* spotting (1) *)
-  let find_first (ending : Method.t) (graph : G.t) : G.V.t list =
-    let ending_vertices =
-      G.fold_vertex
-        (fun vertex acc ->
-          let method_ = Vertex.get_method vertex in
-          if Method.equal method_ ending then vertex :: acc else acc )
-        graph []
-    in
-    List.filter ending_vertices ~f:(fun vertex ->
-        not
-        @@ List.mem
-             (get_recursive_preds graph
-                (G.LiteralVertex.of_vertex vertex)
-                ~label:EdgeLabel.DataFlow )
-             vertex ~equal:Vertex.equal )
+    with _ -> failwithf "%s" method_ ()
 
 
   (* spotting (4) *)
@@ -346,4 +303,70 @@ module Repair = struct
         graph []
     in
     collected
+
+
+  let find_methods_that_need_connecting (graph : G.t) : Method.t list =
+    let methods_with_return_stmt_vertices =
+      List.fold
+        ~f:(fun acc method_ ->
+          try
+            let this_method_return_locs =
+              List.Assoc.find_exn
+                (Deserializer.deserialize_return_stmts ())
+                method_ ~equal:Method.equal
+            in
+            let vertices_with_retun_stmts =
+              G.fold_vertex
+                (fun vertex acc ->
+                  let methname = Vertex.get_method vertex and locset = Vertex.get_loc vertex in
+                  let match_ =
+                    Method.equal methname method_
+                    && List.exists
+                         ~f:(fun loc -> List.mem this_method_return_locs loc ~equal:Int.equal)
+                         (LocationSet.to_int_list locset)
+                  in
+                  if match_ then vertex :: acc else acc )
+                graph []
+            in
+            if not @@ List.is_empty vertices_with_retun_stmts then method_ :: acc else acc
+          with Not_found_s _ -> acc )
+        (G.all_methods_of_graph graph) ~init:[]
+    in
+    let dummy1_vertices =
+      G.fold_vertex
+        (fun vertex acc ->
+          if LocationSet.equal (Vertex.get_loc vertex) LocationSet.dummy then vertex :: acc else acc
+          )
+        graph []
+    in
+    List.fold
+      ~f:(fun acc method_ ->
+        if
+          List.exists dummy1_vertices ~f:(fun dummy1_vertex ->
+              Method.equal (Vertex.get_method dummy1_vertex) method_ )
+        then method_ :: acc
+        else acc )
+      ~init:[] methods_with_return_stmt_vertices
+
+
+  let reconnect_disconnected_edges (graph : G.t) : G.t =
+    let methods_that_need_connecting = find_methods_that_need_connecting graph in
+    List.fold
+      ~f:(fun acc method_ ->
+        let third = find_return_vertex_of_method method_ acc
+        and fourths = find_fourths method_ acc in
+        let fourth_succs =
+          fourths
+          >>= fun vertex ->
+          G.get_succs acc (G.LiteralVertex.of_vertex vertex) ~label:EdgeLabel.DataFlow
+        in
+        let third_fourths_connected =
+          List.fold fourth_succs
+            ~f:(fun smol_acc fourth_succ -> G.add_edge_e smol_acc (third, EdgeLabel.DataFlow, fourth_succ))
+            ~init:graph
+        in
+        List.fold
+          ~f:(fun smol_acc fourth -> G.remove_vertex smol_acc fourth)
+          ~init:third_fourths_connected fourths )
+      ~init:graph methods_that_need_connecting
 end

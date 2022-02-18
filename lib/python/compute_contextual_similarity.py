@@ -43,11 +43,23 @@ def read_udfs():
         return list(map(lambda string: string.rstrip(),
                         f.readlines()))
 
+
+def read_annotations():
+    with open("Annotations.json", "r+") as f:
+        return json.load(f)
+
+
 # constant params
 redefine_dict = read_redefines()
 apis = read_apis()
 udfs = read_udfs()
+annotations = read_annotations()
 
+def get_annots(method):
+    try:
+        return annotations[method]
+    except KeyError:
+        ""
 
 def get_only_classname_and_method(method_name):
     """void RelationalDataAccessApplication.printer(Map)
@@ -144,6 +156,31 @@ class ContextualFeature:
         else:
             return 0
 
+    @staticmethod
+    def both_has_methods_with_same_annot(row):
+        trunk1_methods = list(map(lambda tup: tup[0], row.trunk1))
+        trunk2_methods = list(map(lambda tup: tup[0], row.trunk2))
+
+        trunk1_annotations = list(filter(lambda trunk1_method:\
+                                         get_annots(trunk1_method), trunk1_methods))
+
+        trunk2_annotations = list(filter(lambda trunk2_method:\
+                                         get_annots(trunk2_method), trunk2_methods))
+
+        # now, get only the annotation names
+        # by omitting annotation parameters.
+
+        trunk1_annotation_names =\
+            list(map(lambda str: str.split("(")[0], trunk1_annotations))
+
+        trunk2_annotation_names =\
+            list(map(lambda str: str.split("(")[0], trunk2_annotations))
+
+        if set(trunk1_annotation_names).intersection(trunk2_annotation_names):
+            return 10
+        else:
+            return 0
+
 
 def make_carpro_of_dataframe(dataframe):
     # prepare lhs
@@ -215,7 +252,17 @@ def find_methods_to_connect(carpro_row):
     # computing root_pair_list
     trunk1_root = trunk1[0]
     trunk2_root = trunk2[0]
-    if not (trunk1_root == trunk2_root) and\
+
+    if any(list(map(lambda method: get_annots(method), trunk1))) and\
+       any(list(map(lambda method: get_annots(method), trunk2))):
+
+        trunk1_first_annot_method = list(filter(lambda method: get_annots(method), trunk1))[0]
+        trunk1_last_annot_method = list(filter(lambda method: get_annots(method), trunk1))[-1]
+        trunk2_first_annot_method = list(filter(lambda method: get_annots(method), trunk2))[0]
+        trunk2_last_annot_method = list(filter(lambda method: get_annots(method), trunk2))[-1]
+        root_pair_list = [(trunk1_first_annot_method, trunk2_first_annot_method),
+                          (trunk1_last_annot_method, trunk2_last_annot_method)]
+    elif not (trunk1_root == trunk2_root) and\
        not (is_initializer(trunk1_root) or is_initializer(trunk2_root)):
         root_pair_list = [(trunk1_root, trunk2_root),
                           (trunk2_root, trunk1_root)]
