@@ -29,13 +29,15 @@ let build_graph (graph_fragment : G.t) : G.t =
     graph_fragment |> SimilarityHandler.make_contextual_sim_edge
     |> SimilarityHandler.make_nodewise_sim_edge
   in
+  Visualizer.visualize_snapshot finished_graph ~autoopen:false ~micro:false ;
   finished_graph
 
 
 let one_pass (graph_fragment : G.t) : unit =
-  let finished_graph = build_graph graph_fragment in
-  Visualizer.visualize_snapshot graph_fragment ~autoopen:false ~micro:false ;
-  ignore @@ loop graph_fragment NodeWiseFeatures.NodeWiseFeatureMap.empty
+  let healed = Repair.reconnect_disconnected_edges graph_fragment in
+  let finished_graph = build_graph healed in
+  Visualizer.visualize_snapshot finished_graph ~autoopen:false ~micro:false ;
+  ignore @@ loop healed NodeWiseFeatures.NodeWiseFeatureMap.empty
 
 
 let main () =

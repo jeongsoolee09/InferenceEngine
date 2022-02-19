@@ -6,6 +6,7 @@ open ListMonad
 open InfixOperators
 open SimilarityHandler
 open Chain
+open EdgeLabel
 module G = GraphRepr.G
 
 type json = Yojson.Basic.t
@@ -167,7 +168,7 @@ module EdgeMaker = struct
         and chain_first_callee = ChainSlice.get_callee chain_first_slice in
         let chain_first_edge =
           ( Vertex.make_initial chain_first_callee LocationSet.dummy2
-          , EdgeLabel.DataFlow
+          , DataFlow
           , Vertex.make_initial chain_first_current_method chain_first_locset )
         in
         if not @@ Method.equal chain_first_callee chain_first_current_method then
@@ -175,23 +176,18 @@ module EdgeMaker = struct
           :: ( ( if ChainSlice.is_voidcall (fst last_elem) then refined_bicycle_chain
                else List.drop_last_exn @@ refined_bicycle_chain )
              >>| fun (cs1, cs2) ->
-             ( VertexMaker.vertex_of_chain_slice cs1
-             , EdgeLabel.DataFlow
-             , VertexMaker.vertex_of_chain_slice cs2 ) )
+             (VertexMaker.vertex_of_chain_slice cs1, DataFlow, VertexMaker.vertex_of_chain_slice cs2)
+             )
         else
           ( if ChainSlice.is_voidcall (fst last_elem) then refined_bicycle_chain
           else List.drop_last_exn @@ refined_bicycle_chain )
           >>| fun (cs1, cs2) ->
-          ( VertexMaker.vertex_of_chain_slice cs1
-          , EdgeLabel.DataFlow
-          , VertexMaker.vertex_of_chain_slice cs2 )
+          (VertexMaker.vertex_of_chain_slice cs1, DataFlow, VertexMaker.vertex_of_chain_slice cs2)
       else
         ( if ChainSlice.is_voidcall (fst last_elem) then refined_bicycle_chain
         else List.drop_last_exn @@ refined_bicycle_chain )
         >>| fun (cs1, cs2) ->
-        ( VertexMaker.vertex_of_chain_slice cs1
-        , EdgeLabel.DataFlow
-        , VertexMaker.vertex_of_chain_slice cs2 )
+        (VertexMaker.vertex_of_chain_slice cs1, DataFlow, VertexMaker.vertex_of_chain_slice cs2)
     in
     return
       ( edge_list
@@ -293,16 +289,13 @@ module Repair = struct
 
   (* spotting (4) *)
   let find_fourths (method_ : Method.t) (graph : G.t) : G.V.t list =
-    let collected =
-      G.fold_vertex
-        (fun vertex acc ->
-          let methname = Vertex.get_method vertex and locset = Vertex.get_loc vertex in
-          if Method.equal methname method_ && LocationSet.equal locset LocationSet.dummy2 then
-            vertex :: acc
-          else acc )
-        graph []
-    in
-    collected
+    G.fold_vertex
+      (fun vertex acc ->
+        let methname = Vertex.get_method vertex and locset = Vertex.get_loc vertex in
+        if Method.equal methname method_ && LocationSet.equal locset LocationSet.dummy2 then
+          vertex :: acc
+        else acc )
+      graph []
 
 
   let find_methods_that_need_connecting (graph : G.t) : Method.t list =
@@ -357,13 +350,12 @@ module Repair = struct
         and fourths = find_fourths method_ acc in
         let fourth_succs =
           fourths
-          >>= fun vertex ->
-          G.get_succs acc (G.LiteralVertex.of_vertex vertex) ~label:EdgeLabel.DataFlow
+          >>= fun vertex -> G.get_succs acc (G.LiteralVertex.of_vertex vertex) ~label:DataFlow
         in
         let third_fourths_connected =
           List.fold fourth_succs
-            ~f:(fun smol_acc fourth_succ -> G.add_edge_e smol_acc (third, EdgeLabel.DataFlow, fourth_succ))
-            ~init:graph
+            ~f:(fun smol_acc fourth_succ -> G.add_edge_e smol_acc (third, DataFlow, fourth_succ))
+            ~init:acc
         in
         List.fold
           ~f:(fun smol_acc fourth -> G.remove_vertex smol_acc fourth)
