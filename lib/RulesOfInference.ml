@@ -684,6 +684,16 @@ module AskingRules = struct
     else Question.AskingForLabel (Vertex.get_method random_vertex_in_picked_cluster)
 
 
+  let ask_annotated_method : rule =
+   fun (snapshot : G.t) (received_responses : Response.t list)
+       (nfeaturemap : NodeWiseFeatures.NodeWiseFeatureMap.t) : Question.t ->
+    let all_annotated_vertices =
+      List.filter ~f:Annotations.has_annot (G.all_methods_of_graph snapshot)
+    in
+    let random_annotated_method = Utils.random_select_elem all_annotated_vertices in
+    Question.AskingForLabel random_annotated_method
+
+
   let all_rules : t list =
     [ {label= "ask_if_leaf_is_sink"; rule= ask_if_leaf_is_sink}
     ; {label= "ask_if_root_is_source"; rule= ask_if_root_is_source}
@@ -751,18 +761,20 @@ module MetaRules = struct
         (AskingRules.t * int) list =
       let open AskingRules in
       asking_rules
-      >>= fun asking_rule ->
+      >>| fun asking_rule ->
       match asking_rule.label with
       | "ask_if_leaf_is_sink" ->
-          return (asking_rule, 5)
+          (asking_rule, 5)
       | "ask_if_root_is_source" ->
-          return (asking_rule, 4)
+          (asking_rule, 4)
       | "ask_foreign_package_label" ->
-          return (asking_rule, 3)
+          (asking_rule, 3)
       | "ask_indeterminate" ->
-          return (asking_rule, 1)
+          (asking_rule, 1)
       | "ask_from_ns_cluster_if_it_contains_internal_src_or_sink" ->
-          return (asking_rule, 2)
+          (asking_rule, 2)
+      | "ask_annotated_method" ->
+          (asking_rule, 6)
       | otherwise ->
           failwith (otherwise ^ " is not covered!")
 
