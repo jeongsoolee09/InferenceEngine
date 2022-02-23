@@ -267,9 +267,12 @@ let graph_to_dot (graph : G.t) ?(filename = "initial_graph.dot") : unit =
   Out_channel.close out_channel
 
 
-let graph_already_serialized ~(comp_unit : String.t) ~(suffix : String.t) : String.t option =
+let graph_already_serialized ~(comp_unit : String.t) ~(suffix : String.t) ?(finished = false) :
+    String.t option =
   Array.find (Sys.readdir ".") ~f:(fun filename ->
       (not @@ String.is_prefix filename ~prefix:".")
+      && ( if finished then String.is_suffix filename ~suffix:"finished.bin"
+         else String.is_suffix filename ~suffix:".bin" )
       && String.is_substring filename ~substring:(F.asprintf "%s_%s" comp_unit suffix) )
 
 

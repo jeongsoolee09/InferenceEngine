@@ -27,7 +27,8 @@
 
 ** Notebooks
 
-*** WORKING Notebook89
+*** DONE Notebook89
+CLOSED: [2022-02-23 Wed 20:17]
 
 제일 중요한 거 두 가지를 봅시다.
 
@@ -240,7 +241,8 @@ CLOSED: [2022-02-14 Mon 13:12]
     - SpanningTree.ml을 부활시켜야겠는데?? 으으으 엔지니어링 시러ㅓㅓ
     - 어 뭐야 나 이거 안지웠었네ㅋㅋㅋㅋ
 
-**** TODO index랑 listGuides가 왜 NS 클러스터에 없는지?
+**** DONE index랑 listGuides가 왜 NS 클러스터에 없는지?
+CLOSED: [2022-02-23 Wed 20:17]
 
 **** DONE 스패닝트리로 다이어트 시키기
 CLOSED: [2022-02-14 Mon 18:17]
@@ -752,7 +754,8 @@ CLOSED: [2022-02-17 Thu 20:02]
         not @@ List.mem (get_recursive_preds graph (G.LiteralVertex.of_vertex vertex) ~label:EdgeLabel.DataFlow) vertex ~equal:Vertex.equal)
 #+end_src
 
-***** 마침내 이어붙이기 테스트
+***** DONE 마침내 이어붙이기 테스트
+CLOSED: [2022-02-23 Wed 20:18]
 
 #+begin_src tuareg
   module Json = Yojson.Basic
@@ -797,7 +800,8 @@ CLOSED: [2022-02-17 Thu 20:02]
 아니 근데 왜 반영이 안되냐 미쳐버리겠네
 --> 해결. 😇
 
-** Notebook92
+** ABORTED Notebook92
+CLOSED: [2022-02-23 Wed 20:16]
 
 toResource 고치기. 흐헤헤헤헤헤
 
@@ -842,3 +846,11 @@ toResource 고치기. 흐헤헤헤헤헤
 
   let after = G.map_vertex test before
 #+end_src
+
+--> 이건 금요일 세미나 끝나고 하자.
+
+** Notebook93
+
+왜 자꾸 iter_succ가 문제가 생기지?? 마샬링이 깨져서 그런가??
+--> ㅇㅇ 마샬링이 깨지면 DFS.iter_succ가 터짐.
+--> 그리고 ARM에서 마샬링한 걸 x86에서 불러오면 마샬링이 깨짐. 인코딩 방식이 다른듯. 아니면 컴파일러가 달라서 그런 걸 수도 있고.

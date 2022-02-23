@@ -17,9 +17,9 @@ let location_is_correct (line : string) : bool = String.is_suffix ~suffix:";" (S
 
 let rectify_return_stmt_location (file_containing_method : string) (before_location : int) : int =
   (* NOTE: `file_containing_method` should be an absolute directory. *)
-  Out_channel.print_endline
-  @@ F.asprintf "file_containing_method: %s, before_location: %d\n" file_containing_method
-       before_location ;
+  (* Out_channel.print_endline *)
+  (* @@ F.asprintf "file_containing_method: %s, before_location: %d\n" file_containing_method *)
+  (*      before_location ; *)
   let lines = Array.of_list @@ In_channel.read_lines file_containing_method in
   let current_location = ref before_location in
   let current_location_line = ref (move_to_line lines !current_location) in

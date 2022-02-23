@@ -8,11 +8,15 @@ type t = G.V.t array [@@deriving compare, equal]
 module Hashtbl = Caml.Hashtbl
 
 module PathUtils = struct
-  let is_reachable (source : G.V.t) (dest : G.V.t) (graph : G.t) : bool =
+  let is_reachable (source : G.LiteralVertex.t) (dest : G.LiteralVertex.t) (graph : G.t) : bool =
     (* dest is reachable from source iff dest is one of the descendants of source. *)
     let module DFS = Graph.Traverse.Dfs (G) in
-    let descendants = DFS.fold_component List.cons [] graph source in
-    List.mem ~equal:G.V.equal descendants dest
+    Out_channel.print_endline @@ F.asprintf "source: %s" (G.LiteralVertex.to_string source) ;
+    Out_channel.print_endline @@ F.asprintf "dest: %s" (G.LiteralVertex.to_string dest) ;
+    let source_vertex = G.LiteralVertex.to_vertex source graph.graph
+    and dest_vertex = G.LiteralVertex.to_vertex dest graph.graph in
+    let descendants = DFS.fold_component List.cons [] graph source_vertex in
+    List.mem ~equal:G.V.equal descendants dest_vertex
 
 
   (** For every leaf, print paths to the leaf from the given source, where the given graph may
@@ -84,7 +88,11 @@ let identify_longest_trunks (graph : G.t) : t array =
   let carpro = Array.cartesian_product roots leaves in
   (* not all leaves are reachable from all roots. So we filter out unreachable (root, leaf) pairs. *)
   let reachable_root_and_leaf_pairs =
-    Array.filter ~f:(fun (root, leaf) -> PathUtils.is_reachable root leaf df_only_graph) carpro
+    Array.filter
+      ~f:(fun (root, leaf) ->
+        PathUtils.is_reachable (G.LiteralVertex.of_vertex root) (G.LiteralVertex.of_vertex leaf)
+          df_only_graph )
+      carpro
   in
   (* now, find the path between the root and the leaf. *)
   Array.map
@@ -96,13 +104,13 @@ let identify_longest_trunks (graph : G.t) : t array =
     reachable_root_and_leaf_pairs
 
 
-let longest_trunk_finder ~(start : G.LiteralVertex.t) ~(end_ : G.LiteralVertex.t) (graph : G.t) : t array
-  =
+let longest_trunk_finder ~(start : G.LiteralVertex.t) ~(end_ : G.LiteralVertex.t) (graph : G.t) :
+    t array =
   let all_trunks = identify_longest_trunks graph in
   Array.filter
     ~f:(fun trunk ->
-        Vertex.equal (G.LiteralVertex.to_vertex start graph.graph) trunk.(0)
-        && Vertex.equal (G.LiteralVertex.to_vertex end_ graph.graph) (Array.last trunk) )
+      Vertex.equal (G.LiteralVertex.to_vertex start graph.graph) trunk.(0)
+      && Vertex.equal (G.LiteralVertex.to_vertex end_ graph.graph) (Array.last trunk) )
     all_trunks
 
 

@@ -33,7 +33,7 @@ open GraphRepr;;
 open ListMonad;;
 open InfixOperators;;
 open ContextualFeatures;;
-open GraphMaker;;
+open DataFlowEdges;;
 open SimilarityHandler;;
 open Loop;;
 open RulesOfInference;;

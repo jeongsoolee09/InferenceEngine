@@ -700,7 +700,8 @@ module AskingRules = struct
     ; {label= "ask_foreign_package_label"; rule= ask_foreign_package_label}
     ; {label= "ask_indeterminate"; rule= ask_indeterminate}
     ; { label= "ask_from_ns_cluster_if_it_contains_internal_src_or_sink"
-      ; rule= ask_from_ns_cluster_if_it_contains_internal_src_or_sink } ]
+      ; rule= ask_from_ns_cluster_if_it_contains_internal_src_or_sink }
+    ; {label = "ask_annotated_method" ; rule= ask_annotated_method}]
 end
 
 module MetaRules = struct

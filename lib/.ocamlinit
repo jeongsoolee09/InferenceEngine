@@ -47,6 +47,7 @@ open Method
 open GraphSplitter
 open Annotations
 open Trunk
+open Main
 module Json = Yojson.Basic
 
 exception End
@@ -68,7 +69,7 @@ let () = Sys.chdir ".."
 let () = print_endline @@ Format.asprintf "Utop is spawned on %s" @@ Sys.getcwd ()
 
 let df_edges_added =
-  match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" with
+  match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" ~finished:false with
   | None ->
       let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
       G.serialize_to_bin result ~suffix:"df_edges" ;

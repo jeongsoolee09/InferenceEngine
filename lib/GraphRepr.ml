@@ -175,7 +175,7 @@ module Vertex = struct
 
   let make_initial (meth : Method.t) (loc : String.t) : t = (meth, loc, ProbQuadruple.initial)
 
-  let make (meth : Method.t) (loc : String.t) (dist: ProbQuadruple.t) : t = (meth, loc, dist)
+  let make (meth : Method.t) (loc : String.t) (dist : ProbQuadruple.t) : t = (meth, loc, dist)
 
   let get_method (meth, _, _) : Method.t = meth
 
@@ -497,7 +497,9 @@ module G = struct
 
   let serialize_to_bin ?(suffix = "") (graph : t) : unit =
     let out_chan =
-      Out_channel.create (F.asprintf "%s_%s_%s.bin" (make_now_string 9) graph.comp_unit suffix)
+      if String.is_empty suffix then
+        Out_channel.create (F.asprintf "%s_%s.bin" (make_now_string 9) graph.comp_unit)
+      else Out_channel.create (F.asprintf "%s_%s_%s.bin" (make_now_string 9) graph.comp_unit suffix)
     in
     Out_channel.set_binary_mode out_chan true ;
     Marshal.to_channel out_chan graph [] ;
