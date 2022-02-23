@@ -152,6 +152,13 @@ module LocationSet = struct
     List.map all_matches ~f:int_of_string
 
 
+  let of_int_list (ints : int list) =
+    let int_strs =
+      List.stable_dedup ints |> List.map ~f:string_of_int |> List.map ~f:(fun str -> "line " ^ str)
+    in
+    List.intersperse int_strs ~sep:", " |> String.concat |> fun out -> "{ " ^ out ^ " }"
+
+
   let earliest_location (locset : t) : int =
     List.hd_exn @@ List.sort (to_int_list locset) ~compare:Int.compare
 end
@@ -167,6 +174,8 @@ module Vertex = struct
 
 
   let make_initial (meth : Method.t) (loc : String.t) : t = (meth, loc, ProbQuadruple.initial)
+
+  let make (meth : Method.t) (loc : String.t) (dist: ProbQuadruple.t) : t = (meth, loc, dist)
 
   let get_method (meth, _, _) : Method.t = meth
 

@@ -190,6 +190,7 @@ module PropagationRules = struct
           G.strong_update_dist succ new_dist acc )
         contextual_succs ~init:graph
     in
+    print_endline "done." ;
     (propagated, contextual_succs)
 
 
@@ -388,20 +389,20 @@ module PropagationRules = struct
                 && (not @@ G.is_df_leaf (LV.of_vertex vertex) graph)
                 && (not @@ Method.is_initializer vertex_meth)
                 && (not @@ List.mem ~equal:Vertex.equal ns_clusters_vertices vertex)
-              then (
+              then
                 let new_dist =
                   { ProbQuadruple.src= vertex_dist.src +. 0.3
                   ; sin= vertex_dist.sin -. 0.1
                   ; san= vertex_dist.san -. 0.1
                   ; non= vertex_dist.non -. 0.1 }
                 in
-                if not dry_run then
-                  Out_channel.fprintf Out_channel.stdout
-                    "%s propagated its info to %s (internal_src), its dist is now %s\n"
-                    (Method.to_string new_fact_method)
-                    (LV.to_string (LV.of_vertex vertex))
-                    (ProbQuadruple.to_string new_dist) ;
-                (G.strong_update_dist vertex new_dist graph_acc, vertex :: affected) )
+                (* if not dry_run then *)
+                (*   Out_channel.fprintf Out_channel.stdout *)
+                (*     "%s propagated its info to %s (internal_src), its dist is now %s\n" *)
+                (*     (Method.to_string new_fact_method) *)
+                (*     (LV.to_string (LV.of_vertex vertex)) *)
+                (*     (ProbQuadruple.to_string new_dist) ; *)
+                (G.strong_update_dist vertex new_dist graph_acc, vertex :: affected)
               else smol_acc )
             ~init:big_acc trunk )
         ~init:(new_fact_propagated, []) trunks_containing_vertices

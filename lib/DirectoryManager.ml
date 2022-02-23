@@ -50,23 +50,18 @@ let get_compilation_unit_subdirs (root_dir : string) : string list =
 
 
 module ClassnameScraper = struct
+  let regexp = Re2.create_exn "[a-z ]*(@[a-zA-Z.() ]*)? ?(class|enum)+ ([a-zA-Z]+).*{"
+
   let is_class_decl (line : string) : bool =
     let stripped = String.strip line in
-    let regexp = Str.regexp "[a-z ]*[a-zA-Z@.() ]*class .*{" in
-    Str.string_match regexp stripped 0
+    Re2.matches regexp stripped
 
 
   let extract_classname_from_class_decl (class_decl : string) : string =
-    let rec inner (splitted : string list) : string =
-      match splitted with
-      | this :: next :: t when String.equal this "class" ->
-          next
-      | this :: t when not @@ String.equal this "class" ->
-          inner t
-      | _ ->
-          failwith @@ F.asprintf "could not find classname from class declaration: %s\n" class_decl
-    in
-    inner @@ String.split ~on:' ' class_decl
+    Re2.find_submatches_exn regexp class_decl
+    |> Array.to_list
+    |> catMaybes
+    |> List.last_exn
 
 
   let scrape_classes_in_single_file =
@@ -88,6 +83,11 @@ module ClassnameScraper = struct
   let scrape_classes_in_directory (root_dir : string) : string list =
     let java_files = walk_for_extension root_dir ".java" in
     java_files >>= scrape_classes_in_single_file
+
+
+  let get_filenames_and_their_classes (root_dir : string) : (string * string list) list =
+    let java_files = walk_for_extension root_dir ".java" in
+    java_files >>| fun java_file -> (java_file, scrape_classes_in_single_file java_file)
 end
 
 module Classnames = struct

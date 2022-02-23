@@ -1,5 +1,6 @@
 open ListMonad
 open InfixOperators
+open DirectoryManager
 module F = Format
 module Hashtbl = Caml.Hashtbl
 
@@ -71,7 +72,11 @@ module NormalString = struct
   let get_class_name (normalstring : String.t) : string =
     try
       assert (Str.string_match normalstring_regex normalstring 0) ;
-      Str.matched_group 2 normalstring
+      let out = Str.matched_group 2 normalstring in
+      if String.is_substring out ~substring:"$" then
+        String.split normalstring ~on:' ' |> List.last_exn |> String.split ~on:'.' |> List.hd_exn
+        |> String.split ~on:'$' |> List.last_exn
+      else out
     with Assert_failure _ -> ""
 
 
@@ -307,3 +312,56 @@ let get_return_stmt_lines =
         out
     | Some res ->
         res
+
+
+let get_declaration_file_candidates =
+  let cache = Hashtbl.create 777 in
+  fun (method_ : t) : string list ->
+    match Hashtbl.find_opt cache method_ with
+    | None ->
+        let out =
+          let this_method_classname = get_class_name method_ in
+          let root_dir = Deserializer.deserialize_config () in
+          let files_and_their_methods = ClassnameScraper.get_filenames_and_their_classes root_dir in
+          List.fold
+            ~f:(fun acc (filename, classes) ->
+              if List.mem classes this_method_classname ~equal:String.equal then (
+                print_endline filename ;
+                filename :: acc )
+              else acc )
+            ~init:[] files_and_their_methods
+        in
+        Hashtbl.add cache method_ out ;
+        out
+    | Some res ->
+        res
+
+
+exception TODO
+
+let get_declaration_file (method_ : t) : string =
+  (* 1차로, classname을 가진 java file이 있는지 확인. 대부분은 여기서 해결됨 *)
+  let this_method_classname = get_class_name method_
+  and all_filenames = DirectoryManager.walk_for_extension Deserializer.project_root ".java" in
+  let result =
+    List.find all_filenames ~f:(fun filename ->
+        let filename_short = List.last_exn @@ String.split ~on:'/' filename in
+        String.equal filename_short (this_method_classname ^ ".java") )
+  in
+  if is_some result then Option.value_exn result
+  else (
+    print_endline "hihi" ;
+    (* 1차가 안 되면, 2차로 classes_and_files를 본다. *)
+    let all_filenames_and_their_classes =
+      ClassnameScraper.get_filenames_and_their_classes Deserializer.project_root
+    in
+    let result =
+      List.find all_filenames_and_their_classes ~f:(fun (filename, classnames) ->
+          List.mem ~equal:String.equal classnames this_method_classname )
+    in
+    match result with
+    | None ->
+        (* 그래도 안되면 나는 모르겠다 *)
+        failwithf "get_declaration_file failed for %s" method_ ()
+    | Some (filename, _) ->
+        filename )

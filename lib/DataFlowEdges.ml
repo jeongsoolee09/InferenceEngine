@@ -243,7 +243,15 @@ let batch_add_edge (raw_json : json) (graph : G.t) =
   let all_edges_arr = Array.of_list all_edges in
   let deduped = ref [] in
   sequential_dedup_edge all_edges_arr deduped ;
-  sequential_add_edge acc !deduped ;
+  let repaired_edges =
+    List.map
+      ~f:(fun (v1, label, v2) ->
+        let v1_repaired = ReturnStmtLocation.rectify_return_stmt_location_vertex v1
+        and v2_repaired = ReturnStmtLocation.rectify_return_stmt_location_vertex v2 in
+        (v1_repaired, label, v2_repaired) )
+      !deduped
+  in
+  sequential_add_edge acc repaired_edges ;
   let edge_added = !acc in
   let out_channel = Out_channel.create "void_calls.lisp" in
   Sexp.output out_channel (Sexp.List (List.map ~f:G.LiteralVertex.sexp_of_t all_void_calls)) ;
@@ -268,23 +276,23 @@ let graph_already_serialized ~(comp_unit : String.t) ~(suffix : String.t) : Stri
 module Repair = struct
   let find_return_vertex_of_method (method_ : Method.t) (graph : G.t) : G.V.t =
     let return_stmt_locs = Deserializer.deserialize_return_stmts () in
+    let this_method_decl_filename = Method.get_declaration_file method_ in
     let this_method_return_locs =
       List.Assoc.find_exn return_stmt_locs method_ ~equal:Method.equal
+      >>| fun loc -> ReturnStmtLocation.rectify_return_stmt_location this_method_decl_filename loc
     in
-    try
-      List.hd_exn
-      @@ G.fold_vertex
-           (fun vertex acc ->
-             let methname = Vertex.get_method vertex and locset = Vertex.get_loc vertex in
-             let match_ =
-               Method.equal methname method_
-               && List.exists
-                    ~f:(fun loc -> List.mem this_method_return_locs loc ~equal:Int.equal)
-                    (LocationSet.to_int_list locset)
-             in
-             if match_ then vertex :: acc else acc )
-           graph []
-    with _ -> failwithf "%s" method_ ()
+    List.hd_exn
+    @@ G.fold_vertex
+         (fun vertex acc ->
+           let methname = Vertex.get_method vertex and locset = Vertex.get_loc vertex in
+           let match_ =
+             Method.equal methname method_
+             && List.exists
+                  ~f:(fun loc -> List.mem this_method_return_locs loc ~equal:Int.equal)
+                  (LocationSet.to_int_list locset)
+           in
+           if match_ then vertex :: acc else acc )
+         graph []
 
 
   (* spotting (4) *)

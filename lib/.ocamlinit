@@ -67,7 +67,7 @@ let () = Sys.chdir ".."
 
 let () = print_endline @@ Format.asprintf "Utop is spawned on %s" @@ Sys.getcwd ()
 
-let df_edges_added =
+(*let df_edges_added =
   match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" with
   | None ->
       let result = G.empty |> batch_add_vertex json |> batch_add_edge json in
@@ -81,4 +81,4 @@ let splitted = split_graph_by_comp_unit df_edges_added
 
 let renderer_graph = List.nth_exn splitted 0
 
-let site_graph = List.nth_exn splitted 1
+let site_graph = List.nth_exn splitted 1*)

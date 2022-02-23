@@ -397,7 +397,8 @@ toResource랑 render가 지금 sink로 오인되고 있네. 분석기 안 고치
 
 흐아아아아
 
-*** WORKING 왜 render -> renderGuide 엣지가 없을까?
+*** DONE 왜 render -> renderGuide 엣지가 없을까?
+CLOSED: [2022-02-18 Fri 19:34]
 
 샘플 json을 만들자.
 
@@ -525,7 +526,8 @@ toResource랑 render가 지금 sink로 오인되고 있네. 분석기 안 고치
 
 이건 GraphMaker.EdgeMaker.edge_list_of_chain_slice_list에다가 Define slice 처리하는 메커니즘 추가하면 댐.
 
-**** WORKING 이어붙이는 메커니즘 만들기
+**** DONE 이어붙이는 메커니즘 만들기
+CLOSED: [2022-02-18 Fri 19:34]
 
 #+begin_src json
   {
@@ -752,7 +754,6 @@ CLOSED: [2022-02-17 Thu 20:02]
 
 ***** 마침내 이어붙이기 테스트
 
-
 #+begin_src tuareg
   module Json = Yojson.Basic
 
@@ -791,4 +792,53 @@ CLOSED: [2022-02-17 Thu 20:02]
   let method_ = "ResourceSupport IndexController.index()"
     
   let method_ = "GuideContentResource GuideRenderer.render(GuideType,String)"
+#+end_src
+
+아니 근데 왜 반영이 안되냐 미쳐버리겠네
+--> 해결. 😇
+
+** Notebook92
+
+toResource 고치기. 흐헤헤헤헤헤
+
+#+begin_src tuareg
+  let vertex1 = ("Repository GithubClient.fetchOrgRepository(String,String)", "{ line 112 }", ProbQuadruple.initial)
+
+  let vertex2 = ("Object RestTemplate.getForObject(String,Class,Object[])", "{ line 113 }", ProbQuadruple.initial)
+
+  let vertex3 = ("Repository GithubClient.fetchOrgRepository(String,String)", "{ line 113 }", ProbQuadruple.initial)
+
+  let vertex4 = ("ResponseEntity GuidesController.showGuide(String,String)", "{ line 73 }", ProbQuadruple.initial)
+
+  let vertex5 = ("GuideResource GuideResourceAssembler.toResource(Repository)", "{ line 75 }", ProbQuadruple.initial)
+
+
+  let before = List.fold ~f:(fun acc (v1, v2) ->
+      G.add_edge_e acc (v1, EdgeLabel.DataFlow, v2)
+    ) ~init:G.empty [(vertex1, vertex2); (vertex2, vertex3); (vertex1, vertex4); (vertex4, vertex5)]
+
+  open ReturnStmtLocation
+
+  let vertex = vertex5
+
+  let test = fun vertex ->
+    let methname, locset, dist =
+      (Vertex.get_method vertex, Vertex.get_loc vertex, Vertex.get_dist vertex)
+    in
+    try
+      if
+        String.equal (Method.get_return_type methname) "void"
+        || (not @@ is_return_stmt_location_vertex methname locset)
+        || (not @@ Method.is_udf methname)
+      then vertex
+      else
+        let locset_repaired =
+          LocationSet.to_int_list locset
+          |> List.map ~f:(rectify_return_stmt_location (Method.get_declaration_file methname))
+          |> LocationSet.of_int_list
+        in
+        Vertex.make methname locset_repaired dist
+    with Not_found_s _ -> vertex
+
+  let after = G.map_vertex test before
 #+end_src
