@@ -205,10 +205,17 @@ module VertexPair = struct
   type t = Vertex.t * Vertex.t [@@deriving equal, compare]
 end
 
-module BiDiGraph = Graph.Persistent.Digraph.ConcreteBidirectionalLabeled (Vertex) (EdgeLabel)
+module BiDiGraph = struct
+  include Graph.Persistent.Digraph.ConcreteBidirectionalLabeled (Vertex) (EdgeLabel)
+
+  let compare bdg1 bdg2 =
+    let bdg1_num_edges = nb_edges bdg1 and bdg2_num_edges = nb_edges bdg2 in
+    Int.compare bdg1_num_edges bdg2_num_edges
+end
 
 module G = struct
   type t = {graph: BiDiGraph.t; comp_unit: String.t; label: String.t; desc: String.t}
+  [@@deriving compare]
 
   (* ==================== Really Boring Wrapping Logic ==================== *)
 
@@ -669,7 +676,8 @@ module G = struct
   let leave_only_df_edges (graph : t) : t =
     fold_edges_e
       (fun ((_, label, _) as edge) acc ->
-        if not @@ EdgeLabel.equal EdgeLabel.DataFlow label then remove_edge_e acc edge else acc )
+        try if not @@ EdgeLabel.equal EdgeLabel.DataFlow label then remove_edge_e acc edge else acc
+        with Invalid_argument _ -> acc )
       graph graph
 
 
