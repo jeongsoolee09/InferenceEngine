@@ -58,10 +58,7 @@ module ClassnameScraper = struct
 
 
   let extract_classname_from_class_decl (class_decl : string) : string =
-    Re2.find_submatches_exn regexp class_decl
-    |> Array.to_list
-    |> catMaybes
-    |> List.last_exn
+    Re2.find_submatches_exn regexp class_decl |> Array.to_list |> catMaybes |> List.last_exn
 
 
   let scrape_classes_in_single_file =
@@ -175,7 +172,7 @@ module PackageScraper = struct
 
   let package_regex = Re2.create_exn "package ([a-zA-Z.]+);"
 
-  let is_package_decl string = Re2.matches package_regex string
+  let is_package_decl = Re2.matches package_regex
 
   let extract_package_from_package_decl package_decl =
     String.split ~on:' ' package_decl |> List.last_exn |> String.rstrip ~drop:(Char.equal ';')
@@ -210,4 +207,88 @@ module PackageScraper = struct
           out
       | Some res ->
           res
+end
+
+module InterfaceScraper = struct
+  let regexp = Re2.create_exn "[a-z ]*([@a-zA-Z.()]+)? ?implements ([a-zA-Z<>]+).*{"
+
+  let is_implements_decl = Re2.matches regexp
+
+  let has_implements_decl = List.exists ~f:is_implements_decl
+
+  let extract_class_interface_pair_from_implements_decl (implements_decl : string) : string * string
+      =
+    if not @@ is_implements_decl implements_decl then
+      raise @@ Invalid_argument (F.asprintf "%s is not an implements decl" implements_decl)
+    else
+      let matches = Re2.find_submatches_exn regexp implements_decl in
+      let classname = Option.value_exn matches.(1)
+      and interfacename = Option.value_exn matches.(2) in
+      (classname, interfacename)
+
+
+  let scrape_class_interface_pair_from_single_file =
+    let cache = Hashtbl.create 777 in
+    fun (file_absdir : string) : (string * string) option ->
+      match Hashtbl.find_opt cache file_absdir with
+      | None ->
+          let out =
+            let file_line_by_line = In_channel.read_lines file_absdir in
+            let implements_line_opt = List.find file_line_by_line ~f:is_implements_decl in
+            match implements_line_opt with
+            | None ->
+                None
+            | Some line ->
+                Some (extract_class_interface_pair_from_implements_decl line)
+          in
+          Hashtbl.add cache file_absdir out ;
+          out
+      | Some res ->
+          res
+
+
+  let scrape_class_interface_pairs_from_directory =
+    let cache = Hashtbl.create 777 in
+    fun (root_dir : string) : (string * string) list ->
+      match Hashtbl.find_opt cache root_dir with
+      | None ->
+          let out =
+            let java_files = walk_for_extension root_dir ".java" in
+            List.fold java_files
+              ~f:(fun acc java_file ->
+                match scrape_class_interface_pair_from_single_file java_file with
+                | None ->
+                    acc
+                | Some res ->
+                    res :: acc )
+              ~init:[]
+          in
+          Hashtbl.add cache root_dir out ;
+          out
+      | Some res ->
+          res
+
+
+  let scrape_implemented_interfaces_from_directory =
+    let cache = Hashtbl.create 777 in
+    fun (root_dir : string) : string list ->
+      match Hashtbl.find_opt cache root_dir with
+      | None ->
+          let out =
+            scrape_class_interface_pairs_from_directory root_dir
+            |> List.fold
+                 ~f:(fun acc (_, interfacename) ->
+                   let normalized =
+                     String.take_while interfacename ~f:(fun c -> not @@ Char.equal '<' c)
+                   in
+                   if not @@ List.mem ~equal:String.equal acc normalized then normalized :: acc
+                   else acc )
+                 ~init:[]
+          in
+          Hashtbl.add cache root_dir out ;
+          out
+      | Some res ->
+          res
+
+  (* let scrape_interfaces_from_directory = *)
 end
