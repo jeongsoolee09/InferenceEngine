@@ -16,3 +16,9 @@
 
 - 이런 경우 일단 `brew reinstall openblas` 를 해 준다음
 - `export PKG_CONFIG_PATH="/usr/local/opt/openblas/lib/pkgconfig:$PATH"` 를 해 준다.
+
+### `mlgmpidl` 관련 에러
+
+(애플 실리콘, homebrew 기준)
+
+CFLAGS="-I`brew --prefix mpfr`/include -I`brew --prefix gmp`/include" LDFLAGS="-L`brew --prefix mpfr`/lib -L`brew --prefix gmp`/lib" opam install mlgmpidl
