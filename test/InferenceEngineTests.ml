@@ -18,7 +18,7 @@ open SpawnPython
 open Main
 module Json = Yojson.Basic
 
-exception End
+type delimiter = Start | End
 
 type json = Json.t
 
@@ -78,5 +78,46 @@ module Notebook94 = struct
 
   (* applying all rules *)
 
+  let _ = End
+end
+
+module Notebook95 = struct
+  let _ = Start
+
+  let vertices = [("v1", "l1"); ("v2", "l2"); ("v3", "l3"); ("v4", "l4")]
+
+  let initial =
+    List.fold
+      ~f:(fun current_graph (v, l) -> G.add_vertex current_graph (v, l, ProbQuadruple.initial))
+      ~init:G.empty vertices
+
+
+  module TestMap = struct
+    module WithGraphDomain = Caml.Map.Make (G)
+    include WithGraphDomain
+
+    type t = Int.t WithGraphDomain.t
+  end
+
+  let added = TestMap.add initial 777 TestMap.empty
+
+  (* now, bump v1's dist. *)
+
+  let bumped =
+    G.strong_update_dist
+      (G.LiteralVertex.to_vertex ("v1", "l1") initial.graph)
+      {src= 1.; san= 0.; sin= 0.; non= 0.}
+      initial
+
+
+  let _ = G.equal initial bumped
+
+  let _ = TestMap.find bumped added
+
+  let _ = TestMap.find initial added
+
+  let _ = assert (Int.equal (TestMap.find bumped added) (TestMap.find initial added))
+
+  (* Good! *)
   let _ = End
 end
