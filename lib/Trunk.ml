@@ -7,12 +7,19 @@ type t = G.V.t array [@@deriving compare, equal]
 
 module Hashtbl = Caml.Hashtbl
 
+module Cache = struct
+  module WithGraphDomain = Caml.Map.Make (G)
+  include WithGraphDomain
+
+  type t = Int.t WithGraphDomain.t
+end
+
 module PathUtils = struct
   let is_reachable (source : G.LiteralVertex.t) (dest : G.LiteralVertex.t) (graph : G.t) : bool =
     (* dest is reachable from source iff dest is one of the descendants of source. *)
     let module DFS = Graph.Traverse.Dfs (G) in
-    Out_channel.print_endline @@ F.asprintf "source: %s" (G.LiteralVertex.to_string source) ;
-    Out_channel.print_endline @@ F.asprintf "dest: %s" (G.LiteralVertex.to_string dest) ;
+    (* Out_channel.print_endline @@ F.asprintf "source: %s" (G.LiteralVertex.to_string source) ; *)
+    (* Out_channel.print_endline @@ F.asprintf "dest: %s" (G.LiteralVertex.to_string dest) ; *)
     let source_vertex = G.LiteralVertex.to_vertex source graph.graph
     and dest_vertex = G.LiteralVertex.to_vertex dest graph.graph in
     let descendants = DFS.fold_component List.cons [] graph source_vertex in
@@ -81,27 +88,38 @@ let find_longest_path (paths : t array) : t =
     (Array.max_elt ~compare:(fun p1 p2 -> Int.compare (Array.length p1) (Array.length p2)) paths)
 
 
-let identify_longest_trunks (graph : G.t) : t array =
-  let df_only_graph = G.leave_only_df_edges graph in
-  let roots = Array.of_list @@ G.collect_df_roots df_only_graph in
-  let leaves = Array.of_list @@ G.collect_df_leaves df_only_graph in
-  let carpro = Array.cartesian_product roots leaves in
-  (* not all leaves are reachable from all roots. So we filter out unreachable (root, leaf) pairs. *)
-  let reachable_root_and_leaf_pairs =
-    Array.filter
-      ~f:(fun (root, leaf) ->
-        PathUtils.is_reachable (G.LiteralVertex.of_vertex root) (G.LiteralVertex.of_vertex leaf)
-          df_only_graph )
-      carpro
-  in
-  (* now, find the path between the root and the leaf. *)
-  Array.map
-    ~f:(fun (root, leaf) ->
-      let all_paths =
-        PathUtils.find_paths_from_source_to_dest df_only_graph (G.LiteralVertex.of_vertex root) leaf
-      in
-      find_longest_path all_paths )
-    reachable_root_and_leaf_pairs
+let identify_longest_trunks =
+  let cache = ref Cache.empty in
+  fun (graph : G.t) : t array ->
+    match Cache.find_opt graph !cache with
+    | None ->
+        let out =
+          let df_only_graph = G.leave_only_df_edges graph in
+          let roots = Array.of_list @@ G.collect_df_roots df_only_graph in
+          let leaves = Array.of_list @@ G.collect_df_leaves df_only_graph in
+          let carpro = Array.cartesian_product roots leaves in
+          (* not all leaves are reachable from all roots. So we filter out unreachable (root, leaf) pairs. *)
+          let reachable_root_and_leaf_pairs =
+            Array.filter
+              ~f:(fun (root, leaf) ->
+                PathUtils.is_reachable (G.LiteralVertex.of_vertex root)
+                  (G.LiteralVertex.of_vertex leaf) df_only_graph )
+              carpro
+          in
+          (* now, find the path between the root and the leaf. *)
+          Array.map
+            ~f:(fun (root, leaf) ->
+              let all_paths =
+                PathUtils.find_paths_from_source_to_dest df_only_graph
+                  (G.LiteralVertex.of_vertex root) leaf
+              in
+              find_longest_path all_paths )
+            reachable_root_and_leaf_pairs
+        in
+        cache := Cache.add graph out !cache ;
+        out
+    | Some res ->
+        res
 
 
 let longest_trunk_finder ~(start : G.LiteralVertex.t) ~(end_ : G.LiteralVertex.t) (graph : G.t) :
