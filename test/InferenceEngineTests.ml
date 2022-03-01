@@ -121,3 +121,36 @@ module Notebook95 = struct
   (* Good! *)
   let _ = End
 end
+
+module Notebook96 = struct
+  let _ = Start
+
+  let renderer_finished = build_graph renderer_graph
+
+  let parse = "Document Jsoup.parse(String)"
+
+  let jsoup_parse_question = Question.AskingForLabel parse
+
+  let response = Response.ForLabel (parse, TaintLabel.Sanitizer)
+
+  let applicable_rules =
+    MetaRules.ForPropagation.take_subset_of_applicable_propagation_rules renderer_finished response
+      [] PropagationRules.all_rules
+
+
+  let propagated_snapshot, current_propagation_targets =
+    List.fold
+      ~f:(fun (snapshot_acc, affected_vertices) (rule : PropagationRules.t) ->
+        let propagated, this_affected =
+          let out = rule.rule snapshot_acc new_fact prev_facts ~dry_run:false in
+          (* Visualizer.visualize_snapshot (fst out) ~micro:true ~autoopen:false ; *)
+          out
+        in
+        (propagated, affected_vertices @ this_affected) )
+      ~init:(current_snapshot, []) rules_to_propagate
+
+
+  let _ = Visualizer.visualize_snapshot test ~micro:false ~autoopen:true
+
+  let _ = End
+end

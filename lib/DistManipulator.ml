@@ -1,6 +1,7 @@
 open ListMonad
 open InfixOperators
 open GraphRepr
+open TaintLabel
 
 exception TODO
 
@@ -50,3 +51,18 @@ let bump (old_dist : ProbQuadruple.t) (to_bump_labels : TaintLabel.t list) ~(inc
 let overwrite ~(src : Float.t) ~(sin : Float.t) ~(san : Float.t) ~(non : Float.t) : ProbQuadruple.t
     =
   {src; sin; san; non}
+
+
+let oracle_overwrite (label : TaintLabel.t) : ProbQuadruple.t =
+  let inf = Float.infinity and neg = Float.neg_infinity in
+  match label with
+  | Source ->
+      {src= inf; sin= neg; san= neg; non= neg}
+  | Sink ->
+      {src= neg; sin= inf; san= neg; non= neg}
+  | Sanitizer ->
+      {src= neg; sin= neg; san= inf; non= neg}
+  | None ->
+      {src= neg; sin= neg; san= neg; non= inf}
+  | Indeterminate ->
+      raise @@ Invalid_argument "indeterminate"
