@@ -86,17 +86,13 @@ let get_methodwise_precision_of_snapshot (snapshot : G.t) : Float.t =
   Float.of_int (correct_methods_count / num_of_all_methods) *. 100.
 
 
-(* - 루프를 도는데:
-   - 현재의 최신 스냅샷에 대한 정확도를 채점하고, determinate한 메소드와 버텍스의 개수를 센다.
-   - 물음에 자동으로 답한다 (정답을 답해야 한다).
-
-   ==> 이걸 stdout에도 출력하고, 로그파일에도 쓰게 하자. 야호! *)
-
 (** auto-question-n-answer version of Loop.loop_inner. *)
-let rec auto_test_spechunter_for_snapshot (current_snapshot : G.t)
+let rec auto_test_spechunter_for_snapshot_inner (current_snapshot : G.t)
     (received_responses : Response.t list)
-    (nodewise_featuremap : NodeWiseFeatures.NodeWiseFeatureMap.t) (count : int) : G.t =
-  if G.Saturation.all_dists_in_graph_are_saturated current_snapshot then current_snapshot
+    (nodewise_featuremap : NodeWiseFeatures.NodeWiseFeatureMap.t) (count : int)
+    (log_data_acc : string list) : G.t * string =
+  if G.Saturation.all_dists_in_graph_are_saturated current_snapshot then
+    (current_snapshot, List.rev log_data_acc |> List.map ~f:(fun str -> str ^ "\n") |> String.concat)
   else
     (* find the most appropriate Asking Rule. *)
     let question_maker =
@@ -107,9 +103,9 @@ let rec auto_test_spechunter_for_snapshot (current_snapshot : G.t)
     let response =
       match question with
       | AskingForLabel meth ->
-          Response.ForLabel (meth, Hashtbl.find solution_table meth)
+          Response.ForLabel (meth, get_solution meth)
       | AskingForConfirmation (meth, label) ->
-          Response.ForLabel (meth, Hashtbl.find solution_table meth)
+          Response.ForLabel (meth, get_solution meth)
     in
     (* sort applicable Propagation Rules by adequacy. *)
     let propagation_rules_to_apply =
@@ -122,9 +118,24 @@ let rec auto_test_spechunter_for_snapshot (current_snapshot : G.t)
            PropagationRules.all_rules
     in
     let propagated' = Axioms.apply_axioms propagated in
-    print_endline
-    @@ F.asprintf "%d: %f (v) %f (m)" count
-         (get_vertexwise_precision_of_snapshot propagated')
-         (get_methodwise_precision_of_snapshot propagated') ;
-    auto_test_spechunter_for_snapshot propagated' (response :: received_responses)
-      nodewise_featuremap (count + 1)
+    (* output to stdout *)
+    let stats =
+      F.asprintf "%d: %f (v), %f (m)" count
+        (get_vertexwise_precision_of_snapshot propagated')
+        (get_methodwise_precision_of_snapshot propagated')
+    in
+    print_endline stats ;
+    auto_test_spechunter_for_snapshot_inner propagated' (response :: received_responses)
+      nodewise_featuremap (count + 1) (stats :: log_data_acc)
+
+
+let auto_test (initial_snapshot : G.t) : unit =
+  let loop_finished_snapshot, log_data =
+    auto_test_spechunter_for_snapshot_inner initial_snapshot []
+      NodeWiseFeatures.NodeWiseFeatureMap.empty 0 []
+  in
+  let out_chan =
+    Out_channel.create @@ F.asprintf "%s_%s.txt" (make_now_string 9) initial_snapshot.comp_unit
+  in
+  Out_channel.output_string out_chan log_data ;
+  Out_channel.close out_chan
