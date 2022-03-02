@@ -131,26 +131,41 @@ module Notebook96 = struct
 
   let jsoup_parse_question = Question.AskingForLabel parse
 
-  let response = Response.ForLabel (parse, TaintLabel.Sanitizer)
+  let new_fact = Response.ForLabel (parse, TaintLabel.Sanitizer)
 
-  let applicable_rules =
-    MetaRules.ForPropagation.take_subset_of_applicable_propagation_rules renderer_finished response
+  let current_snapshot = renderer_finished
+
+  let previous_snapshot = None
+
+  let rules_to_propagate =
+    MetaRules.ForPropagation.take_subset_of_applicable_propagation_rules renderer_finished new_fact
       [] PropagationRules.all_rules
 
 
-  let propagated_snapshot, current_propagation_targets =
-    List.fold
-      ~f:(fun (snapshot_acc, affected_vertices) (rule : PropagationRules.t) ->
-        let propagated, this_affected =
-          let out = rule.rule snapshot_acc new_fact prev_facts ~dry_run:false in
-          (* Visualizer.visualize_snapshot (fst out) ~micro:true ~autoopen:false ; *)
-          out
-        in
-        (propagated, affected_vertices @ this_affected) )
-      ~init:(current_snapshot, []) rules_to_propagate
+  let prev_facts = []
+
+  let history = []
+
+  let prop_rule_pool = PropagationRules.all_rules
+
+  let propagated, _ =
+    propagator new_fact current_snapshot previous_snapshot rules_to_propagate prev_facts history
+      prop_rule_pool
 
 
-  let _ = Visualizer.visualize_snapshot test ~micro:false ~autoopen:true
+  let _ = Visualizer.visualize_snapshot propagated ~micro:false ~autoopen:true
+
+  (* OK *)
+
+  let _ = End
+end
+
+module Notebook97 = struct
+  let _ = Start
+
+  let renderer_finished = build_graph renderer_graph
+
+  let _ = loop renderer_finished NodeWiseFeatureMap.empty
 
   let _ = End
 end
