@@ -24,12 +24,16 @@ let make_now_string (gmt_diff : int) : string =
 let deserialize_config () =
   let in_channel = In_channel.create "config.json" in
   let json = Json.from_channel in_channel in
-  let out = Util.member "project_root" json |> Util.to_string in
+  let out =
+    let project_root = Util.member "project_root" json |> Util.to_string
+    and solution_dir = Util.member "solution_dir" json |> Util.to_string in
+    (project_root, solution_dir)
+  in
   In_channel.close in_channel ;
   out
 
 
-let project_root = deserialize_config ()
+let project_root, solution_dir = deserialize_config ()
 
 let yojson_already_serialized () =
   Array.exists ~f:(fun dir -> String.is_substring ~substring:"yojson" dir) (Sys.readdir ".")
@@ -154,3 +158,11 @@ let deserialize_return_stmts =
       cache := out ;
       out )
     else !cache
+
+
+let deserialize_solution () : (string * string list) array =
+  let in_channel = In_channel.create solution_dir in
+  let json = Json.from_channel in_channel in
+  let assoc = Util.to_assoc json in
+  List.map ~f:(fun (str, str_json) -> (str, Util.to_list str_json >>| Util.to_string)) assoc
+  |> Array.of_list
