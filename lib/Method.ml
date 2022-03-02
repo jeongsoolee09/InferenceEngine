@@ -151,7 +151,7 @@ let is_api (method_ : t) : bool =
 
 let is_testcode (method_ : t) : bool =
   List.mem ~equal:String.equal
-    (DirectoryManager.Classnames.get_test_classnames (Deserializer.deserialize_config ()))
+    (DirectoryManager.Classnames.get_test_classnames Deserializer.project_root)
     (get_class_name method_)
 
 
@@ -171,8 +171,7 @@ module PackageResolver = struct
   let resolve_via_import_stmts (method_ : t) : string =
     (* find from the list of scraped packages *)
     let imports_in_directory =
-      DirectoryManager.PackageScraper.scrape_imports_in_directory
-        (Deserializer.deserialize_config ())
+      DirectoryManager.PackageScraper.scrape_imports_in_directory Deserializer.project_root
     in
     let method_classname = get_class_name method_ in
     match
@@ -188,9 +187,7 @@ module PackageResolver = struct
 
   let resolve_via_package_decls (method_ : t) : string =
     if is_initializer method_ then
-      let java_filenames =
-        DirectoryManager.walk_for_extension (Deserializer.deserialize_config ()) ".java"
-      in
+      let java_filenames = DirectoryManager.walk_for_extension Deserializer.project_root ".java" in
       let classname = get_class_name method_ in
       match
         List.find
@@ -321,8 +318,9 @@ let get_declaration_file_candidates =
     | None ->
         let out =
           let this_method_classname = get_class_name method_ in
-          let root_dir = Deserializer.deserialize_config () in
-          let files_and_their_methods = ClassnameScraper.get_filenames_and_their_classes root_dir in
+          let files_and_their_methods =
+            ClassnameScraper.get_filenames_and_their_classes Deserializer.project_root
+          in
           List.fold
             ~f:(fun acc (filename, classes) ->
               if List.mem classes this_method_classname ~equal:String.equal then (
@@ -336,8 +334,6 @@ let get_declaration_file_candidates =
     | Some res ->
         res
 
-
-exception TODO
 
 let get_declaration_file (method_ : t) : string =
   (* 1차로, classname을 가진 java file이 있는지 확인. 대부분은 여기서 해결됨 *)
@@ -365,3 +361,12 @@ let get_declaration_file (method_ : t) : string =
         failwithf "get_declaration_file failed for %s" method_ ()
     | Some (filename, _) ->
         filename )
+
+
+let classname_implements_some_interface (method_ : t) : bool =
+  let classname = get_class_name method_ in
+  let all_class_interface_pairs =
+    DirectoryManager.InterfaceScraper.scrape_class_interface_pairs_from_directory
+      Deserializer.project_root
+  in
+  Option.is_some @@ List.Assoc.find all_class_interface_pairs classname ~equal:String.equal

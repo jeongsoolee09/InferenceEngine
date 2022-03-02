@@ -32,7 +32,7 @@ module VertexMaker = struct
 
   let get_all_vertices (raw_json : json) : G.V.t list =
     let test_classnames =
-      DirectoryManager.Classnames.get_test_classnames (Deserializer.deserialize_config ())
+      DirectoryManager.Classnames.get_test_classnames Deserializer.project_root
     in
     let intermediate =
       wrapped_chain_list_of_raw_json raw_json

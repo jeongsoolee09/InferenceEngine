@@ -16,9 +16,8 @@ let get_comp_unit =
     match Hashtbl.find_opt cache method_ with
     | None ->
         let (out : CompUnit.t) =
-          let root_dir = Deserializer.deserialize_config () in
           let abs_dirs_and_classnames =
-            DirectoryManager.Classnames.classnames_by_compilation_unit root_dir
+            DirectoryManager.Classnames.classnames_by_compilation_unit Deserializer.project_root
           in
           if List.is_empty abs_dirs_and_classnames then Default
           else
@@ -83,9 +82,7 @@ let split_graph_by_single_comp_unit (df_graph : G.t)
 
 
 let split_graph_by_comp_unit (graph : G.t) : G.t list =
-  let all_comp_units =
-    DirectoryManager.get_compilation_unit_subdirs (Deserializer.deserialize_config ())
-  in
+  let all_comp_units = DirectoryManager.get_compilation_unit_subdirs Deserializer.project_root in
   List.iter
     ~f:(fun comp_unit ->
       Out_channel.print_endline @@ F.asprintf "comp_unit %s identified." comp_unit )
