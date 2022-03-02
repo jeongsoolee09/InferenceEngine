@@ -2,10 +2,9 @@ open GraphRepr
 open ListMonad
 open RulesOfInference
 
-
 (** (1) receive a rule to propagate, (2) use that propagation rule, and (3) spawn itself to the
     propagation targets. *)
-let rec propagator (new_fact : Response.t) (current_snapshot : G.t) (previous_snapshot : G.t option)
+let rec propagator (new_fact : Response.t) (current_snapshot : G.t)
     (rules_to_propagate : PropagationRules.t list) (prev_facts : Response.t list)
     (history : Vertex.t list) (prop_rule_pool : PropagationRules.t list) : G.t * Vertex.t list =
   if List.is_empty rules_to_propagate then
@@ -32,9 +31,7 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t) (previous_sn
     let propagated_snapshot, current_propagation_targets =
       List.fold
         ~f:(fun (snapshot_acc, affected_vertices) (rule : PropagationRules.t) ->
-          let propagated_snapshot, this_affected =
-            rule.rule snapshot_acc new_fact prev_facts ~dry_run:false
-          in
+          let propagated_snapshot, this_affected = rule.rule snapshot_acc new_fact ~dry_run:false in
           (propagated_snapshot, affected_vertices @ this_affected) )
         ~init:(oracle_marked, []) rules_to_propagate
     in
@@ -45,7 +42,7 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t) (previous_sn
           || List.mem new_fact_vertices target ~equal:Vertex.equal
         then (big_acc, big_history)
         else
-          let target_meth, target_loc, target_dist = target in
+          let target_meth = Vertex.get_method target and target_loc = Vertex.get_method target in
           (* summarize this node's distribution into a Response.t! *)
           let target_rule_summary =
             Response.response_of_dist target_meth
@@ -56,13 +53,9 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t) (previous_sn
               target_rule_summary prev_facts prop_rule_pool
           in
           let propagated, updated_history =
-            List.fold applicable_rules
-              ~f:(fun (smol_acc, smol_history) prop_rule ->
-                propagator target_rule_summary smol_acc (Some current_snapshot) applicable_rules
-                  (target_rule_summary :: new_fact :: prev_facts)
-                  smol_history prop_rule_pool )
-              ~init:(big_acc, big_history)
+            propagator target_rule_summary big_acc applicable_rules
+              (target_rule_summary :: new_fact :: prev_facts)
+              big_history prop_rule_pool
           in
           (propagated, updated_history) )
       ~init:(propagated_snapshot, new_fact_vertices @ history)
-

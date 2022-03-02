@@ -15,15 +15,14 @@ end
 
 (** Rules for propagating facts *)
 module PropagationRules = struct
-  type rule = G.t -> Response.t -> Response.t list -> dry_run:bool -> G.t * Vertex.t list
+  type rule = G.t -> Response.t -> dry_run:bool -> G.t * Vertex.t list
 
   type t = {rule: rule; label: string}
 
   (** propagating to contextually similar vertices: requires that the new_fact's method have
       successors with contextual similarity edge *)
   let contextual_similarity_rule : rule =
-   fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ~(dry_run : bool) :
-       (G.t * Vertex.t list) ->
+   fun (graph : G.t) (new_fact : Response.t) ~(dry_run : bool) : (G.t * Vertex.t list) ->
     let new_fact_method = Response.get_method new_fact
     and new_fact_label = Response.get_label new_fact in
     let new_fact_method_vertices =
@@ -72,7 +71,7 @@ module PropagationRules = struct
   (** Propagate the same info to nodes that are similar nodewise: requires that the new_fact's
       method have successors with nodewise simlarity edge *)
   let nodewise_similarity_propagation_rule : rule =
-   fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ~(dry_run : bool) :
+   fun (graph : G.t) (new_fact : Response.t) ~(dry_run : bool) :
        (G.t * Vertex.t list) ->
     let new_fact_method = Response.get_method new_fact
     and new_fact_label = Response.get_label new_fact in
@@ -134,7 +133,7 @@ module PropagationRules = struct
 
 
   let internal_nonbidirectional_library_node_is_a_src_if_leaf_is_sink : rule =
-   fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ~(dry_run : bool) :
+   fun (graph : G.t) (new_fact : Response.t) ~(dry_run : bool) :
        (G.t * Vertex.t list) ->
     let new_fact_label = Response.get_label new_fact in
     let new_fact_method = Response.get_method new_fact in
@@ -237,7 +236,7 @@ module PropagationRules = struct
 
 
   let if_method_is_none_once_then_it's_none_everywhere : rule =
-   fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ~(dry_run : bool) :
+   fun (graph : G.t) (new_fact : Response.t) ~(dry_run : bool) :
        (G.t * Vertex.t list) ->
     let new_fact_method = Response.get_method new_fact in
     let new_fact_label = Response.get_label new_fact in
@@ -261,7 +260,7 @@ module PropagationRules = struct
       method have successors with nodewise simlarity edge bearing the same @annotation *)
 
   let annotation_rule : rule =
-   fun (graph : G.t) (new_fact : Response.t) (prev_facts : Response.t list) ~(dry_run : bool) :
+   fun (graph : G.t) (new_fact : Response.t) ~(dry_run : bool) :
        (G.t * Vertex.t list) ->
     (* assert that this method has an annotation. *)
     let this_method = Response.get_method new_fact
@@ -593,7 +592,7 @@ module MetaRules = struct
            ~f:(fun acc prop_rule ->
              try
                (* try applying a prop_rule *)
-               ignore @@ prop_rule.rule graph new_fact prev_facts ~dry_run:true ;
+               ignore @@ prop_rule.rule graph new_fact ~dry_run:true ;
                prop_rule :: acc
              with Assert_failure _ -> acc )
            ~init:[] prop_rules
