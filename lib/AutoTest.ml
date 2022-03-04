@@ -4,6 +4,7 @@ open GraphRepr
 open TaintLabel
 open RulesOfInference
 open Propagator
+open Utils
 module Hashtbl = Caml.Hashtbl
 
 let prepare_solution (raw_solution : (string * string list) array) :
@@ -86,6 +87,29 @@ let get_methodwise_precision_of_snapshot (snapshot : G.t) : Float.t =
   Float.of_int (correct_methods_count / num_of_all_methods) *. 100.
 
 
+let responder =
+  let memory : (Method.t, TaintLabel.t list) Hashtbl.t = Hashtbl.create 777 in
+  fun (question : Question.t) : Response.t ->
+    match question with
+    | AskingForLabel meth ->
+        (* give any label not in memory *)
+        let solution_labels = get_solution meth in
+        let not_responded_labels =
+          match Hashtbl.find_opt memory meth with
+          | None ->
+              solution_labels
+          | Some responded_labels ->
+              List.filter solution_labels ~f:(fun label ->
+                  not @@ List.mem responded_labels label ~equal:TaintLabel.equal )
+        in
+        let not_responded_label = random_select_elem not_responded_labels in
+        Response.ForLabel (meth, not_responded_label)
+    | AskingForConfirmation (meth, asked_label) ->
+        (* see if the asked_label is in the solution_labels. *)
+        let is_correct = List.mem (get_solution meth) asked_label ~equal:TaintLabel.equal in
+        Response.ForYesOrNo (meth, asked_label, is_correct)
+
+
 (** auto-question-n-answer version of Loop.loop_inner. *)
 let rec auto_test_spechunter_for_snapshot_inner (current_snapshot : G.t)
     (received_responses : Response.t list)
@@ -100,21 +124,14 @@ let rec auto_test_spechunter_for_snapshot_inner (current_snapshot : G.t)
         nodewise_featuremap
     in
     let question = question_maker.rule current_snapshot received_responses nodewise_featuremap in
-    let response =
-      match question with
-      | AskingForLabel meth ->
-          Response.ForLabel (meth, get_solution meth)
-      | AskingForConfirmation (meth, label) ->
-          Response.ForLabel (meth, get_solution meth)
-    in
+    let response = responder question in
     (* sort applicable Propagation Rules by adequacy. *)
     let propagation_rules_to_apply =
       MetaRules.ForPropagation.sort_propagation_rules_by_priority current_snapshot response
-        received_responses
     in
     let propagated =
       fst
-      @@ propagator response current_snapshot None propagation_rules_to_apply received_responses []
+      @@ propagator response current_snapshot propagation_rules_to_apply received_responses []
            PropagationRules.all_rules
     in
     let propagated' = Axioms.apply_axioms propagated in
@@ -130,7 +147,7 @@ let rec auto_test_spechunter_for_snapshot_inner (current_snapshot : G.t)
 
 
 let auto_test (initial_snapshot : G.t) : unit =
-  let loop_finished_snapshot, log_data =
+  let _, log_data =
     auto_test_spechunter_for_snapshot_inner initial_snapshot []
       NodeWiseFeatures.NodeWiseFeatureMap.empty 0 []
   in

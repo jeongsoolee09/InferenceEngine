@@ -36,11 +36,11 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t)
         ~init:(oracle_marked, []) rules_to_propagate
     in
     List.fold current_propagation_targets
-      ~f:(fun (big_acc, big_history) target ->
+      ~f:(fun (acc, history) target ->
         if
-          List.mem big_history target ~equal:Vertex.equal
+          List.mem history target ~equal:Vertex.equal
           || List.mem new_fact_vertices target ~equal:Vertex.equal
-        then (big_acc, big_history)
+        then (acc, history)
         else
           let target_meth = Vertex.get_method target and target_loc = Vertex.get_method target in
           (* summarize this node's distribution into a Response.t! *)
@@ -50,12 +50,12 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t)
           in
           let applicable_rules =
             MetaRules.ForPropagation.take_subset_of_applicable_propagation_rules current_snapshot
-              target_rule_summary prev_facts prop_rule_pool
+              target_rule_summary prop_rule_pool
           in
           let propagated, updated_history =
-            propagator target_rule_summary big_acc applicable_rules
+            propagator target_rule_summary acc applicable_rules
               (target_rule_summary :: new_fact :: prev_facts)
-              big_history prop_rule_pool
+              history prop_rule_pool
           in
           (propagated, updated_history) )
       ~init:(propagated_snapshot, new_fact_vertices @ history)

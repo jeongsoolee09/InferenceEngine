@@ -56,12 +56,11 @@ let rec loop_inner (current_snapshot : G.t) (received_responses : Response.t lis
       (* sort applicable Propagation Rules by adequacy. *)
       let propagation_rules_to_apply =
         MetaRules.ForPropagation.sort_propagation_rules_by_priority current_snapshot response
-          received_responses
       in
       let propagated =
         fst
-        @@ propagator response current_snapshot None propagation_rules_to_apply received_responses
-             [] PropagationRules.all_rules
+        @@ propagator response current_snapshot propagation_rules_to_apply received_responses []
+             PropagationRules.all_rules
       in
       let propagated' = Axioms.apply_axioms propagated in
       Visualizer.visualize_snapshot propagated' ~micro:false ~autoopen:true ;
@@ -73,5 +72,6 @@ let loop (current_snapshot : G.t) (nodewise_featuremap : NodeWiseFeatures.NodeWi
   print_endline "Starting question-&-answer loop." ;
   G.snapshot_to_json current_snapshot ;
   if auto_test then
-    AutoTest.auto_test_spechunter_for_snapshot current_snapshot [] nodewise_featuremap 0
+    fst
+    @@ AutoTest.auto_test_spechunter_for_snapshot_inner current_snapshot [] nodewise_featuremap 0 []
   else loop_inner current_snapshot [] nodewise_featuremap
