@@ -72,17 +72,17 @@ module ChainSlice = struct
     "[ " ^ contents ^ " ]"
 
 
-  let is_define slice = match slice with DefineSlice _ -> true | _ -> false
+  let is_define = function DefineSlice _ -> true | _ -> false
 
-  let is_call slice = match slice with CallSlice _ -> true | _ -> false
+  let is_call = function CallSlice _ -> true | _ -> false
 
-  let is_voidcall slice = match slice with VoidCallSlice _ -> true | _ -> false
+  let is_voidcall = function VoidCallSlice _ -> true | _ -> false
 
-  let is_redefine slice = match slice with RedefineSlice _ -> true | _ -> false
+  let is_redefine = function RedefineSlice _ -> true | _ -> false
 
-  let is_dead slice = match slice with DeadSlice _ -> true | _ -> false
+  let is_dead = function DeadSlice _ -> true | _ -> false
 
-  let is_deadbycycle slice = match slice with DeadByCycleSlice _ -> true | _ -> false
+  let is_deadbycycle = function DeadByCycleSlice _ -> true | _ -> false
 
   let of_json_assoc (json_assoc : json) : t =
     match json_assoc with

@@ -140,13 +140,6 @@ let is_udf (method_ : t) : bool =
 
 
 let is_api (method_ : t) : bool =
-  (* try *)
-  (*   let classname = get_class_name method_ and methodname = get_method_name method_ in *)
-  (*   let classname_methodname = F.asprintf "%s.%s" classname methodname in *)
-  (*   List.exists *)
-  (*     ~f:(fun line -> String.is_substring ~substring:classname_methodname line) *)
-  (*     (Deserializer.deserialize_skip_func ()) *)
-  (* with _ -> true *)
   if is_dunder method_ then true else not @@ is_udf method_
 
 
@@ -193,7 +186,7 @@ module PackageResolver = struct
       match
         List.find
           ~f:(fun java_filename ->
-            let filename_only = List.last_exn @@ String.split ~on:'/' java_filename in
+            (* let filename_only = List.last_exn @@ String.split ~on:'/' java_filename in *)
             String.equal java_filename (classname ^ ".java") )
           java_filenames
       with
@@ -353,7 +346,7 @@ let get_declaration_file (method_ : t) : string =
       ClassnameScraper.get_filenames_and_their_classes Deserializer.project_root
     in
     let result =
-      List.find all_filenames_and_their_classes ~f:(fun (filename, classnames) ->
+      List.find all_filenames_and_their_classes ~f:(fun (_, classnames) ->
           List.mem ~equal:String.equal classnames this_method_classname )
     in
     match result with

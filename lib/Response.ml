@@ -21,20 +21,21 @@ let list_to_string (responses : t list) : string =
   F.asprintf "[%s]" contents
 
 
-let get_method (res : t) : Method.t =
-  match res with ForLabel (meth, _) -> meth | ForYesOrNo (meth, _, _) -> meth
+let get_method : t -> Method.t = function
+  | ForLabel (meth, _) ->
+      meth
+  | ForYesOrNo (meth, _, _) ->
+      meth
 
 
-let get_label (res : t) : TaintLabel.t =
-  match res with
+let get_label : t -> TaintLabel.t = function
   | ForLabel (_, label) ->
       label
-  | _ ->
-      raise @@ Invalid_argument "this is not a response of a yes/no question"
+  | ForYesOrNo (_, label, _) ->
+      label
 
 
-let get_yesorno (res : t) : bool =
-  match res with
+let get_yesorno : t -> bool = function
   | ForYesOrNo (_, _, bool) ->
       bool
   | _ ->
@@ -69,3 +70,8 @@ let response_of_string_foryesorno (method_ : Method.t) (label : TaintLabel.t) (r
       ForYesOrNo (method_, label, false)
   | otherwise ->
       raise @@ Invalid_argument otherwise
+
+
+let is_forlabel = function ForLabel _ -> true | ForYesOrNo _ -> false
+
+let is_foryesorno = function ForLabel _ -> false | ForYesOrNo _ -> true

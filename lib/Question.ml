@@ -24,3 +24,8 @@ let get_label (question : t) : TaintLabel.t =
       label
   | _ ->
       raise @@ Invalid_argument "hahaha"
+
+
+let is_askingforlabel = function AskingForLabel _ -> true | _ -> false
+
+let is_askingforconfirmation = function AskingForConfirmation _ -> true | _ -> false
