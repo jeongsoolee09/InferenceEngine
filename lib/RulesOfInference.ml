@@ -274,8 +274,8 @@ module PropagationRules = struct
     let this_method_has_annotation =
       not @@ Annotations.equal this_method_annotation Annotations.empty
     in
-    assert this_method_has_annotation ;
     (* assert that there is at least one predecessor with the same annotation. *)
+    assert this_method_has_annotation ;
     print_endline @@ F.asprintf "annotation_rule chosen for %s" (Response.get_method new_fact) ;
     if dry_run then (graph, [])
     else
@@ -557,6 +557,20 @@ module AskingRules = struct
   let ask_annotated_method : rule =
    fun (snapshot : G.t) (received_responses : Response.t list)
        (nfeaturemap : NodeWiseFeatures.NodeWiseFeatureMap.t) : Question.t ->
+    let forlabel_response_is_paired_up (forlabel : Response.t) =
+      List.exists received_responses ~f:(fun received_response ->
+          Response.is_foryesorno received_response
+          && Method.equal (Response.get_method forlabel) (Response.get_method received_response) )
+    in
+    let annotated_methods =
+      List.filter ~f:(fun method_ -> Annotations.has_annot method_)
+      @@ G.all_methods_of_graph snapshot
+    in
+    let all_received_forlabels = List.filter received_responses ~f:Response.is_forlabel in
+    let all_received_forlabels_are_pairedup =
+      List.for_all all_received_forlabels ~f:forlabel_response_is_paired_up
+    in
+    assert ((not @@ List.is_empty annotated_methods) || not all_received_forlabels_are_pairedup) ;
     let all_annotated_vertices =
       List.filter
         ~f:(fun vertex -> Annotations.has_annot (Vertex.get_method vertex))
@@ -568,8 +582,25 @@ module AskingRules = struct
                      (received_responses >>| Response.get_method)
                      (Vertex.get_method vertex) ~equal:Method.equal )
     in
-    let random_annotated_vertex = Utils.random_select_elem all_annotated_vertices in
-    Question.AskingForLabel (Vertex.get_method random_annotated_vertex)
+    let unpaired_forlabel =
+      List.find ~f:(not << forlabel_response_is_paired_up) all_received_forlabels
+    in
+    match unpaired_forlabel with
+    | None ->
+        let random_annotated_vertex = Utils.random_select_elem all_annotated_vertices in
+        Question.AskingForLabel (Vertex.get_method random_annotated_vertex)
+    | Some forlabel -> (
+        let forlabel_method = Response.get_method forlabel in
+        match Response.get_label forlabel with
+        | Source ->
+            Question.AskingForConfirmation (forlabel_method, Sink)
+        | Sink ->
+            Question.AskingForConfirmation (forlabel_method, Source)
+        | Sanitizer | None ->
+            let random_annotated_vertex = Utils.random_select_elem all_annotated_vertices in
+            Question.AskingForLabel (Vertex.get_method random_annotated_vertex)
+        | Indeterminate ->
+            failwith "WTF" )
 
 
   let all_rules : t list =
