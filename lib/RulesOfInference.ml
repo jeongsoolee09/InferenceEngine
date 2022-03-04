@@ -34,7 +34,8 @@ module PropagationRules = struct
       >>= fun vertex -> G.get_succs graph (LV.of_vertex vertex) ~label:ContextualSimilarity
     in
     assert (Int.( >= ) (List.length contextual_succs) 1) ;
-    print_endline "contextual_similarity_rule chosen" ;
+    print_endline
+    @@ F.asprintf "contextual_similarity_rule chosen for %s" (Response.get_method new_fact) ;
     if dry_run then (graph, [])
     else
       let propagated =
@@ -87,7 +88,8 @@ module PropagationRules = struct
       raw_succs |> VertexSet.of_list |> VertexSet.elements
     in
     assert (Int.( >= ) (List.length similarity_succs) 1) ;
-    print_endline "nodewise_similarity_propagation_rule chosen" ;
+    print_endline
+    @@ F.asprintf "nodewise_similarity_rule chosen for %s" (Response.get_method new_fact) ;
     if dry_run then (graph, [])
     else
       let propagated =
@@ -141,7 +143,9 @@ module PropagationRules = struct
         new_fact_vertices >>= (Array.to_list << Trunk.find_trunks_containing_vertex graph)
       in
       assert (not @@ List.is_empty trunks_containing_vertices) ;
-      print_endline "internal_nonbidirectional_library_node... chosen" ;
+      print_endline
+      @@ F.asprintf "internal_nonbidirectional_library_node... chosen for %s"
+           (Response.get_method new_fact) ;
       if dry_run then (graph, [])
       else
         let trunk_leaves = trunks_containing_vertices >>| Array.last in
@@ -193,7 +197,9 @@ module PropagationRules = struct
         new_fact_vertices >>= (Array.to_list << Trunk.find_trunks_containing_vertex graph)
       in
       assert (not @@ List.is_empty trunks_containing_vertices) ;
-      print_endline "internal_nonbidirectional_library_node... chosen" ;
+      print_endline
+      @@ F.asprintf "internal_nonbidirectional_library_node... chosen for %s"
+           (Response.get_method new_fact) ;
       if dry_run then (graph, [])
       else
         let new_fact_propagated =
@@ -241,7 +247,8 @@ module PropagationRules = struct
     if TaintLabel.is_none new_fact_label then (
       let this_method_vertices = G.this_method_vertices graph new_fact_method in
       assert (not @@ List.is_empty this_method_vertices) ;
-      print_endline "if_method_is_none_once_then... chosen" ;
+      print_endline
+      @@ F.asprintf "if_method_is_none_once_then... chosen for %s" (Response.get_method new_fact) ;
       if dry_run then (graph, [])
       else
         List.fold this_method_vertices
@@ -269,7 +276,7 @@ module PropagationRules = struct
     in
     assert this_method_has_annotation ;
     (* assert that there is at least one predecessor with the same annotation. *)
-    print_endline "annotation_rule chosen" ;
+    print_endline @@ F.asprintf "annotation_rule chosen for %s" (Response.get_method new_fact) ;
     if dry_run then (graph, [])
     else
       let recursive_preds_with_same_annot =
@@ -581,8 +588,8 @@ module MetaRules = struct
   module ForPropagation = struct
     let take_subset_of_applicable_propagation_rules (graph : G.t) (new_fact : Response.t)
         (prop_rules : PropagationRules.t list) : PropagationRules.t list =
-      (* rule R is applicable to vertex V iff (def) V has successor with labeled edge required by rule R
-                                          iff (def) the embedded assertion succeeds *)
+      (* rule R is applicable to vertex V <=> (def) V has successor with labeled edge required by rule R
+                                          <=> (def) the embedded assertion succeeds *)
       List.rev
       @@ List.fold
            ~f:(fun acc prop_rule ->
