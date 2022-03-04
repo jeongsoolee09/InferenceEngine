@@ -40,7 +40,7 @@ module PropagationRules = struct
       let propagated =
         List.fold
           ~f:(fun acc succ ->
-            let succ_meth, succ_label, succ_dist = succ in
+            let succ_dist = Vertex.get_dist succ in
             let is_inside_ns_cluster_containing_df_internals =
               let containing_cluster_opt =
                 List.find (SimilarityHandler.all_ns_clusters graph) ~f:(fun cluster ->
@@ -71,8 +71,7 @@ module PropagationRules = struct
   (** Propagate the same info to nodes that are similar nodewise: requires that the new_fact's
       method have successors with nodewise simlarity edge *)
   let nodewise_similarity_propagation_rule : rule =
-   fun (graph : G.t) (new_fact : Response.t) ~(dry_run : bool) :
-       (G.t * Vertex.t list) ->
+   fun (graph : G.t) (new_fact : Response.t) ~(dry_run : bool) : (G.t * Vertex.t list) ->
     let new_fact_method = Response.get_method new_fact
     and new_fact_label = Response.get_label new_fact in
     let new_fact_method_vertices =
@@ -94,7 +93,7 @@ module PropagationRules = struct
       let propagated =
         List.fold
           ~f:(fun acc succ ->
-            let succ_meth, succ_label, succ_dist = succ in
+            let succ_dist = Vertex.get_dist succ in
             let new_dist =
               match new_fact_label with
               | Source ->
@@ -133,8 +132,7 @@ module PropagationRules = struct
 
 
   let internal_nonbidirectional_library_node_is_a_src_if_leaf_is_sink : rule =
-   fun (graph : G.t) (new_fact : Response.t) ~(dry_run : bool) :
-       (G.t * Vertex.t list) ->
+   fun (graph : G.t) (new_fact : Response.t) ~(dry_run : bool) : (G.t * Vertex.t list) ->
     let new_fact_label = Response.get_label new_fact in
     let new_fact_method = Response.get_method new_fact in
     let new_fact_vertices = G.this_method_vertices graph new_fact_method in
@@ -160,7 +158,7 @@ module PropagationRules = struct
             ~f:(fun big_acc trunk ->
               Array.fold
                 ~f:(fun ((graph_acc, affected) as smol_acc) vertex ->
-                  let vertex_meth, vertex_loc, vertex_dist = vertex in
+                  let vertex_meth = Vertex.get_method vertex in
                   let ns_clusters_vertices = List.join @@ SimilarityHandler.all_ns_clusters graph in
                   if
                     NodeWiseFeatures.SingleFeature.is_library_code vertex_meth
@@ -212,7 +210,8 @@ module PropagationRules = struct
           ~f:(fun big_acc trunk ->
             Array.fold
               ~f:(fun ((graph_acc, affected) as smol_acc) vertex ->
-                let vertex_meth, vertex_loc, vertex_dist = vertex in
+                let vertex_meth = Vertex.get_method vertex
+                and vertex_dist = Vertex.get_dist vertex in
                 let ns_clusters_vertices = List.join @@ SimilarityHandler.all_ns_clusters graph in
                 if
                   NodeWiseFeatures.SingleFeature.is_library_code vertex_meth
@@ -236,8 +235,7 @@ module PropagationRules = struct
 
 
   let if_method_is_none_once_then_it's_none_everywhere : rule =
-   fun (graph : G.t) (new_fact : Response.t) ~(dry_run : bool) :
-       (G.t * Vertex.t list) ->
+   fun (graph : G.t) (new_fact : Response.t) ~(dry_run : bool) : (G.t * Vertex.t list) ->
     let new_fact_method = Response.get_method new_fact in
     let new_fact_label = Response.get_label new_fact in
     if TaintLabel.is_none new_fact_label then (
@@ -260,8 +258,7 @@ module PropagationRules = struct
       method have successors with nodewise simlarity edge bearing the same @annotation *)
 
   let annotation_rule : rule =
-   fun (graph : G.t) (new_fact : Response.t) ~(dry_run : bool) :
-       (G.t * Vertex.t list) ->
+   fun (graph : G.t) (new_fact : Response.t) ~(dry_run : bool) : (G.t * Vertex.t list) ->
     (* assert that this method has an annotation. *)
     let this_method = Response.get_method new_fact
     and this_method_label = Response.get_label new_fact in
@@ -583,8 +580,7 @@ module MetaRules = struct
       represents the highest priority. *)
   module ForPropagation = struct
     let take_subset_of_applicable_propagation_rules (graph : G.t) (new_fact : Response.t)
-        (prev_facts : Response.t list) (prop_rules : PropagationRules.t list) :
-        PropagationRules.t list =
+        (prop_rules : PropagationRules.t list) : PropagationRules.t list =
       (* rule R is applicable to vertex V iff (def) V has successor with labeled edge required by rule R
                                           iff (def) the embedded assertion succeeds *)
       List.rev
@@ -603,11 +599,10 @@ module MetaRules = struct
       List.map ~f:(fun rule -> (rule, 1)) prop_rules
 
 
-    let sort_propagation_rules_by_priority graph new_fact responses : PropagationRules.t list =
+    let sort_propagation_rules_by_priority graph new_fact : PropagationRules.t list =
       let priority_assigned =
         assign_priority_on_propagation_rules
-          (take_subset_of_applicable_propagation_rules graph new_fact responses
-             PropagationRules.all_rules )
+          (take_subset_of_applicable_propagation_rules graph new_fact PropagationRules.all_rules)
           graph
       in
       List.map ~f:fst
@@ -620,8 +615,8 @@ module MetaRules = struct
   module ForAsking = struct
     let take_subset_of_applicable_asking_rules (snapshot : G.t) (responses : Response.t list)
         (nfeaturemap : NodeWiseFeatures.NodeWiseFeatureMap.t) (asking_rules : AskingRules.t list) =
-      (* rule R is applicable to vertex V iff (def) V has successor with labeled edge required by rule R
-                                          iff (def) the embedded assertion succeeds *)
+      (* rule R is applicable to vertex V <=> (def) V has successor with labeled edge required by rule R
+                                          <=> (def) the embedded assertion succeeds *)
       List.rev
       @@ List.fold
            ~f:(fun acc asking_rule ->

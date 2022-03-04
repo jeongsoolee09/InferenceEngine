@@ -1,6 +1,7 @@
 open ListMonad
 open InfixOperators
 open DirectoryManager
+open Utils
 module F = Format
 module Hashtbl = Caml.Hashtbl
 
