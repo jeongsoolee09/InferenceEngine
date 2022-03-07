@@ -8,7 +8,7 @@
 
 (defn read-files [filepaths]
   "returns an iterator of (filepath, contents) combo."
-  (gfor filepath filepaths 
+  (gfor filepath filepaths
         :setv content (with [f (open filepath "r+")]
                         (.read f))
         (, filepath content)))
