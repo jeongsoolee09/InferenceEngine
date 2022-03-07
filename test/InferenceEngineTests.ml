@@ -52,35 +52,6 @@ let renderer_graph = List.nth_exn splitted 0
 
 let site_graph = List.nth_exn splitted 1
 
-module Notebook94 = struct
-  let renderer_finished = build_graph renderer_graph
-
-  let parse = "Document Jsoup.parse(String)"
-
-  let response = Response.ForLabel (parse, TaintLabel.Sanitizer)
-
-  let test, _ =
-    PropagationRules.internal_nonbidirectional_library_node_is_a_src_if_leaf_is_sink
-      renderer_finished response [] ~dry_run:false
-
-
-  let _ = Visualizer.visualize_snapshot test ~micro:false ~autoopen:true
-
-  (* Inspection *)
-
-  let parse_vertex1 = (parse, "{ line -2 }")
-
-  let parse_vertex2 = (parse, "{ line 47 }")
-
-  let _ = G.LiteralVertex.to_vertex parse_vertex1 test.graph
-
-  let _ = G.LiteralVertex.to_vertex parse_vertex2 test.graph
-
-  (* applying all rules *)
-
-  let _ = End
-end
-
 module Notebook95 = struct
   let _ = Start
 
@@ -122,50 +93,12 @@ module Notebook95 = struct
   let _ = End
 end
 
-module Notebook96 = struct
-  let _ = Start
-
-  let renderer_finished = build_graph renderer_graph
-
-  let parse = "Document Jsoup.parse(String)"
-
-  let jsoup_parse_question = Question.AskingForLabel parse
-
-  let new_fact = Response.ForLabel (parse, TaintLabel.Sanitizer)
-
-  let current_snapshot = renderer_finished
-
-  let previous_snapshot = None
-
-  let rules_to_propagate =
-    MetaRules.ForPropagation.take_subset_of_applicable_propagation_rules renderer_finished new_fact
-      [] PropagationRules.all_rules
-
-
-  let prev_facts = []
-
-  let history = []
-
-  let prop_rule_pool = PropagationRules.all_rules
-
-  let propagated, _ =
-    propagator new_fact current_snapshot previous_snapshot rules_to_propagate prev_facts history
-      prop_rule_pool
-
-
-  let _ = Visualizer.visualize_snapshot propagated ~micro:false ~autoopen:true
-
-  (* OK *)
-
-  let _ = End
-end
-
 module Notebook97 = struct
   let _ = Start
 
   let renderer_finished = build_graph renderer_graph
 
-  let _ = loop renderer_finished NodeWiseFeatureMap.empty
+  let _ = loop renderer_finished NodeWiseFeatureMap.empty ~auto_test:false
 
   let _ = End
 end
