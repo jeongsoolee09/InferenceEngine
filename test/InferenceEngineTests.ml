@@ -102,3 +102,96 @@ module Notebook97 = struct
 
   let _ = End
 end
+
+module Notebook98 = struct
+  let _ = Start
+
+  let is_src (_, labels) = List.mem ~equal:String.equal labels "src"
+
+  let is_sin (_, labels) = List.mem ~equal:String.equal labels "sin"
+
+  let is_san (_, labels) = List.mem ~equal:String.equal labels "san"
+
+  let is_non (_, labels) = List.mem ~equal:String.equal labels "non"
+
+  (* ============ UDFs ============ *)
+
+  let num_sagan_udfs = Array.length Sagan_solution.sagan_udf_solution
+
+  let sagan_udf_src = Array.filter ~f:is_src Sagan_solution.sagan_udf_solution
+
+  let num_sagan_udf_srcs = Array.length sagan_udf_src
+
+  let sagan_udf_sin = Array.filter ~f:is_sin Sagan_solution.sagan_udf_solution
+
+  let num_sagan_udf_sins = Array.length sagan_udf_sin
+
+  let sagan_udf_san = Array.filter ~f:is_san Sagan_solution.sagan_udf_solution
+
+  let num_sagan_udf_sans = Array.length sagan_udf_san
+
+  let sagan_udf_non = Array.filter ~f:is_non Sagan_solution.sagan_udf_solution
+
+  let num_sagan_udf_nons = Array.length sagan_udf_non
+
+  let sagan_udf_src_and_sin =
+    Array.filter ~f:(fun sol -> is_src sol && is_sin sol) Sagan_solution.sagan_udf_solution
+
+
+  let num_sagan_udf_src_and_sin = Array.length sagan_udf_src_and_sin
+
+  let num_sagan_udf_srms = num_sagan_udf_srcs + num_sagan_udf_sins + num_sagan_udf_sans
+
+  let sagan_udf_src_percentage = Float.of_int num_sagan_udf_srcs /. Float.of_int num_sagan_udf_srms
+
+  let sagan_udf_sin_percentage = Float.of_int num_sagan_udf_sins /. Float.of_int num_sagan_udf_srms
+
+  let sagan_udf_san_percentage = Float.of_int num_sagan_udf_sans /. Float.of_int num_sagan_udf_srms
+
+  let sagan_udf_src_sin_percentage =
+    Float.of_int num_sagan_udf_src_and_sin /. Float.of_int num_sagan_udf_srms
+
+
+  (* ============ APIs ============ *)
+
+  let num_sagan_apis = Array.length Sagan_solution.sagan_api_solution
+
+  let sagan_api_src = Array.filter ~f:is_src Sagan_solution.sagan_api_solution
+
+  let num_sagan_api_srcs = Array.length sagan_api_src
+
+  let sagan_api_sin = Array.filter ~f:is_sin Sagan_solution.sagan_api_solution
+
+  let num_sagan_api_sins = Array.length sagan_api_sin
+
+  let sagan_api_san = Array.filter ~f:is_san Sagan_solution.sagan_api_solution
+
+  let num_sagan_api_sans = Array.length sagan_api_san
+
+  let sagan_api_non = Array.filter ~f:is_non Sagan_solution.sagan_api_solution
+
+  let num_sagan_api_nons = Array.length sagan_api_non
+
+  let sagan_api_src_and_sin =
+    Array.filter ~f:(fun sol -> is_src sol && is_sin sol) Sagan_solution.sagan_api_solution
+
+
+  let num_sagan_api_src_and_sin = Array.length sagan_api_src_and_sin
+
+  let num_sagan_api_srms = num_sagan_api_srcs + num_sagan_api_sins + num_sagan_api_sans
+
+  let sagan_api_src_percentage = Float.of_int num_sagan_api_srcs /. Float.of_int num_sagan_api_srms
+
+  let sagan_api_sin_percentage = Float.of_int num_sagan_api_sins /. Float.of_int num_sagan_api_srms
+
+  let sagan_api_san_percentage = Float.of_int num_sagan_api_sans /. Float.of_int num_sagan_api_srms
+
+  let sagan_api_src_sin_percentage =
+    Float.of_int num_sagan_api_src_and_sin /. Float.of_int num_sagan_api_srms
+
+
+  let _ =
+    Array.length @@ Array.append Sagan_solution.sagan_udf_solution Sagan_solution.sagan_api_solution
+
+  let _ = End
+end

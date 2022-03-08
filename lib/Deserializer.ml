@@ -74,7 +74,7 @@ let deserialize_method_txt =
   fun () : string list ->
     if List.is_empty !cache then (
       let out =
-        In_channel.read_lines (project_root ^ "Methods.txt")
+        In_channel.read_lines (project_root ^ "UDFs_unique_id.txt")
         |> List.filter ~f:(fun method_str ->
                (not @@ String.is_substring method_str ~substring:"lambda")
                && (not @@ String.is_substring method_str ~substring:"Lambda")
@@ -91,7 +91,7 @@ let deserialize_skip_func =
   fun () : string list ->
     if List.is_empty !cache then (
       let out =
-        In_channel.read_lines (project_root ^ "skip_func.txt")
+        In_channel.read_lines (project_root ^ "APIs_unique_id.txt")
         |> List.filter ~f:(not << String.is_prefix ~prefix:"__")
         |> List.filter ~f:(not << String.is_empty)
       in

@@ -75,3 +75,5 @@ let response_of_string_foryesorno (method_ : Method.t) (label : TaintLabel.t) (r
 let is_forlabel = function ForLabel _ -> true | ForYesOrNo _ -> false
 
 let is_foryesorno = function ForLabel _ -> false | ForYesOrNo _ -> true
+
+let is_affirmative = function ForLabel _ -> failwith "meh" | ForYesOrNo (_, _, resp) -> resp

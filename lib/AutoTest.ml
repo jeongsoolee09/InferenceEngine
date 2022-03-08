@@ -30,9 +30,17 @@ let prepare_solution (raw_solution : (string * string list) array) :
   acc
 
 
-let solution_table = prepare_solution @@ Deserializer.deserialize_solution ()
+let solution_table =
+  prepare_solution
+  @@ Array.concat
+       [ Sagan_solution.sagan_udf_solution
+       ; Sagan_solution.sagan_api_solution
+       ; Sagan_solution.sagan_interface_solution ]
 
-let get_solution (method_ : Method.t) : TaintLabel.t list = Hashtbl.find solution_table method_
+
+let get_solution (method_ : Method.t) : TaintLabel.t list =
+  if Method.is_initializer method_ then [None] else Hashtbl.find solution_table method_
+
 
 let vertex_inference_result_is_correct ~(inferred : TaintLabel.t) ~(ground : TaintLabel.t list) :
     bool =
@@ -64,7 +72,7 @@ let get_vertexwise_precision_of_snapshot (snapshot : G.t) : Float.t =
       snapshot 0
   in
   let num_of_all_vertices = List.length @@ G.all_vertices_of_graph snapshot in
-  Float.of_int (correct_vertices_count / num_of_all_vertices) *. 100.
+  Float.of_int correct_vertices_count /. Float.of_int num_of_all_vertices *. 100.
 
 
 (** get the percentage of correct methods in this snapshot. *)
@@ -84,7 +92,7 @@ let get_methodwise_precision_of_snapshot (snapshot : G.t) : Float.t =
       (G.all_methods_of_graph snapshot) ~init:0
   in
   let num_of_all_methods = List.length @@ G.all_methods_of_graph snapshot in
-  Float.of_int (correct_methods_count / num_of_all_methods) *. 100.
+  Float.of_int correct_methods_count /. Float.of_int num_of_all_methods *. 100.
 
 
 let responder =
@@ -121,9 +129,8 @@ let rec auto_test_spechunter_for_snapshot_inner (current_snapshot : G.t)
     (* find the most appropriate Asking Rule. *)
     let question_maker =
       MetaRules.ForAsking.asking_rules_selector current_snapshot received_responses
-        nodewise_featuremap
     in
-    let question = question_maker.rule current_snapshot received_responses nodewise_featuremap in
+    let question = question_maker.rule current_snapshot received_responses in
     let response = responder question in
     (* sort applicable Propagation Rules by adequacy. *)
     let propagation_rules_to_apply =

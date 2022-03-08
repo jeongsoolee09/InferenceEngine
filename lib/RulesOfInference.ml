@@ -122,6 +122,7 @@ module PropagationRules = struct
                   if G.is_df_root (LV.of_vertex succ) graph then
                     DistManipulator.bump succ_dist [None] ~inc_delta:3. ~dec_delta:1.
                   else if G.is_df_leaf (LV.of_vertex succ) graph then
+                    (* UNSURE Is it correct to bump Sink? *)
                     DistManipulator.bump succ_dist [Sink] ~inc_delta:3. ~dec_delta:1.
                   else DistManipulator.bump succ_dist [None] ~inc_delta:8. ~dec_delta:3.
               | Indeterminate ->
@@ -265,109 +266,73 @@ module PropagationRules = struct
       method have successors with nodewise simlarity edge bearing the same @annotation *)
 
   let annotation_rule : rule =
+   (* NOTE Under construction *)
    fun (graph : G.t) (new_fact : Response.t) ~(dry_run : bool) : (G.t * Vertex.t list) ->
-    (* assert that this method has an annotation. *)
-    let this_method = Response.get_method new_fact
-    and this_method_label = Response.get_label new_fact in
-    let this_method_vertices = G.this_method_vertices graph this_method
-    and this_method_annotation = Annotations.get_annots this_method in
-    let this_method_has_annotation =
-      not @@ Annotations.equal this_method_annotation Annotations.empty
-    in
-    (* assert that there is at least one predecessor with the same annotation. *)
-    assert this_method_has_annotation ;
-    print_endline @@ F.asprintf "annotation_rule chosen for %s" (Response.get_method new_fact) ;
-    if dry_run then (graph, [])
+    if dry_run then (
+      assert (Annotations.has_annot (Response.get_method new_fact)) ;
+      print_endline @@ F.asprintf "annotation_rule chosen for %s" (Response.get_method new_fact) ;
+      (graph, []) )
     else
-      let recursive_preds_with_same_annot =
-        let all_recursive_preds =
-          let* this_method_vertex = this_method_vertices in
-          get_recursive_preds graph (LV.of_vertex this_method_vertex) ~label:DataFlow
-        in
-        List.filter
-          ~f:(fun pred ->
-            let predecessor_annotation = Annotations.get_annots (Vertex.get_method pred) in
-            Annotations.equal this_method_annotation predecessor_annotation )
-          all_recursive_preds
-      (* assert that there is at least one successor with the same annotation. *)
-      and recursive_succs_with_same_annot =
-        let all_recursive_succs =
-          let* this_method_vertex = this_method_vertices in
-          get_recursive_succs graph (LV.of_vertex this_method_vertex) ~label:DataFlow
-        in
-        List.filter
-          ~f:(fun succ ->
-            let successor_annotation = Annotations.get_annots (Vertex.get_method succ) in
-            Annotations.equal this_method_annotation successor_annotation )
-          all_recursive_succs
-      (* assert that there is at least one successor with the same annotation. *)
-      and ns_succs_with_same_annot =
-        let all_ns_succs =
-          let* this_method_vertex = this_method_vertices in
-          get_recursive_succs graph (LV.of_vertex this_method_vertex) ~label:NodeWiseSimilarity
-        in
-        List.filter
-          ~f:(fun succ ->
-            let successor_annotation = Annotations.get_annots (Vertex.get_method succ) in
-            Annotations.equal this_method_annotation successor_annotation )
-          all_ns_succs
-      in
-      let there_is_at_least_one_recursive_pred_with_same_annot =
-        not @@ List.is_empty recursive_preds_with_same_annot
-      and there_is_at_least_one_recursive_succ_with_same_annot =
-        not @@ List.is_empty recursive_succs_with_same_annot
-      and there_is_at_least_one_ns_succ_with_same_annot =
-        not @@ List.is_empty ns_succs_with_same_annot
-      in
-      if
-        not
-        @@ ( there_is_at_least_one_recursive_pred_with_same_annot
-           || there_is_at_least_one_recursive_succ_with_same_annot
-           || there_is_at_least_one_ns_succ_with_same_annot )
-      then (graph, [])
-      else
-        (* First, propagate to DF recursive preds and succs *)
-        let df_propagated =
-          List.fold
-            ~f:(fun acc vertex ->
-              let vertex_dist = Vertex.get_dist vertex in
-              let new_dist =
-                match this_method_label with
-                | Source | Sink | Sanitizer ->
-                    if G.is_df_root (LV.of_vertex vertex) graph then
-                      DistManipulator.bump vertex_dist [Source] ~inc_delta:1. ~dec_delta:0.9
-                    else if G.is_df_leaf (LV.of_vertex vertex) graph then
-                      DistManipulator.bump vertex_dist [Sink] ~inc_delta:1. ~dec_delta:0.9
-                    else vertex_dist
-                | None | Indeterminate ->
-                    vertex_dist
-              in
-              G.strong_update_dist vertex new_dist acc )
-            ~init:graph
-            (recursive_preds_with_same_annot @ recursive_succs_with_same_annot)
-        in
-        (* Second, propagate to NS successors *)
-        let ns_propagated =
-          List.fold
-            ~f:(fun acc vertex ->
-              let vertex_dist = Vertex.get_dist vertex in
-              let new_dist =
-                match this_method_label with
-                | Source | Sink | Sanitizer ->
-                    if G.is_df_root (LV.of_vertex vertex) graph then
-                      DistManipulator.bump vertex_dist [Source] ~inc_delta:1. ~dec_delta:0.9
-                    else if G.is_df_leaf (LV.of_vertex vertex) graph then
-                      DistManipulator.bump vertex_dist [Sink] ~inc_delta:1. ~dec_delta:0.9
-                    else vertex_dist
-                | None | Indeterminate ->
-                    vertex_dist
-              in
-              G.strong_update_dist vertex new_dist acc )
-            ~init:df_propagated ns_succs_with_same_annot
-        in
-        ( ns_propagated
-        , recursive_preds_with_same_annot @ recursive_succs_with_same_annot
-          @ ns_succs_with_same_annot )
+      match new_fact with
+      | ForLabel (this_method, this_method_label) ->
+          let this_method_vertices = G.this_method_vertices graph this_method
+          and this_method_annotation = Annotations.get_annots this_method in
+          let cs_succs_with_same_annot =
+            let all_cs_succs =
+              let* this_method_vertex = this_method_vertices in
+              G.get_succs graph (LV.of_vertex this_method_vertex) ~label:ContextualSimilarity
+            in
+            List.filter
+              ~f:(fun succ ->
+                let successor_annotation = Annotations.get_annots (Vertex.get_method succ) in
+                Annotations.equal this_method_annotation successor_annotation )
+              all_cs_succs
+          in
+          (* Propagate to CS successors *)
+          let cs_propagated =
+            List.fold
+              ~f:(fun acc vertex ->
+                let vertex_dist = Vertex.get_dist vertex in
+                let new_dist =
+                  match this_method_label with
+                  | Source | Sink | Sanitizer ->
+                      if G.is_df_root (LV.of_vertex vertex) graph then
+                        DistManipulator.bump vertex_dist [Source] ~inc_delta:1. ~dec_delta:0.9
+                      else if G.is_df_leaf (LV.of_vertex vertex) graph then
+                        DistManipulator.bump vertex_dist [Sink] ~inc_delta:1. ~dec_delta:0.9
+                      else vertex_dist
+                  | None | Indeterminate ->
+                      vertex_dist
+                in
+                G.strong_update_dist vertex new_dist acc )
+              ~init:graph cs_succs_with_same_annot
+          in
+          (cs_propagated, cs_succs_with_same_annot)
+      | ForYesOrNo (this_method, this_method_label, affirmative) when affirmative ->
+          let this_method_vertices = G.this_method_vertices graph this_method
+          and this_method_annotation = Annotations.get_annots this_method in
+          let cs_succs_with_same_annot =
+            let all_cs_succs =
+              let* this_method_vertex = this_method_vertices in
+              G.get_succs graph (LV.of_vertex this_method_vertex) ~label:ContextualSimilarity
+            in
+            List.filter
+              ~f:(fun succ ->
+                let successor_annotation = Annotations.get_annots (Vertex.get_method succ) in
+                Annotations.equal this_method_annotation successor_annotation )
+              all_cs_succs
+          in
+          (* Propagate to CS successors *)
+          let cs_propagated =
+            List.fold
+              ~f:(fun acc vertex ->
+                let new_dist = DistManipulator.oracle_overwrite this_method_label in
+                G.strong_update_dist vertex new_dist acc )
+              ~init:graph cs_succs_with_same_annot
+          in
+          (cs_propagated, cs_succs_with_same_annot)
+      | _ ->
+          (graph, [])
 
 
   let all_rules =
@@ -383,13 +348,12 @@ end
 (* Use Random.int_incl for making a random integer. *)
 
 module AskingRules = struct
-  type rule = G.t -> Response.t list -> NodeWiseFeatures.NodeWiseFeatureMap.t -> Question.t
+  type rule = G.t -> Response.t list -> Question.t
 
   type t = {rule: rule; label: string}
 
   let ask_if_leaf_is_sink : rule =
-   fun (snapshot : G.t) (received_responses : Response.t list)
-       (nfeaturemap : NodeWiseFeatures.NodeWiseFeatureMap.t) : Question.t ->
+   fun (snapshot : G.t) (received_responses : Response.t list) : Question.t ->
     (* TODO: consider featuremaps *)
     let all_non_sus_leaves =
       G.collect_df_leaves snapshot
@@ -428,8 +392,7 @@ module AskingRules = struct
 
 
   let ask_if_root_is_source : rule =
-   fun (snapshot : G.t) (received_responses : Response.t list)
-       (nfeaturemap : NodeWiseFeatures.NodeWiseFeatureMap.t) : Question.t ->
+   fun (snapshot : G.t) (received_responses : Response.t list) : Question.t ->
     (* TODO consider featuremaps *)
     let all_roots_are_determined =
       List.for_all (G.collect_df_roots snapshot) ~f:(fun root ->
@@ -454,8 +417,7 @@ module AskingRules = struct
 
   (** ask a method from a foreign package of its label. *)
   let ask_foreign_package_label : rule =
-   fun (snapshot : G.t) (received_responses : Response.t list)
-       (nfeaturemap : NodeWiseFeatures.NodeWiseFeatureMap.t) : Question.t ->
+   fun (snapshot : G.t) (received_responses : Response.t list) : Question.t ->
     let all_foreign_codes_are_determined =
       let all_foreign_codes =
         G.fold_vertex
@@ -493,8 +455,7 @@ module AskingRules = struct
 
   let ask_indeterminate : rule =
    (* NOTE this should *NOT* be run at the first round of Loop. *)
-   fun (snapshot : G.t) (received_responses : Response.t list)
-       (nfeaturemap : NodeWiseFeatures.NodeWiseFeatureMap.t) : Question.t ->
+   fun (snapshot : G.t) (received_responses : Response.t list) : Question.t ->
     let all_indeterminates =
       List.filter (G.all_vertices_of_graph snapshot) ~f:(fun vertex ->
           ProbQuadruple.is_indeterminate (Vertex.get_dist vertex) )
@@ -515,8 +476,7 @@ module AskingRules = struct
 
 
   let ask_from_ns_cluster_if_it_contains_internal_src_or_sink : rule =
-   fun (snapshot : G.t) (received_responses : Response.t list)
-       (nfeaturemap : NodeWiseFeatures.NodeWiseFeatureMap.t) : Question.t ->
+   fun (snapshot : G.t) (received_responses : Response.t list) : Question.t ->
     let there_is_some_cluster_that_has_internal_src_or_sink =
       List.for_all (SimilarityHandler.all_ns_clusters snapshot) ~f:(fun ns_cluster ->
           List.exists ns_cluster ~f:(fun vertex ->
@@ -555,22 +515,26 @@ module AskingRules = struct
 
 
   let ask_annotated_method : rule =
-   fun (snapshot : G.t) (received_responses : Response.t list)
-       (nfeaturemap : NodeWiseFeatures.NodeWiseFeatureMap.t) : Question.t ->
+   fun (snapshot : G.t) (received_responses : Response.t list) : Question.t ->
+    (* for annotated methods that both appear at the root and the leaf *)
     let forlabel_response_is_paired_up (forlabel : Response.t) =
       List.exists received_responses ~f:(fun received_response ->
           Response.is_foryesorno received_response
           && Method.equal (Response.get_method forlabel) (Response.get_method received_response) )
     in
-    let annotated_methods =
-      List.filter ~f:(fun method_ -> Annotations.has_annot method_)
+    let unasked_annotated_methods =
+      List.filter ~f:(fun method_ ->
+          Annotations.has_annot method_
+          && not
+             @@ List.mem (received_responses >>| Response.get_method) method_ ~equal:Method.equal )
       @@ G.all_methods_of_graph snapshot
     in
     let all_received_forlabels = List.filter received_responses ~f:Response.is_forlabel in
     let all_received_forlabels_are_pairedup =
       List.for_all all_received_forlabels ~f:forlabel_response_is_paired_up
     in
-    assert ((not @@ List.is_empty annotated_methods) || not all_received_forlabels_are_pairedup) ;
+    assert (
+      (not @@ List.is_empty unasked_annotated_methods) || not all_received_forlabels_are_pairedup ) ;
     let all_annotated_vertices =
       List.filter
         ~f:(fun vertex -> Annotations.has_annot (Vertex.get_method vertex))
@@ -582,13 +546,27 @@ module AskingRules = struct
                      (received_responses >>| Response.get_method)
                      (Vertex.get_method vertex) ~equal:Method.equal )
     in
-    let unpaired_forlabel =
+    let unpaired_forlabel_opt =
       List.find ~f:(not << forlabel_response_is_paired_up) all_received_forlabels
     in
-    match unpaired_forlabel with
+    match unpaired_forlabel_opt with
     | None ->
-        let random_annotated_vertex = Utils.random_select_elem all_annotated_vertices in
-        Question.AskingForLabel (Vertex.get_method random_annotated_vertex)
+        let just_before_response_was_foryesorno_for_df_internal_method =
+          match List.hd received_responses with
+          | None ->
+              raise TODO
+          | Some response ->
+              Response.is_foryesorno response
+              && (not @@ TaintLabel.equal None (Response.get_label response))
+              && List.for_all
+                   (G.this_method_vertices snapshot (Response.get_method response))
+                   ~f:(fun vertex -> G.is_df_internal (G.LiteralVertex.of_vertex vertex) snapshot)
+        in
+        if just_before_response_was_foryesorno_for_df_internal_method then
+          AskingForConfirmation (Response.get_method (List.hd_exn received_responses), None)
+        else
+          let random_annotated_vertex = Utils.random_select_elem all_annotated_vertices in
+          Question.AskingForLabel (Vertex.get_method random_annotated_vertex)
     | Some forlabel -> (
         let forlabel_method = Response.get_method forlabel in
         match Response.get_label forlabel with
@@ -632,7 +610,7 @@ module MetaRules = struct
            ~init:[] prop_rules
 
 
-    let assign_priority_on_propagation_rules prop_rules (graph : G.t) =
+    let assign_priority_on_propagation_rules prop_rules =
       (* TODO static for now, but could be dynamic *)
       List.map ~f:(fun rule -> (rule, 1)) prop_rules
 
@@ -641,7 +619,6 @@ module MetaRules = struct
       let priority_assigned =
         assign_priority_on_propagation_rules
           (take_subset_of_applicable_propagation_rules graph new_fact PropagationRules.all_rules)
-          graph
       in
       List.map ~f:fst
       @@ List.sort
@@ -652,20 +629,20 @@ module MetaRules = struct
   (** the priority of asking rules represent their current adequacy of application. *)
   module ForAsking = struct
     let take_subset_of_applicable_asking_rules (snapshot : G.t) (responses : Response.t list)
-        (nfeaturemap : NodeWiseFeatures.NodeWiseFeatureMap.t) (asking_rules : AskingRules.t list) =
+        (asking_rules : AskingRules.t list) =
       (* rule R is applicable to vertex V <=> (def) V has successor with labeled edge required by rule R
                                           <=> (def) the embedded assertion succeeds *)
       List.rev
       @@ List.fold
            ~f:(fun acc asking_rule ->
              try
-               ignore @@ asking_rule.rule snapshot responses nfeaturemap ;
+               ignore @@ asking_rule.rule snapshot responses ;
                asking_rule :: acc
              with _ -> acc )
            ~init:[] asking_rules
 
 
-    let assign_priority_on_asking_rules (asking_rules : AskingRules.t list) (graph : G.t) :
+    let assign_priority_on_asking_rules (asking_rules : AskingRules.t list) :
         (AskingRules.t * int) list =
       let open AskingRules in
       asking_rules
@@ -688,12 +665,10 @@ module MetaRules = struct
 
 
     (** choose the most applicable asking rule. *)
-    let asking_rules_selector (graph : G.t) (responses : Response.t list)
-        (nfeaturemap : NodeWiseFeatures.NodeWiseFeatureMap.t) : AskingRules.t =
+    let asking_rules_selector (graph : G.t) (responses : Response.t list) : AskingRules.t =
       let priority_assigned =
         assign_priority_on_asking_rules
-          (take_subset_of_applicable_asking_rules graph responses nfeaturemap AskingRules.all_rules)
-          graph
+          (take_subset_of_applicable_asking_rules graph responses AskingRules.all_rules)
       in
       (* sort the asking rules by the priority, and get the first one. *)
       fst @@ List.hd_exn

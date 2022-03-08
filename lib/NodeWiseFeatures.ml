@@ -299,6 +299,9 @@ module NodeWiseFeatureMap = struct
 
 
     let serialize (featuremap : t) ~(filename : string) : unit =
+      if Sys.is_file_exn filename then
+        print_endline @@ F.asprintf "File %s already exists. Skipping." filename
+      else
       let csv_repr =
         headers
         :: ( List.rev

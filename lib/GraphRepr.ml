@@ -284,7 +284,7 @@ module G = struct
 
   let iter_pred_e f g v = BiDiGraph.iter_pred_e f g.graph v
 
-  let fold_pred_e f g v init = BiDiGraph.fold_pred_e f g.graph v
+  let fold_pred_e f g v init = BiDiGraph.fold_pred_e f g.graph v init
 
   let empty = {graph= BiDiGraph.empty; label= ""; desc= ""; comp_unit= ""}
 
@@ -320,7 +320,7 @@ module G = struct
     let to_vertex_inner ((meth, loc) : t) (graph : BiDiGraph.t) : Vertex.t =
       let res_opt =
         BiDiGraph.fold_vertex
-          (fun ((target_meth, target_loc, dist) as vertex) acc ->
+          (fun ((target_meth, target_loc, _) as vertex) acc ->
             if Method.equal meth target_meth && LocationSet.equal loc target_loc then Some vertex
             else acc )
           graph None
@@ -470,7 +470,7 @@ module G = struct
     F.asprintf "\"(%s, %s)\"" (Method.to_string meth) (LocationSet.to_string locset)
 
 
-  let vertex_attributes ((meth, locset, dist) : V.t) =
+  let vertex_attributes ((_, _, dist) : V.t) =
     match ProbQuadruple.determine_label dist with
     | Source ->
         [`Fillcolor 0xf54260; `Style `Filled]
@@ -556,7 +556,7 @@ module G = struct
 
   let find_in_edges (vertex : LiteralVertex.t) (g : t) : E.t list =
     fold_edges_e
-      (fun ((_, label, v2) as edge) acc ->
+      (fun ((_, _, v2) as edge) acc ->
         if V.equal (LiteralVertex.to_vertex vertex g.graph) v2 then edge :: acc else acc )
       g []
 
@@ -735,7 +735,7 @@ module G = struct
 
   let dist_is_all_flat (graph : t) : bool =
     fold_vertex
-      (fun vertex acc -> ProbQuadruple.equal (Vertex.get_dist vertex) ProbQuadruple.initial)
+      (fun vertex acc -> ProbQuadruple.equal (Vertex.get_dist vertex) ProbQuadruple.initial && acc)
       graph true
 
 

@@ -16,15 +16,22 @@ let make_contextual_sim_edge (graph : G.t) : G.t =
   let in_chan = In_channel.create csv_filename in
   let csv_array = Csv.to_array @@ Csv.load_in in_chan in
   In_channel.close in_chan ;
-  let acc = ref G.empty in
+  let acc = ref G.empty and history = ref [] in
   Out_channel.print_string "Now adding CS edges..." ;
   Out_channel.flush stdout ;
   for i = 1 to Array.length csv_array - 1 do
     let vertex1 = csv_array.(i).(0) and vertex2 = csv_array.(i).(1) in
     let vertex1 = G.LiteralVertex.to_vertex (G.LiteralVertex.of_string vertex1) graph.graph
     and vertex2 = G.LiteralVertex.to_vertex (G.LiteralVertex.of_string vertex2) graph.graph in
-    acc := G.add_edge_e !acc (vertex1, EdgeLabel.ContextualSimilarity, vertex2) ;
-    acc := G.add_edge_e !acc (vertex2, EdgeLabel.ContextualSimilarity, vertex1)
+    let method1 = Vertex.get_method vertex1 and method2 = Vertex.get_method vertex2 in
+    if
+      not
+      @@ List.mem !history (method1, method2) ~equal:(fun (m11, m12) (m21, m22) ->
+             Method.equal m11 m21 && Method.equal m12 m22 )
+    then acc := G.add_edge_e !acc (vertex1, EdgeLabel.ContextualSimilarity, vertex2) ;
+    acc := G.add_edge_e !acc (vertex2, EdgeLabel.ContextualSimilarity, vertex1) ;
+    history := (method1, method2) :: !history ;
+    history := (method2, method1) :: !history
   done ;
   let dieted = prune_to_mst !acc in
   let out =
@@ -106,3 +113,42 @@ let all_ns_clusters (graph : G.t) : G.V.t list list =
   let udf_mst_vertices = udf_parsed >>| fun tuplist -> tuplist >>= ident |> List.stable_dedup
   and api_mst_vertices = api_parsed >>| fun tuplist -> tuplist >>= ident |> List.stable_dedup in
   udf_mst_vertices @ api_mst_vertices >>| fun cluster -> cluster >>= G.this_method_vertices graph
+
+
+(** NOTE This function is wrong. Deprecated. *)
+let temp_make_nodewise_sim_edge (graph : G.t) : G.t =
+  let mapping_annotated_vertices =
+    Array.of_list
+    @@ List.filter
+         ~f:(fun vertex ->
+           let method_ = Vertex.get_method vertex in
+           Annotations.has_annot method_
+           &&
+           let annots = Annotations.get_annots method_ in
+           List.exists annots ~f:(fun annot ->
+               let annot_name = annot.name in
+               String.is_substring annot_name ~substring:"Mapping" ) )
+         (G.all_vertices_of_graph graph)
+  in
+  let nonreflexive_carpro =
+    Array.cartesian_product mapping_annotated_vertices mapping_annotated_vertices
+    |> Array.filter ~f:(fun (v1, v2) ->
+           not @@ Method.equal (Vertex.get_method v1) (Vertex.get_method v2) )
+    |> Array.map ~f:(fun (v1, v2) -> (v1, EdgeLabel.NodeWiseSimilarity, v2))
+  in
+  let mst_edges = Array.of_list @@ diet_edge_list (Array.to_list nonreflexive_carpro) in
+  let acc = ref graph in
+  let history : (Method.t * Method.t) list ref = ref [] in
+  Array.iter
+    ~f:(fun (v1, label, v2) ->
+      let method1 = Vertex.get_method v1 and method2 = Vertex.get_method v2 in
+      if
+        not
+        @@ List.mem !history (method1, method2) ~equal:(fun (m11, m12) (m21, m22) ->
+               Method.equal m11 m21 && Method.equal m12 m22 )
+      then
+        (* print_endline @@ F.asprintf "adding (%s, %s)." (Vertex.to_string v1) (Vertex.to_string v2) ; *)
+      acc := G.add_edge_e !acc (v1, label, v2) ;
+      history := (method1, method2) :: !history )
+    mst_edges ;
+  !acc

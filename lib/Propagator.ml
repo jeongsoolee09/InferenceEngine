@@ -42,7 +42,7 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t)
           || List.mem new_fact_vertices target ~equal:Vertex.equal
         then (acc, history)
         else
-          let target_meth = Vertex.get_method target and target_loc = Vertex.get_method target in
+          let target_meth = Vertex.get_method target and target_loc = Vertex.get_loc target in
           (* summarize this node's distribution into a Response.t! *)
           let target_rule_summary =
             Response.response_of_dist target_meth

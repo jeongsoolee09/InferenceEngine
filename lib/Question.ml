@@ -5,8 +5,7 @@ open GraphRepr
 type t = AskingForLabel of Method.t | AskingForConfirmation of (Method.t * TaintLabel.t)
 
 (** make a prompt message out of a question term. *)
-let make_prompt (question : t) : string =
-  match question with
+let make_prompt : t -> string = function
   | AskingForLabel meth ->
       F.asprintf "What label does %s bear? [src|sin|san|non]: " (Method.to_string meth)
   | AskingForConfirmation (meth, label) ->
@@ -14,12 +13,14 @@ let make_prompt (question : t) : string =
         (TaintLabel.to_string label)
 
 
-let get_method (question : t) : Method.t =
-  match question with AskingForLabel meth -> meth | AskingForConfirmation (meth, _) -> meth
+let get_method : t -> Method.t = function
+  | AskingForLabel meth ->
+      meth
+  | AskingForConfirmation (meth, _) ->
+      meth
 
 
-let get_label (question : t) : TaintLabel.t =
-  match question with
+let get_label : t -> TaintLabel.t = function
   | AskingForConfirmation (_, label) ->
       label
   | _ ->
