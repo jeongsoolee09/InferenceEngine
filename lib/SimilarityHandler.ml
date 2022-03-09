@@ -5,14 +5,16 @@ open Chain
 open NodeWiseFeatures
 open ContextualFeatures
 open SpanningTree
+open EdgeLabel
 module Json = Yojson.Basic
 
 let make_contextual_sim_edge (graph : G.t) : G.t =
-  Out_channel.print_string "spawning python process compute_contextual_similarity.py..." ;
-  SpawnPython.spawn_python ~pyfile:"./lib/python/compute_contextual_similarity.py"
-    ~args:[graph.comp_unit] ;
-  Out_channel.print_endline "done" ;
   let csv_filename = F.asprintf "%s_all_longest_trunks.json_filtered.csv" graph.comp_unit in
+  if not @@ Sys.file_exists_exn csv_filename then (
+    Out_channel.print_string "spawning python process compute_contextual_similarity.py..." ;
+    SpawnPython.spawn_python ~pyfile:"./lib/python/compute_contextual_similarity.py"
+      ~args:[graph.comp_unit] ) ;
+  Out_channel.print_endline "done" ;
   let in_chan = In_channel.create csv_filename in
   let csv_array = Csv.to_array @@ Csv.load_in in_chan in
   In_channel.close in_chan ;
@@ -28,29 +30,31 @@ let make_contextual_sim_edge (graph : G.t) : G.t =
       not
       @@ List.mem !history (method1, method2) ~equal:(fun (m11, m12) (m21, m22) ->
              Method.equal m11 m21 && Method.equal m12 m22 )
-    then acc := G.add_edge_e !acc (vertex1, EdgeLabel.ContextualSimilarity, vertex2) ;
-    acc := G.add_edge_e !acc (vertex2, EdgeLabel.ContextualSimilarity, vertex1) ;
+    then acc := G.add_edge_e !acc (vertex1, ContextualSimilarity, vertex2) ;
+    acc := G.add_edge_e !acc (vertex2, ContextualSimilarity, vertex1) ;
     history := (method1, method2) :: !history ;
     history := (method2, method1) :: !history
   done ;
   let dieted = prune_to_mst !acc in
   let out =
-    G.fold_edges
-      (fun v1 v2 acc -> G.add_edge_e acc (v1, EdgeLabel.ContextualSimilarity, v2))
-      dieted graph
+    G.fold_edges (fun v1 v2 acc -> G.add_edge_e acc (v1, ContextualSimilarity, v2)) dieted graph
   in
   Out_channel.print_endline "done" ;
   out
 
 
 let make_nodewise_sim_edge (graph : G.t) : G.t =
-  Out_channel.print_string "spawning python process compute_nodewise_similarity.py..." ;
-  SpawnPython.spawn_python ~pyfile:"./lib/python/compute_nodewise_similarity.py"
-    ~args:[graph.comp_unit] ;
-  Out_channel.print_endline "done" ;
   let api_csv_filename = F.asprintf "NodeWiseFeatures_%s_apis.csv_filtered.csv" graph.comp_unit in
+  let udf_csv_filename = F.asprintf "NodeWiseFeatures_%s_udfs.csv_filtered.csv" graph.comp_unit in
+  if not @@ Sys.file_exists_exn api_csv_filename then (
+    Out_channel.print_string "spawning python process compute_nodewise_similarity.py..." ;
+    SpawnPython.spawn_python ~pyfile:"./lib/python/compute_nodewise_similarity.py"
+      ~args:[graph.comp_unit] ) ;
+  Out_channel.print_endline "done" ;
   let api_in_chan = In_channel.create api_csv_filename in
   let api_array = Csv.to_array @@ Csv.load_in api_in_chan in
+  let udf_in_chan = In_channel.create udf_csv_filename in
+  let udf_array = Csv.to_array @@ Csv.load_in udf_in_chan in
   In_channel.close api_in_chan ;
   Out_channel.print_string "Now adding NS edges..." ;
   Out_channel.flush stdout ;
@@ -73,11 +77,38 @@ let make_nodewise_sim_edge (graph : G.t) : G.t =
                      let v1_method = Vertex.get_method v1 and v2_method = Vertex.get_method v2 in
                      Method.equal m1_vertex_method v1_method
                      && Method.equal m2_vertex_method v2_method )
-                   (G.get_edges graph ~label:EdgeLabel.ContextualSimilarity)
+                   (G.get_edges graph ~label:ContextualSimilarity)
             in
             if there_is_no_cs then (
-              let edge1 = (m1_vertex, EdgeLabel.NodeWiseSimilarity, m2_vertex)
-              and edge2 = (m2_vertex, EdgeLabel.NodeWiseSimilarity, m1_vertex) in
+              let edge1 = (m1_vertex, NodeWiseSimilarity, m2_vertex)
+              and edge2 = (m2_vertex, NodeWiseSimilarity, m1_vertex) in
+              acc := G.add_edge_e !acc edge1 ;
+              acc := G.add_edge_e !acc edge2 ) )
+          m2_vertices )
+      m1_vertices
+  done ;
+  for i = 0 to Array.length udf_array - 1 do
+    let method1 = udf_array.(i).(0) and method2 = udf_array.(i).(1) in
+    let m1_vertices = G.this_method_vertices graph method1
+    and m2_vertices = G.this_method_vertices graph method2 in
+    List.iter
+      ~f:(fun m1_vertex ->
+        List.iter
+          ~f:(fun m2_vertex ->
+            let m1_vertex_method = Vertex.get_method m1_vertex
+            and m2_vertex_method = Vertex.get_method m2_vertex in
+            let there_is_no_cs =
+              not
+              @@ List.exists
+                   ~f:(fun (v1, _, v2) ->
+                     let v1_method = Vertex.get_method v1 and v2_method = Vertex.get_method v2 in
+                     Method.equal m1_vertex_method v1_method
+                     && Method.equal m2_vertex_method v2_method )
+                   (G.get_edges graph ~label:ContextualSimilarity)
+            in
+            if there_is_no_cs then (
+              let edge1 = (m1_vertex, NodeWiseSimilarity, m2_vertex)
+              and edge2 = (m2_vertex, NodeWiseSimilarity, m1_vertex) in
               acc := G.add_edge_e !acc edge1 ;
               acc := G.add_edge_e !acc edge2 ) )
           m2_vertices )
@@ -85,9 +116,7 @@ let make_nodewise_sim_edge (graph : G.t) : G.t =
   done ;
   let dieted = prune_to_mst !acc in
   let out =
-    G.fold_edges
-      (fun v1 v2 acc -> G.add_edge_e acc (v1, EdgeLabel.NodeWiseSimilarity, v2))
-      dieted graph
+    G.fold_edges (fun v1 v2 acc -> G.add_edge_e acc (v1, NodeWiseSimilarity, v2)) dieted graph
   in
   Out_channel.print_endline "done" ;
   out
@@ -116,7 +145,7 @@ let all_ns_clusters (graph : G.t) : G.V.t list list =
 
 
 (** NOTE This function is wrong. Deprecated. *)
-let temp_make_nodewise_sim_edge (graph : G.t) : G.t =
+let temp_make_nodewise_sim_edge_Mapping (graph : G.t) : G.t =
   let mapping_annotated_vertices =
     Array.of_list
     @@ List.filter
@@ -130,13 +159,13 @@ let temp_make_nodewise_sim_edge (graph : G.t) : G.t =
                String.is_substring annot_name ~substring:"Mapping" ) )
          (G.all_vertices_of_graph graph)
   in
-  let nonreflexive_carpro =
+  let raw_edges =
     Array.cartesian_product mapping_annotated_vertices mapping_annotated_vertices
     |> Array.filter ~f:(fun (v1, v2) ->
            not @@ Method.equal (Vertex.get_method v1) (Vertex.get_method v2) )
-    |> Array.map ~f:(fun (v1, v2) -> (v1, EdgeLabel.NodeWiseSimilarity, v2))
+    |> Array.map ~f:(fun (v1, v2) -> (v1, NodeWiseSimilarity, v2))
   in
-  let mst_edges = Array.of_list @@ diet_edge_list (Array.to_list nonreflexive_carpro) in
+  let mst_edges = Array.of_list @@ diet_edge_list (Array.to_list raw_edges) in
   let acc = ref graph in
   let history : (Method.t * Method.t) list ref = ref [] in
   Array.iter
@@ -146,9 +175,34 @@ let temp_make_nodewise_sim_edge (graph : G.t) : G.t =
         not
         @@ List.mem !history (method1, method2) ~equal:(fun (m11, m12) (m21, m22) ->
                Method.equal m11 m21 && Method.equal m12 m22 )
-      then
-        (* print_endline @@ F.asprintf "adding (%s, %s)." (Vertex.to_string v1) (Vertex.to_string v2) ; *)
-      acc := G.add_edge_e !acc (v1, label, v2) ;
+      then acc := G.add_edge_e !acc (v1, label, v2) ;
+      history := (method1, method2) :: !history )
+    mst_edges ;
+  !acc
+
+
+let temp_make_nodewise_sim_edge_Printer (graph : G.t) : G.t =
+  let printer_methods =
+    Array.of_list
+    @@ List.filter (G.all_vertices_of_graph graph) ~f:(fun vertex ->
+           String.equal (vertex |> Vertex.get_method |> Method.get_class_name) "Printer" )
+  in
+  let raw_edges =
+    Array.cartesian_product printer_methods printer_methods
+    |> Array.filter ~f:(fun (v1, v2) -> not @@ Vertex.equal v1 v2)
+    |> Array.map ~f:(fun (v1, v2) -> (v1, NodeWiseSimilarity, v2))
+  in
+  let mst_edges = Array.of_list @@ diet_edge_list (Array.to_list raw_edges) in
+  let acc = ref graph in
+  let history : (Method.t * Method.t) list ref = ref [] in
+  Array.iter
+    ~f:(fun (v1, label, v2) ->
+      let method1 = Vertex.get_method v1 and method2 = Vertex.get_method v2 in
+      if
+        not
+        @@ List.mem !history (method1, method2) ~equal:(fun (m11, m12) (m21, m22) ->
+               Method.equal m11 m21 && Method.equal m12 m22 )
+      then acc := G.add_edge_e !acc (v1, label, v2) ;
       history := (method1, method2) :: !history )
     mst_edges ;
   !acc

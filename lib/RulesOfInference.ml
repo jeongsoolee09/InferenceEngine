@@ -34,8 +34,7 @@ module PropagationRules = struct
       >>= fun vertex -> G.get_succs graph (LV.of_vertex vertex) ~label:ContextualSimilarity
     in
     assert (Int.( >= ) (List.length contextual_succs) 1) ;
-    print_endline
-    @@ F.asprintf "contextual_similarity_rule chosen for %s" (Response.get_method new_fact) ;
+    (* print_endline *)
     if dry_run then (graph, [])
     else
       let propagated =
@@ -65,7 +64,6 @@ module PropagationRules = struct
             G.strong_update_dist succ new_dist acc )
           contextual_succs ~init:graph
       in
-      print_endline "done." ;
       (propagated, contextual_succs)
 
 
@@ -88,8 +86,8 @@ module PropagationRules = struct
       raw_succs |> VertexSet.of_list |> VertexSet.elements
     in
     assert (Int.( >= ) (List.length similarity_succs) 1) ;
-    print_endline
-    @@ F.asprintf "nodewise_similarity_rule chosen for %s" (Response.get_method new_fact) ;
+    (* print_endline *)
+    (* @@ F.asprintf "nodewise_similarity_rule chosen for %s" (Response.get_method new_fact) ; *)
     if dry_run then (graph, [])
     else
       let propagated =
@@ -122,8 +120,7 @@ module PropagationRules = struct
                   if G.is_df_root (LV.of_vertex succ) graph then
                     DistManipulator.bump succ_dist [None] ~inc_delta:3. ~dec_delta:1.
                   else if G.is_df_leaf (LV.of_vertex succ) graph then
-                    (* UNSURE Is it correct to bump Sink? *)
-                    DistManipulator.bump succ_dist [Sink] ~inc_delta:3. ~dec_delta:1.
+                    DistManipulator.bump succ_dist [None] ~inc_delta:3. ~dec_delta:1.
                   else DistManipulator.bump succ_dist [None] ~inc_delta:8. ~dec_delta:3.
               | Indeterminate ->
                   succ_dist
@@ -144,9 +141,9 @@ module PropagationRules = struct
         new_fact_vertices >>= (Array.to_list << Trunk.find_trunks_containing_vertex graph)
       in
       assert (not @@ List.is_empty trunks_containing_vertices) ;
-      print_endline
-      @@ F.asprintf "internal_nonbidirectional_library_node... chosen for %s"
-           (Response.get_method new_fact) ;
+      (* print_endline *)
+      (* @@ F.asprintf "internal_nonbidirectional_library_node... chosen for %s" *)
+      (*      (Response.get_method new_fact) ; *)
       if dry_run then (graph, [])
       else
         let trunk_leaves = trunks_containing_vertices >>| Array.last in
@@ -198,9 +195,9 @@ module PropagationRules = struct
         new_fact_vertices >>= (Array.to_list << Trunk.find_trunks_containing_vertex graph)
       in
       assert (not @@ List.is_empty trunks_containing_vertices) ;
-      print_endline
-      @@ F.asprintf "internal_nonbidirectional_library_node... chosen for %s"
-           (Response.get_method new_fact) ;
+      (* print_endline *)
+      (* @@ F.asprintf "internal_nonbidirectional_library_node... chosen for %s" *)
+      (*      (Response.get_method new_fact) ; *)
       if dry_run then (graph, [])
       else
         let new_fact_propagated =
@@ -241,26 +238,25 @@ module PropagationRules = struct
           ~init:(new_fact_propagated, []) trunks_containing_vertices
 
 
-  let if_method_is_none_once_then_it's_none_everywhere : rule =
-   fun (graph : G.t) (new_fact : Response.t) ~(dry_run : bool) : (G.t * Vertex.t list) ->
-    let new_fact_method = Response.get_method new_fact in
-    let new_fact_label = Response.get_label new_fact in
-    if TaintLabel.is_none new_fact_label then (
-      let this_method_vertices = G.this_method_vertices graph new_fact_method in
-      assert (not @@ List.is_empty this_method_vertices) ;
-      print_endline
-      @@ F.asprintf "if_method_is_none_once_then... chosen for %s" (Response.get_method new_fact) ;
-      if dry_run then (graph, [])
-      else
-        List.fold this_method_vertices
-          ~f:(fun (graph_acc, affected) this_method_vertex ->
-            let vertex_dist = Vertex.get_dist this_method_vertex in
-            let new_dist = DistManipulator.bump vertex_dist [None] ~inc_delta:0.3 ~dec_delta:0.1 in
-            ( G.strong_update_dist this_method_vertex new_dist graph_acc
-            , this_method_vertex :: affected ) )
-          ~init:(graph, []) )
-    else (graph, [])
-
+  (* let if_method_is_none_once_then_it's_none_everywhere : rule = *)
+  (*  fun (graph : G.t) (new_fact : Response.t) ~(dry_run : bool) : (G.t * Vertex.t list) -> *)
+  (*   let new_fact_method = Response.get_method new_fact in *)
+  (*   let new_fact_label = Response.get_label new_fact in *)
+  (*   if TaintLabel.is_none new_fact_label then ( *)
+  (*     let this_method_vertices = G.this_method_vertices graph new_fact_method in *)
+  (*     assert (not @@ List.is_empty this_method_vertices) ; *)
+  (*     print_endline *)
+  (*     @@ F.asprintf "if_method_is_none_once_then... chosen for %s" (Response.get_method new_fact) ; *)
+  (*     if dry_run then (graph, []) *)
+  (*     else *)
+  (*       List.fold this_method_vertices *)
+  (*         ~f:(fun (graph_acc, affected) this_method_vertex -> *)
+  (*           let vertex_dist = Vertex.get_dist this_method_vertex in *)
+  (*           let new_dist = DistManipulator.bump vertex_dist [None] ~inc_delta:0.3 ~dec_delta:0.1 in *)
+  (*           ( G.strong_update_dist this_method_vertex new_dist graph_acc *)
+  (*           , this_method_vertex :: affected ) ) *)
+  (*         ~init:(graph, []) ) *)
+  (*   else (graph, []) *)
 
   (** Propagate the same info to nodes with the same @annotations: requires that the new_fact's
       method have successors with nodewise simlarity edge bearing the same @annotation *)
@@ -270,7 +266,7 @@ module PropagationRules = struct
    fun (graph : G.t) (new_fact : Response.t) ~(dry_run : bool) : (G.t * Vertex.t list) ->
     if dry_run then (
       assert (Annotations.has_annot (Response.get_method new_fact)) ;
-      print_endline @@ F.asprintf "annotation_rule chosen for %s" (Response.get_method new_fact) ;
+      (* print_endline @@ F.asprintf "annotation_rule chosen for %s" (Response.get_method new_fact) ; *)
       (graph, []) )
     else
       match new_fact with
@@ -297,9 +293,9 @@ module PropagationRules = struct
                   match this_method_label with
                   | Source | Sink | Sanitizer ->
                       if G.is_df_root (LV.of_vertex vertex) graph then
-                        DistManipulator.bump vertex_dist [Source] ~inc_delta:1. ~dec_delta:0.9
+                        DistManipulator.bump vertex_dist [Source] ~inc_delta:3. ~dec_delta:0.9
                       else if G.is_df_leaf (LV.of_vertex vertex) graph then
-                        DistManipulator.bump vertex_dist [Sink] ~inc_delta:1. ~dec_delta:0.9
+                        DistManipulator.bump vertex_dist [Sink] ~inc_delta:3. ~dec_delta:0.9
                       else vertex_dist
                   | None | Indeterminate ->
                       vertex_dist
@@ -340,8 +336,8 @@ module PropagationRules = struct
     ; {rule= nodewise_similarity_propagation_rule; label= "nodewise_similarity_propagation_rule"}
     ; { rule= internal_nonbidirectional_library_node_is_a_src_if_leaf_is_sink
       ; label= "internal_nonbidirectional_library_node_is_a_src_if_leaf_is_sink" }
-    ; { rule= if_method_is_none_once_then_it's_none_everywhere
-      ; label= "if_method_is_none_once_then_it's_none_everywhere" }
+      (* ; { rule= if_method_is_none_once_then_it's_none_everywhere *)
+      (*   ; label= "if_method_is_none_once_then_it's_none_everywhere" } *)
     ; {rule= annotation_rule; label= "annotation_rule"} ]
 end
 
@@ -522,19 +518,27 @@ module AskingRules = struct
           Response.is_foryesorno received_response
           && Method.equal (Response.get_method forlabel) (Response.get_method received_response) )
     in
-    let unasked_annotated_methods =
+    let indeterminate_annotated_methods =
       List.filter ~f:(fun method_ ->
           Annotations.has_annot method_
           && not
-             @@ List.mem (received_responses >>| Response.get_method) method_ ~equal:Method.equal )
+             @@ List.mem (received_responses >>| Response.get_method) method_ ~equal:Method.equal
+          && List.exists ~f:ProbQuadruple.is_indeterminate
+               (G.this_method_vertices snapshot method_ >>| Vertex.get_dist) )
       @@ G.all_methods_of_graph snapshot
     in
     let all_received_forlabels = List.filter received_responses ~f:Response.is_forlabel in
     let all_received_forlabels_are_pairedup =
-      List.for_all all_received_forlabels ~f:forlabel_response_is_paired_up
+      let all_received_forlabels_that_are_not_none =
+        List.filter all_received_forlabels ~f:(fun forlabel ->
+            not @@ TaintLabel.is_none @@ Response.get_label forlabel )
+      in
+      List.for_all all_received_forlabels_that_are_not_none ~f:forlabel_response_is_paired_up
     in
     assert (
-      (not @@ List.is_empty unasked_annotated_methods) || not all_received_forlabels_are_pairedup ) ;
+      (not @@ List.is_empty indeterminate_annotated_methods)
+      || not all_received_forlabels_are_pairedup ) ;
+    print_endline "ask_annotated_method chosen." ;
     let all_annotated_vertices =
       List.filter
         ~f:(fun vertex -> Annotations.has_annot (Vertex.get_method vertex))
@@ -551,22 +555,8 @@ module AskingRules = struct
     in
     match unpaired_forlabel_opt with
     | None ->
-        let just_before_response_was_foryesorno_for_df_internal_method =
-          match List.hd received_responses with
-          | None ->
-              raise TODO
-          | Some response ->
-              Response.is_foryesorno response
-              && (not @@ TaintLabel.equal None (Response.get_label response))
-              && List.for_all
-                   (G.this_method_vertices snapshot (Response.get_method response))
-                   ~f:(fun vertex -> G.is_df_internal (G.LiteralVertex.of_vertex vertex) snapshot)
-        in
-        if just_before_response_was_foryesorno_for_df_internal_method then
-          AskingForConfirmation (Response.get_method (List.hd_exn received_responses), None)
-        else
-          let random_annotated_vertex = Utils.random_select_elem all_annotated_vertices in
-          Question.AskingForLabel (Vertex.get_method random_annotated_vertex)
+        let random_annotated_vertex = Utils.random_select_elem all_annotated_vertices in
+        Question.AskingForLabel (Vertex.get_method random_annotated_vertex)
     | Some forlabel -> (
         let forlabel_method = Response.get_method forlabel in
         match Response.get_label forlabel with
@@ -603,7 +593,6 @@ module MetaRules = struct
       @@ List.fold
            ~f:(fun acc prop_rule ->
              try
-               (* try applying a prop_rule *)
                ignore @@ prop_rule.rule graph new_fact ~dry_run:true ;
                prop_rule :: acc
              with Assert_failure _ -> acc )
@@ -638,7 +627,7 @@ module MetaRules = struct
              try
                ignore @@ asking_rule.rule snapshot responses ;
                asking_rule :: acc
-             with _ -> acc )
+             with Assert_failure _ -> acc )
            ~init:[] asking_rules
 
 
@@ -671,9 +660,13 @@ module MetaRules = struct
           (take_subset_of_applicable_asking_rules graph responses AskingRules.all_rules)
       in
       (* sort the asking rules by the priority, and get the first one. *)
-      fst @@ List.hd_exn
-      @@ List.sort
-           ~compare:(fun (_, priority1) (_, priority2) -> -Int.compare priority1 priority2)
-           priority_assigned
+      let out =
+        fst @@ List.hd_exn
+        @@ List.sort
+             ~compare:(fun (_, priority1) (_, priority2) -> -Int.compare priority1 priority2)
+             priority_assigned
+      in
+      print_endline @@ F.asprintf "%s chosen." out.label ;
+      out
   end
 end

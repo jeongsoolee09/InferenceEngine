@@ -52,57 +52,6 @@ let renderer_graph = List.nth_exn splitted 0
 
 let site_graph = List.nth_exn splitted 1
 
-module Notebook95 = struct
-  let _ = Start
-
-  let vertices = [("v1", "l1"); ("v2", "l2"); ("v3", "l3"); ("v4", "l4")]
-
-  let initial =
-    List.fold
-      ~f:(fun current_graph (v, l) -> G.add_vertex current_graph (v, l, ProbQuadruple.initial))
-      ~init:G.empty vertices
-
-
-  module TestMap = struct
-    module WithGraphDomain = Caml.Map.Make (G)
-    include WithGraphDomain
-
-    type t = Int.t WithGraphDomain.t
-  end
-
-  let added = TestMap.add initial 777 TestMap.empty
-
-  (* now, bump v1's dist. *)
-
-  let bumped =
-    G.strong_update_dist
-      (G.LiteralVertex.to_vertex ("v1", "l1") initial.graph)
-      {src= 1.; san= 0.; sin= 0.; non= 0.}
-      initial
-
-
-  let _ = G.equal initial bumped
-
-  let _ = TestMap.find bumped added
-
-  let _ = TestMap.find initial added
-
-  let _ = assert (Int.equal (TestMap.find bumped added) (TestMap.find initial added))
-
-  (* Good! *)
-  let _ = End
-end
-
-module Notebook97 = struct
-  let _ = Start
-
-  let renderer_finished = build_graph renderer_graph
-
-  let _ = loop renderer_finished NodeWiseFeatureMap.empty ~auto_test:false
-
-  let _ = End
-end
-
 module Notebook98 = struct
   let _ = Start
 
@@ -192,6 +141,33 @@ module Notebook98 = struct
 
   let _ =
     Array.length @@ Array.append Sagan_solution.sagan_udf_solution Sagan_solution.sagan_api_solution
+
+
+  let _ = End
+end
+
+module Notebook99 = struct
+  let _ = Start
+
+  let renderer_finished = build_graph renderer_graph
+
+  let _ = Loop.loop renderer_finished NodeWiseFeatureMap.empty ~auto_test:true
+
+  let round1, round1_responses =
+    AutoTest.auto_test_spechunter_for_snapshot_once renderer_finished []
+
+
+  let round2, round2_responses =
+    AutoTest.auto_test_spechunter_for_snapshot_once round1 round1_responses
+
+
+  let _ = AutoTest.get_vertexwise_precision_of_snapshot round2
+
+  let _ = Visualizer.visualize_snapshot round2 ~autoopen:true ~micro:false
+
+  let snapshot = round1
+
+  let received_responses = round1_responses
 
   let _ = End
 end

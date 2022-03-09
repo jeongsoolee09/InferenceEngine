@@ -311,7 +311,7 @@ def main():
     methods_to_connect_columns = filtered.apply(
         find_methods_to_connect, axis=1)
     all_edges = []
-    for row in methods_to_connect_columns.itertuples():
+    for row in methods_to_connect_columns.to_frame().itertuples():
         all_edges += row[1]
 
     # HERE

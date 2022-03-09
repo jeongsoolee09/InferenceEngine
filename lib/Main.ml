@@ -27,11 +27,9 @@ let build_graph (graph_fragment : G.t) : G.t =
   Trunk.Serializer.serialize_graph_trunks_to_json healed ;
   (* ======================================== *)
   let finished_graph =
-    healed
-    (* |> SimilarityHandler.make_contextual_sim_edge *)
-    (* |> SimilarityHandler.make_nodewise_sim_edge *)
-    |> SimilarityHandler.temp_make_nodewise_sim_edge
-    |> Axioms.apply_axioms
+    healed |> SimilarityHandler.make_contextual_sim_edge |> SimilarityHandler.make_nodewise_sim_edge
+    (* |> SimilarityHandler.temp_make_nodewise_sim_edge_Mapping *)
+    (* |> SimilarityHandler.temp_make_nodewise_sim_edge_Printer *) |> Axioms.apply_axioms
   in
   Visualizer.visualize_snapshot finished_graph ~autoopen:false ~micro:false ;
   finished_graph

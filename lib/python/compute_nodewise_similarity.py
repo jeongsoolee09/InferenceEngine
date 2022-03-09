@@ -9,7 +9,7 @@ import weakly
 
 # NOTE KEEP THIS SCRIPT SIMPLE
 
-ns_threshold = 14                # TEMP
+ns_threshold = 10                # TEMP
 
 parser = argparse.ArgumentParser()
 parser.add_argument("comp_unit", nargs=1)
@@ -68,14 +68,14 @@ def get_word_set(identifier):
 class PairwiseFeature:
     scores = {
         "is_both_framework_code": 4,
-        "belong_to_same_class": 2,
+        "belong_to_same_class": 8,
         "belong_to_same_package": 2,
         "returnval_not_used_in_caller": 3,
         "return_type_is_anothers_class": 4,
         "has_same_return_type": 2,
         "is_both_java_builtin": 2,
         "is_both_initializer": 4,
-        "has_same_annots": 6,
+        "has_same_annots": 9,
         "method_contains_same_words": 3,
         "method_has_same_prefixes": 4
     }

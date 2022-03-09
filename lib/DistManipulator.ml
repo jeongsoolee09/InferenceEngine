@@ -65,4 +65,4 @@ let oracle_overwrite (label : TaintLabel.t) : ProbQuadruple.t =
   | None ->
       {src= neg; sin= neg; san= neg; non= inf}
   | Indeterminate ->
-      raise @@ Invalid_argument "indeterminate"
+      {src= 0.25; sin= 0.25; san= 0.25; non= 0.25}

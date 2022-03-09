@@ -10,7 +10,7 @@ type axiom = G.t -> G.t
 module Distribution = struct
   let mark_well_known_java_methods : axiom =
    fun (graph : G.t) : G.t ->
-    Out_channel.print_endline "mark_well_kwown_java_methods" ;
+    (* Out_channel.print_endline "mark_well_kwown_java_methods" ; *)
     let marked = ref [] in
     graph
     |> (* fold_over_sources *)
@@ -63,13 +63,13 @@ module Distribution = struct
           else current_graph )
         graph graph
     in
-    Out_channel.print_endline @@ F.asprintf "marked %d vertices." (List.length !marked) ;
+    (* Out_channel.print_endline @@ F.asprintf "marked %d vertices." (List.length !marked) ; *)
     out
 
 
   let getters_setters_and_predicates_are_none : axiom =
    fun (graph : G.t) : G.t ->
-    Out_channel.print_endline "getters_setters_and_predicates_are_none" ;
+    (* Out_channel.print_endline "getters_setters_and_predicates_are_none" ; *)
     G.fold_vertex
       (fun vertex current_graph ->
         let method_ = Vertex.get_method vertex in
@@ -88,7 +88,7 @@ module Distribution = struct
   (* oops, this should be run at every loop!!! *)
   let sink_can't_be_a_pred_of_sink : axiom =
    fun (graph : G.t) : G.t ->
-    Out_channel.print_endline "sink_can't_be_a_pred_of_sink" ;
+    (* Out_channel.print_endline "sink_can't_be_a_pred_of_sink" ; *)
     let all_sinks =
       G.all_vertices_of_graph graph
       >>| (fun vertex -> (vertex, ProbQuadruple.determine_label (Vertex.get_dist vertex)))
@@ -121,7 +121,7 @@ module Distribution = struct
   (* oops, this too should be run at every loop!!! *)
   let init_that_doesn't_call_lib_code_is_none : axiom =
    fun (graph : G.t) : G.t ->
-    Out_channel.print_endline "init_that_doesn't_call_lib_code_is_none" ;
+    (* Out_channel.print_endline "init_that_doesn't_call_lib_code_is_none" ; *)
     let all_init_vertices =
       G.all_vertices_of_graph graph
       |> List.filter ~f:(fun vertex ->
@@ -146,7 +146,7 @@ module Distribution = struct
 
   let this_project_main_is_none : axiom =
    fun (graph : G.t) : G.t ->
-    Out_channel.print_endline "this_project_main_is_none" ;
+    (* Out_channel.print_endline "this_project_main_is_none" ; *)
     let marked = ref [] in
     let this_project_main_vertices =
       G.fold_vertex
@@ -165,7 +165,7 @@ module Distribution = struct
           G.strong_update_dist main_vertex new_dist acc )
         ~init:graph
     in
-    Out_channel.print_endline @@ F.asprintf "marked %d vertices." (List.length !marked) ;
+    (* Out_channel.print_endline @@ F.asprintf "marked %d vertices." (List.length !marked) ; *)
     out
 
 
@@ -194,7 +194,7 @@ module Distribution = struct
 
   let internal_udf_vertex_is_none : axiom =
    fun (graph : G.t) : G.t ->
-    Out_channel.print_endline "internal_udf_vertex_is_none" ;
+    (* Out_channel.print_endline "internal_udf_vertex_is_none" ; *)
     let internal_udf_vertices_without_annot =
       G.fold_vertex
         (fun vertex acc ->
@@ -218,8 +218,8 @@ module Distribution = struct
           G.strong_update_dist succ new_dist acc )
         ~init:graph internal_udf_vertices_without_annot
     in
-    Out_channel.print_endline
-    @@ F.asprintf "marked %d vertices." (List.length internal_udf_vertices_without_annot) ;
+    (* Out_channel.print_endline *)
+    (* @@ F.asprintf "marked %d vertices." (List.length internal_udf_vertices_without_annot) ; *)
     propagated
 end
 
@@ -239,8 +239,8 @@ module Topology = struct
 end
 
 let all_distribution_axioms : axiom array =
-  [| Distribution.mark_well_known_java_methods
-   ; Distribution.getters_setters_and_predicates_are_none
+  [| (* Distribution.mark_well_known_java_methods *)
+   (* ; *) Distribution.getters_setters_and_predicates_are_none
    ; Distribution.sink_can't_be_a_pred_of_sink
    ; Distribution.init_that_doesn't_call_lib_code_is_none
    ; Distribution.this_project_main_is_none

@@ -1,3 +1,5 @@
+(* Module for easy debugging. *)
+
 open InfixOperators
 open ListMonad
 open GraphRepr
@@ -42,57 +44,42 @@ let get_solution (method_ : Method.t) : TaintLabel.t list =
   if Method.is_initializer method_ then [None] else Hashtbl.find solution_table method_
 
 
-let vertex_inference_result_is_correct ~(inferred : TaintLabel.t) ~(ground : TaintLabel.t list) :
-    bool =
+let vertex_inference_result_is_correct (vertex : Vertex.t) : bool =
+  let ground = get_solution (Vertex.get_method vertex)
+  and inferred = ProbQuadruple.determine_label (Vertex.get_dist vertex) in
   List.mem ground inferred ~equal:TaintLabel.equal
-
-
-let method_inference_result_is_correct ~(inferred : TaintLabel.t list) ~(ground : TaintLabel.t list)
-    : bool =
-  List.fold
-    ~f:(fun acc inferred_label ->
-      if TaintLabel.is_none inferred_label then acc
-      else
-        let inferred_label_is_correct = List.mem ground inferred_label ~equal:TaintLabel.equal in
-        inferred_label_is_correct && acc )
-    ~init:true inferred
 
 
 (** get the percentage of correct vertices in this snapshot. *)
 let get_vertexwise_precision_of_snapshot (snapshot : G.t) : Float.t =
   let correct_vertices_count =
     G.fold_vertex
-      (fun vertex acc ->
-        if
-          vertex_inference_result_is_correct
-            ~inferred:(ProbQuadruple.determine_label (Vertex.get_dist vertex))
-            ~ground:(get_solution (Vertex.get_method vertex))
-        then acc + 1
-        else acc )
+      (fun vertex acc -> if vertex_inference_result_is_correct vertex then acc + 1 else acc)
       snapshot 0
   in
   let num_of_all_vertices = List.length @@ G.all_vertices_of_graph snapshot in
   Float.of_int correct_vertices_count /. Float.of_int num_of_all_vertices *. 100.
 
 
-(** get the percentage of correct methods in this snapshot. *)
-let get_methodwise_precision_of_snapshot (snapshot : G.t) : Float.t =
-  let correct_methods_count =
-    List.fold
-      ~f:(fun acc method_ ->
-        let all_inferred_labels_for_method =
-          G.this_method_vertices snapshot method_
-          >>| Vertex.get_dist >>| ProbQuadruple.determine_label
-        in
-        if
-          method_inference_result_is_correct ~inferred:all_inferred_labels_for_method
-            ~ground:(get_solution method_)
-        then acc + 1
-        else acc )
-      (G.all_methods_of_graph snapshot) ~init:0
-  in
-  let num_of_all_methods = List.length @@ G.all_methods_of_graph snapshot in
-  Float.of_int correct_methods_count /. Float.of_int num_of_all_methods *. 100.
+let watch (snapshot : G.t) (methods : Method.t list) (count : int) : unit =
+  let vertices_to_watch = methods >>= G.this_method_vertices snapshot in
+  let txt_file = Out_channel.create @@ F.asprintf "%d_%s.txt" count snapshot.comp_unit in
+  List.iter vertices_to_watch ~f:(fun vertex ->
+      let label = ProbQuadruple.determine_label @@ Vertex.get_dist vertex in
+      Out_channel.output_string txt_file
+      @@ F.asprintf "%s: %s\n"
+           (G.LiteralVertex.to_string (G.LiteralVertex.of_vertex vertex))
+           (TaintLabel.to_string label) ) ;
+  Out_channel.flush txt_file ;
+  Out_channel.close txt_file
+
+
+let to_watch =
+  [ "ResourceSupport IndexController.index()"
+  ; "Resources GuidesController.listGuides()"
+  ; "ResponseEntity GuidesController.renderGuide(String,String)"
+  ; "ResponseEntity GuidesController.showGuide(String,String)"
+  ; "ResponseEntity MarkupController.renderMarkup(MediaType,String)" ]
 
 
 let responder =
@@ -118,6 +105,45 @@ let responder =
         Response.ForYesOrNo (meth, asked_label, is_correct)
 
 
+let auto_test_spechunter_for_snapshot_once (current_snapshot : G.t)
+    (received_responses : Response.t list) =
+  if G.Saturation.all_dists_in_graph_are_saturated current_snapshot then
+    (current_snapshot, received_responses)
+  else
+    (* find the most appropriate Asking Rule. *)
+    let question_maker =
+      MetaRules.ForAsking.asking_rules_selector current_snapshot received_responses
+    in
+    let question = question_maker.rule current_snapshot received_responses in
+    print_endline @@ F.asprintf "Question: %s" (Question.to_string question) ;
+    let response = responder question in
+    (* sort applicable Propagation Rules by adequacy. *)
+    let propagation_rules_to_apply =
+      MetaRules.ForPropagation.sort_propagation_rules_by_priority current_snapshot response
+    in
+    let propagated =
+      fst
+      @@ propagator response current_snapshot propagation_rules_to_apply received_responses []
+           PropagationRules.all_rules
+    in
+    let propagated' = Axioms.apply_axioms propagated in
+    let stats =
+      let correct_vertices =
+        List.filter (G.all_vertices_of_graph propagated') ~f:vertex_inference_result_is_correct
+      in
+      F.asprintf "stats: [%d / %d] (%f) <vertex>, [%d / %d] <indeterminate>"
+        (List.length correct_vertices) (G.nb_vertex propagated')
+        (get_vertexwise_precision_of_snapshot propagated')
+        (List.length correct_vertices)
+        ( List.length
+        @@ List.filter
+             (G.all_vertices_of_graph propagated')
+             ~f:(ProbQuadruple.is_indeterminate << Vertex.get_dist) )
+    in
+    print_endline stats ;
+    (propagated', response :: received_responses)
+
+
 (** auto-question-n-answer version of Loop.loop_inner. *)
 let rec auto_test_spechunter_for_snapshot_inner (current_snapshot : G.t)
     (received_responses : Response.t list)
@@ -131,6 +157,7 @@ let rec auto_test_spechunter_for_snapshot_inner (current_snapshot : G.t)
       MetaRules.ForAsking.asking_rules_selector current_snapshot received_responses
     in
     let question = question_maker.rule current_snapshot received_responses in
+    print_endline @@ F.asprintf "Question: %s" (Question.to_string question) ;
     let response = responder question in
     (* sort applicable Propagation Rules by adequacy. *)
     let propagation_rules_to_apply =
@@ -144,16 +171,27 @@ let rec auto_test_spechunter_for_snapshot_inner (current_snapshot : G.t)
     let propagated' = Axioms.apply_axioms propagated in
     (* output to stdout *)
     let stats =
-      F.asprintf "%d: %f (v), %f (m)" count
+      let correct_vertices =
+        List.filter (G.all_vertices_of_graph propagated') ~f:vertex_inference_result_is_correct
+      in
+      F.asprintf "%d: [%d / %d] (%f) <vertex>, [%d / %d] <indeterminate>" count
+        (List.length correct_vertices) (G.nb_vertex propagated')
         (get_vertexwise_precision_of_snapshot propagated')
-        (get_methodwise_precision_of_snapshot propagated')
+        (List.length correct_vertices)
+        ( List.length
+        @@ List.filter
+             (G.all_vertices_of_graph propagated')
+             ~f:(ProbQuadruple.is_indeterminate << Vertex.get_dist) )
     in
     print_endline stats ;
+    watch propagated' to_watch count ;
+    Visualizer.visualize_snapshot propagated' ~autoopen:false ~micro:false ;
     auto_test_spechunter_for_snapshot_inner propagated' (response :: received_responses)
       nodewise_featuremap (count + 1) (stats :: log_data_acc)
 
 
 let auto_test (initial_snapshot : G.t) : unit =
+  watch initial_snapshot to_watch (-1) ;
   let _, log_data =
     auto_test_spechunter_for_snapshot_inner initial_snapshot []
       NodeWiseFeatures.NodeWiseFeatureMap.empty 0 []

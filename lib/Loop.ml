@@ -9,22 +9,6 @@ exception TODO
 module In_channel = Core_kernel.In_channel
 module Out_channel = Core_kernel.Out_channel
 
-module Visualizer = struct
-  (** (1) output a dot file of this snapshot, (2) render a svg off the dot file, and (3) show the
-      svg file. *)
-  let visualize_snapshot (snapshot : G.t) ~(micro : bool) ~(autoopen : bool) : unit =
-    let open DataFlowEdges in
-    let now_timestring = make_now_string 9 in
-    let filename_without_extension =
-      if micro then F.asprintf "%s_micro" now_timestring else now_timestring
-    in
-    graph_to_dot snapshot ~filename:(filename_without_extension ^ ".dot") ;
-    ignore
-    @@ Unix.system
-         (F.asprintf "dot -Tsvg -o %s.svg %s.dot" filename_without_extension
-            filename_without_extension ) ;
-    if autoopen then ignore @@ Unix.system (F.asprintf "open %s.svg" filename_without_extension)
-end
 
 let rec loop_inner (current_snapshot : G.t) (received_responses : Response.t list)
     (nodewise_featuremap : NodeWiseFeatures.NodeWiseFeatureMap.t) : G.t =
@@ -72,5 +56,5 @@ let loop (current_snapshot : G.t) (nodewise_featuremap : NodeWiseFeatures.NodeWi
   G.snapshot_to_json current_snapshot ;
   if auto_test then
     fst
-    @@ AutoTest.auto_test_spechunter_for_snapshot_inner current_snapshot [] nodewise_featuremap 0 []
+    @@ AutoTest.auto_test_spechunter_for_snapshot_inner current_snapshot [] nodewise_featuremap 1 []
   else loop_inner current_snapshot [] nodewise_featuremap
