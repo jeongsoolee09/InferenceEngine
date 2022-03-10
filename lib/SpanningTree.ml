@@ -5,12 +5,8 @@ module U = Graph.Persistent.Graph.ConcreteLabeled (Vertex) (EdgeLabel)
 
 let to_undirected (digraph : G.t) : U.t =
   U.empty
-  |> (fun graph ->
-       List.fold
-         ~f:(fun acc vertex -> U.add_vertex acc vertex)
-         ~init:graph (G.all_vertices_of_graph digraph) )
-  |> fun graph ->
-  List.fold ~f:(fun acc edge -> U.add_edge_e acc edge) ~init:graph (G.all_edges_of_graph digraph)
+  |> (fun graph -> List.fold ~f:U.add_vertex ~init:graph (G.all_vertices_of_graph digraph))
+  |> fun graph -> List.fold ~f:U.add_edge_e ~init:graph (G.all_edges_of_graph digraph)
 
 
 module Weight = struct
@@ -27,19 +23,26 @@ module Weight = struct
   let zero = 0
 end
 
+module KWeight = struct
+  type t = EdgeLabel.t
+
+  let compare = EdgeLabel.compare
+end
+
 module UPrim = Graph.Prim.Make (U) (Weight)
+module UKruskal = Graph.Kruskal.Make (U) (KWeight)
+
+let run_kruskal (undigraph : U.t) : Weight.edge list = UKruskal.spanningtree undigraph
 
 let run_prim (undigraph : U.t) : Weight.edge list = UPrim.spanningtree undigraph
 
 let prune_to_mst (digraph : G.t) : G.t =
   (* mst stands for minimum spanning tree *)
   let undirected_of_digraph = to_undirected digraph in
-  let mst = run_prim undirected_of_digraph in
+  let mst = run_kruskal undirected_of_digraph in
   G.empty
   |> fun graph ->
-  List.fold
-    ~f:(fun acc vertex -> G.add_vertex acc vertex)
-    ~init:graph (G.all_vertices_of_graph digraph)
+  List.fold ~f:G.add_vertex ~init:graph (G.all_vertices_of_graph digraph)
   |> fun graph ->
   List.fold
     ~f:(fun acc (v1, label, v2) ->
@@ -48,6 +51,6 @@ let prune_to_mst (digraph : G.t) : G.t =
 
 
 let diet_edge_list (edgelist : G.E.t list) : G.E.t list =
-  let subgraph = List.fold ~f:(fun acc edge -> G.add_edge_e acc edge) ~init:G.empty edgelist in
+  let subgraph = List.fold ~f:G.add_edge_e ~init:G.empty edgelist in
   let subgraph_pruned = prune_to_mst subgraph in
   G.all_edges_of_graph subgraph_pruned
