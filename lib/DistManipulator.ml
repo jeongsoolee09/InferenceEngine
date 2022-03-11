@@ -22,7 +22,7 @@ let bump (old_dist : ProbQuadruple.t) (to_bump_labels : TaintLabel.t list) ~(inc
         | None ->
             {acc with non= acc.non +. inc_delta}
         | Indeterminate ->
-            raise @@ Invalid_argument "You can't ask to bump an Indeterminate!" )
+            acc )
       bump_label_set old_dist
   in
   let labels_to_decrease =
@@ -42,7 +42,7 @@ let bump (old_dist : ProbQuadruple.t) (to_bump_labels : TaintLabel.t list) ~(inc
         | None ->
             {acc with non= acc.non -. dec_delta}
         | Indeterminate ->
-            raise @@ Invalid_argument "You can't ask to bump an Indeterminate!" )
+            acc )
       labels_to_decrease increased
   in
   decreased

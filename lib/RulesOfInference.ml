@@ -57,7 +57,7 @@ module PropagationRules = struct
               match new_fact_label with
               | Source | Sink | Sanitizer | None ->
                   if is_inside_ns_cluster_containing_df_internals then succ_dist
-                  else DistManipulator.bump succ_dist [new_fact_label] ~inc_delta:3. ~dec_delta:1.
+                  else DistManipulator.bump succ_dist [new_fact_label] ~inc_delta:10. ~dec_delta:5.
               | Indeterminate ->
                   succ_dist
             in
@@ -98,30 +98,30 @@ module PropagationRules = struct
               match new_fact_label with
               | Source ->
                   if G.is_df_root (LV.of_vertex succ) graph then
-                    DistManipulator.bump succ_dist [Source] ~inc_delta:3. ~dec_delta:1.
+                    DistManipulator.bump succ_dist [Source] ~inc_delta:10. ~dec_delta:5.
                   else if G.is_df_leaf (LV.of_vertex succ) graph then
-                    DistManipulator.bump succ_dist [Sink] ~inc_delta:3. ~dec_delta:1.
+                    DistManipulator.bump succ_dist [Sink] ~inc_delta:10. ~dec_delta:5.
                   else
                     (* bump the likelihood of the successor being a source *)
-                    DistManipulator.bump succ_dist [Source] ~inc_delta:3. ~dec_delta:1.
+                    DistManipulator.bump succ_dist [Source] ~inc_delta:10. ~dec_delta:5.
               | Sink ->
                   if G.is_df_root (LV.of_vertex succ) graph then
-                    DistManipulator.bump succ_dist [Source] ~inc_delta:3. ~dec_delta:1.
+                    DistManipulator.bump succ_dist [Source] ~inc_delta:10. ~dec_delta:5.
                   else if G.is_df_leaf (LV.of_vertex succ) graph then
-                    DistManipulator.bump succ_dist [Sink] ~inc_delta:3. ~dec_delta:1.
-                  else DistManipulator.bump succ_dist [Sink] ~inc_delta:3. ~dec_delta:1.
+                    DistManipulator.bump succ_dist [Sink] ~inc_delta:10. ~dec_delta:5.
+                  else DistManipulator.bump succ_dist [Sink] ~inc_delta:10. ~dec_delta:5.
               | Sanitizer ->
                   if G.is_df_root (LV.of_vertex succ) graph then
-                    DistManipulator.bump succ_dist [Source] ~inc_delta:3. ~dec_delta:1.
+                    DistManipulator.bump succ_dist [Source] ~inc_delta:10. ~dec_delta:5.
                   else if G.is_df_leaf (LV.of_vertex succ) graph then
-                    DistManipulator.bump succ_dist [Sink] ~inc_delta:3. ~dec_delta:1.
-                  else DistManipulator.bump succ_dist [Sanitizer] ~inc_delta:3. ~dec_delta:1.
+                    DistManipulator.bump succ_dist [Sink] ~inc_delta:10. ~dec_delta:5.
+                  else DistManipulator.bump succ_dist [Sanitizer] ~inc_delta:10. ~dec_delta:5.
               | None ->
                   if G.is_df_root (LV.of_vertex succ) graph then
-                    DistManipulator.bump succ_dist [None] ~inc_delta:3. ~dec_delta:1.
+                    DistManipulator.bump succ_dist [None] ~inc_delta:10. ~dec_delta:5.
                   else if G.is_df_leaf (LV.of_vertex succ) graph then
-                    DistManipulator.bump succ_dist [None] ~inc_delta:3. ~dec_delta:1.
-                  else DistManipulator.bump succ_dist [None] ~inc_delta:8. ~dec_delta:3.
+                    DistManipulator.bump succ_dist [None] ~inc_delta:10. ~dec_delta:5.
+                  else DistManipulator.bump succ_dist [None] ~inc_delta:10. ~dec_delta:5.
               | Indeterminate ->
                   succ_dist
             in
@@ -205,7 +205,7 @@ module PropagationRules = struct
             ~f:(fun acc new_fact_vertex ->
               let vertex_dist = Vertex.get_dist new_fact_vertex in
               let updated_dist =
-                DistManipulator.bump vertex_dist [Sink] ~inc_delta:3. ~dec_delta:1.
+                DistManipulator.bump vertex_dist [Sink] ~inc_delta:10. ~dec_delta:5.
               in
               G.strong_update_dist new_fact_vertex updated_dist acc )
             ~init:graph new_fact_vertices
@@ -224,7 +224,7 @@ module PropagationRules = struct
                   && (not @@ List.mem ~equal:Vertex.equal ns_clusters_vertices vertex)
                 then
                   let new_dist =
-                    DistManipulator.bump vertex_dist [Source] ~inc_delta:3. ~dec_delta:1.
+                    DistManipulator.bump vertex_dist [Source] ~inc_delta:10. ~dec_delta:5.
                   in
                   (G.strong_update_dist vertex new_dist graph_acc, vertex :: affected)
                 else if Method.equal (Vertex.get_method vertex) new_fact_method then
@@ -293,9 +293,9 @@ module PropagationRules = struct
                   match this_method_label with
                   | Source | Sink | Sanitizer ->
                       if G.is_df_root (LV.of_vertex vertex) graph then
-                        DistManipulator.bump vertex_dist [Source] ~inc_delta:3. ~dec_delta:0.9
+                        DistManipulator.bump vertex_dist [Source] ~inc_delta:10. ~dec_delta:5.
                       else if G.is_df_leaf (LV.of_vertex vertex) graph then
-                        DistManipulator.bump vertex_dist [Sink] ~inc_delta:3. ~dec_delta:0.9
+                        DistManipulator.bump vertex_dist [Sink] ~inc_delta:10. ~dec_delta:5.
                       else vertex_dist
                   | None | Indeterminate ->
                       vertex_dist
@@ -578,6 +578,7 @@ module AskingRules = struct
     ; {label= "ask_indeterminate"; rule= ask_indeterminate}
     ; { label= "ask_from_ns_cluster_if_it_contains_internal_src_or_sink"
       ; rule= ask_from_ns_cluster_if_it_contains_internal_src_or_sink }
+    (* ; {label= "ask_by_out_degree"; rule= AskByDegree.ask_by_degree} *)
     ; {label= "ask_annotated_method"; rule= ask_annotated_method} ]
 end
 
@@ -638,7 +639,7 @@ module MetaRules = struct
       >>| fun asking_rule ->
       match asking_rule.label with
       | "ask_if_leaf_is_sink" ->
-          (asking_rule, 5)
+          (asking_rule, 2)
       | "ask_if_root_is_source" ->
           (asking_rule, 4)
       | "ask_foreign_package_label" ->
@@ -649,6 +650,8 @@ module MetaRules = struct
           (asking_rule, 2)
       | "ask_annotated_method" ->
           (asking_rule, 6)
+      | "ask_by_out_degree" ->
+          (asking_rule, 5)
       | otherwise ->
           failwith (otherwise ^ " is not covered!")
 

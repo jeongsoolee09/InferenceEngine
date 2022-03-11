@@ -139,9 +139,7 @@ let is_udf (method_ : t) : bool =
   with _ -> false
 
 
-let is_api (method_ : t) : bool =
-  if is_dunder method_ then true else not @@ is_udf method_
-
+let is_api (method_ : t) : bool = if is_dunder method_ then true else not @@ is_udf method_
 
 let is_testcode (method_ : t) : bool =
   List.mem ~equal:String.equal
@@ -202,14 +200,26 @@ let get_package_name (method_ : t) : string =
   try
     let unique_id = find_unique_identifier method_ in
     UniqueID.get_package_name unique_id
-  with Not_found_s _ ->
-    let other_method_with_same_classname =
-      List.find_exn
-        ~f:(fun other_method ->
-          String.equal (get_class_name method_) (UniqueID.get_class_name other_method) )
-        (Deserializer.deserialize_skip_func () @ Deserializer.deserialize_method_txt ())
+  with _ -> (
+    (* we couldn't find an unique_id for this method. *)
+    (* is it an interface method? *)
+    let class_name = get_class_name method_ in
+    let class_name_file_opt =
+      let all_java_files = walk_for_extension Deserializer.project_root ".java" in
+      List.find all_java_files ~f:(fun java_file ->
+          String.is_substring java_file ~substring:(class_name ^ ".java") )
     in
-    UniqueID.get_package_name other_method_with_same_classname
+    match class_name_file_opt with
+    | None ->
+        let other_method_with_same_classname =
+          List.find_exn
+            ~f:(fun other_method ->
+              String.equal (get_class_name method_) (UniqueID.get_class_name other_method) )
+            (Deserializer.deserialize_skip_func () @ Deserializer.deserialize_method_txt ())
+        in
+        UniqueID.get_package_name other_method_with_same_classname
+    | Some class_name_file ->
+        List.hd_exn @@ PackageScraper.scrape_package_decls_in_single_file class_name_file )
 
 
 let is_java_method (method_ : t) : bool =

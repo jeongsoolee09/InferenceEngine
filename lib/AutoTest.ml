@@ -132,13 +132,13 @@ let auto_test_spechunter_for_snapshot_once (current_snapshot : G.t)
         List.filter (G.all_vertices_of_graph propagated') ~f:vertex_inference_result_is_correct
       in
       F.asprintf "stats: [%d / %d] (%f) <vertex>, [%d / %d] <indeterminate>"
-        (List.length correct_vertices) (G.nb_vertex propagated')
+        (G.nb_vertex propagated') (List.length correct_vertices)
         (get_vertexwise_precision_of_snapshot propagated')
-        (List.length correct_vertices)
         ( List.length
         @@ List.filter
              (G.all_vertices_of_graph propagated')
              ~f:(ProbQuadruple.is_indeterminate << Vertex.get_dist) )
+        (G.nb_vertex propagated')
     in
     print_endline stats ;
     (propagated', response :: received_responses)
@@ -157,6 +157,7 @@ let rec auto_test_spechunter_for_snapshot_inner (current_snapshot : G.t)
       MetaRules.ForAsking.asking_rules_selector current_snapshot received_responses
     in
     let question = question_maker.rule current_snapshot received_responses in
+    (* let question = AskByDegree.ask_by_degree current_snapshot received_responses in *)
     print_endline @@ F.asprintf "Question: %s" (Question.to_string question) ;
     let response = responder question in
     (* sort applicable Propagation Rules by adequacy. *)
@@ -174,14 +175,14 @@ let rec auto_test_spechunter_for_snapshot_inner (current_snapshot : G.t)
       let correct_vertices =
         List.filter (G.all_vertices_of_graph propagated') ~f:vertex_inference_result_is_correct
       in
-      F.asprintf "%d: [%d / %d] (%f) <vertex>, [%d / %d] <indeterminate>" count
-        (List.length correct_vertices) (G.nb_vertex propagated')
+      F.asprintf "stats: [%d / %d] (%f) <vertex>, [%d / %d] <indeterminate>"
+        (G.nb_vertex propagated') (List.length correct_vertices)
         (get_vertexwise_precision_of_snapshot propagated')
-        (List.length correct_vertices)
         ( List.length
         @@ List.filter
              (G.all_vertices_of_graph propagated')
              ~f:(ProbQuadruple.is_indeterminate << Vertex.get_dist) )
+        (G.nb_vertex propagated')
     in
     print_endline stats ;
     watch propagated' to_watch count ;

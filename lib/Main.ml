@@ -12,9 +12,6 @@ let build_graph (graph_fragment : G.t) : G.t =
   Out_channel.print_endline
   @@ F.asprintf "building nodewise maps for %s..." graph_fragment.comp_unit ;
   let healed = Repair.reconnect_disconnected_edges graph_fragment in
-  let unmarked_vertices = G.get_unmarked_vertices healed in
-  let this_fragment_unmarked_apis = G.get_unmarked_apis healed
-  and this_fragment_unmarked_udfs = G.get_unmarked_udfs healed in
   let open NodeWiseFeatures.NodeWiseFeatureMap in
   let this_fragment_unmarked_apis_featuremap, this_fragment_unmarked_udfs_featuremap =
     init_for_graph healed
@@ -26,18 +23,12 @@ let build_graph (graph_fragment : G.t) : G.t =
     ~filename:(F.asprintf "NodeWiseFeatures_%s_udfs.csv" healed.comp_unit) ;
   Trunk.Serializer.serialize_graph_trunks_to_json healed ;
   (* ======================================== *)
-  let finished_graph =
-    healed |> SimilarityHandler.make_contextual_sim_edge |> SimilarityHandler.make_nodewise_sim_edge
-    (* |> SimilarityHandler.temp_make_nodewise_sim_edge_Mapping *)
-    (* |> SimilarityHandler.temp_make_nodewise_sim_edge_Printer *) |> Axioms.apply_axioms
-  in
-  Visualizer.visualize_snapshot finished_graph ~autoopen:false ~micro:false ;
-  finished_graph
+  healed |> SimilarityHandler.make_contextual_sim_edge |> SimilarityHandler.make_nodewise_sim_edge
+  |> Axioms.apply_axioms
 
 
 let one_pass (graph_fragment : G.t) : unit =
   let finished_graph = build_graph graph_fragment in
-  G.serialize_to_bin ~suffix:(graph_fragment.comp_unit ^ "finished") graph_fragment ;
   ignore @@ loop finished_graph NodeWiseFeatures.NodeWiseFeatureMap.empty ~auto_test:true
 
 

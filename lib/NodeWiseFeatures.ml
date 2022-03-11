@@ -200,6 +200,7 @@ let run_all_single_features (method_ : Method.t) : feature_value list =
   List.rev
   @@ Array.fold
        ~f:(fun acc feature ->
+         print_endline feature.label ;
          let feature_value = feature.feature method_ in
          feature_value :: acc )
        SingleFeature.all_features ~init:[]

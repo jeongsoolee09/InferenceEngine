@@ -21,20 +21,19 @@ let make_contextual_sim_edge (graph : G.t) : G.t =
   let acc = ref G.empty and history = ref [] in
   Out_channel.print_string "Now adding CS edges..." ;
   Out_channel.flush stdout ;
-  for i = 1 to Array.length csv_array - 1 do
-    let vertex1 = csv_array.(i).(0) and vertex2 = csv_array.(i).(1) in
-    let vertex1 = G.LiteralVertex.to_vertex (G.LiteralVertex.of_string vertex1) graph.graph
-    and vertex2 = G.LiteralVertex.to_vertex (G.LiteralVertex.of_string vertex2) graph.graph in
-    let method1 = Vertex.get_method vertex1 and method2 = Vertex.get_method vertex2 in
-    if
-      not
-      @@ List.mem !history (method1, method2) ~equal:(fun (m11, m12) (m21, m22) ->
-             Method.equal m11 m21 && Method.equal m12 m22 )
-    then acc := G.add_edge_e !acc (vertex1, ContextualSimilarity, vertex2) ;
-    acc := G.add_edge_e !acc (vertex2, ContextualSimilarity, vertex1) ;
-    history := (method1, method2) :: !history ;
-    history := (method2, method1) :: !history
-  done ;
+  Array.iter csv_array ~f:(fun array ->
+      let vertex1 = array.(0) and vertex2 = array.(1) in
+      let vertex1 = G.LiteralVertex.to_vertex (G.LiteralVertex.of_string vertex1) graph.graph
+      and vertex2 = G.LiteralVertex.to_vertex (G.LiteralVertex.of_string vertex2) graph.graph in
+      let method1 = Vertex.get_method vertex1 and method2 = Vertex.get_method vertex2 in
+      if
+        not
+        @@ List.mem !history (method1, method2) ~equal:(fun (m11, m12) (m21, m22) ->
+               Method.equal m11 m21 && Method.equal m12 m22 )
+      then acc := G.add_edge_e !acc (vertex1, ContextualSimilarity, vertex2) ;
+      acc := G.add_edge_e !acc (vertex2, ContextualSimilarity, vertex1) ;
+      history := (method1, method2) :: !history ;
+      history := (method2, method1) :: !history ) ;
   let dieted = prune_to_mst !acc in
   let out =
     G.fold_edges (fun v1 v2 acc -> G.add_edge_e acc (v1, ContextualSimilarity, v2)) dieted graph
@@ -59,64 +58,62 @@ let make_nodewise_sim_edge (graph : G.t) : G.t =
   Out_channel.print_string "Now adding NS edges..." ;
   Out_channel.flush stdout ;
   (* make a temporary empty graph *)
-  let acc = ref G.empty in
-  for i = 0 to Array.length api_array - 1 do
-    let method1 = api_array.(i).(0) and method2 = api_array.(i).(1) in
-    let m1_vertices = G.this_method_vertices graph method1
-    and m2_vertices = G.this_method_vertices graph method2 in
-    List.iter
-      ~f:(fun m1_vertex ->
-        List.iter
-          ~f:(fun m2_vertex ->
-            let m1_vertex_method = Vertex.get_method m1_vertex
-            and m2_vertex_method = Vertex.get_method m2_vertex in
-            let there_is_no_cs =
-              not
-              @@ List.exists
-                   ~f:(fun (v1, _, v2) ->
-                     let v1_method = Vertex.get_method v1 and v2_method = Vertex.get_method v2 in
-                     Method.equal m1_vertex_method v1_method
-                     && Method.equal m2_vertex_method v2_method )
-                   (G.get_edges graph ~label:ContextualSimilarity)
-            in
-            if there_is_no_cs then (
-              let edge1 = (m1_vertex, NodeWiseSimilarity, m2_vertex)
-              and edge2 = (m2_vertex, NodeWiseSimilarity, m1_vertex) in
-              acc := G.add_edge_e !acc edge1 ;
-              acc := G.add_edge_e !acc edge2 ) )
-          m2_vertices )
-      m1_vertices
-  done ;
-  for i = 0 to Array.length udf_array - 1 do
-    let method1 = udf_array.(i).(0) and method2 = udf_array.(i).(1) in
-    let m1_vertices = G.this_method_vertices graph method1
-    and m2_vertices = G.this_method_vertices graph method2 in
-    List.iter
-      ~f:(fun m1_vertex ->
-        List.iter
-          ~f:(fun m2_vertex ->
-            let m1_vertex_method = Vertex.get_method m1_vertex
-            and m2_vertex_method = Vertex.get_method m2_vertex in
-            let there_is_no_cs =
-              not
-              @@ List.exists
-                   ~f:(fun (v1, _, v2) ->
-                     let v1_method = Vertex.get_method v1 and v2_method = Vertex.get_method v2 in
-                     Method.equal m1_vertex_method v1_method
-                     && Method.equal m2_vertex_method v2_method )
-                   (G.get_edges graph ~label:ContextualSimilarity)
-            in
-            if there_is_no_cs then (
-              let edge1 = (m1_vertex, NodeWiseSimilarity, m2_vertex)
-              and edge2 = (m2_vertex, NodeWiseSimilarity, m1_vertex) in
-              acc := G.add_edge_e !acc edge1 ;
-              acc := G.add_edge_e !acc edge2 ) )
-          m2_vertices )
-      m1_vertices
-  done ;
-  let dieted = prune_to_mst !acc in
+  let acc = ref [] in
+  Array.iter api_array ~f:(fun array ->
+      let method1 = array.(0) and method2 = array.(1) in
+      let m1_vertices = G.this_method_vertices graph method1
+      and m2_vertices = G.this_method_vertices graph method2 in
+      List.iter
+        ~f:(fun m1_vertex ->
+          List.iter
+            ~f:(fun m2_vertex ->
+              let m1_vertex_method = Vertex.get_method m1_vertex
+              and m2_vertex_method = Vertex.get_method m2_vertex in
+              let there_is_no_cs =
+                not
+                @@ List.exists
+                     ~f:(fun (v1, _, v2) ->
+                       let v1_method = Vertex.get_method v1 and v2_method = Vertex.get_method v2 in
+                       Method.equal m1_vertex_method v1_method
+                       && Method.equal m2_vertex_method v2_method )
+                     (G.get_edges graph ~label:ContextualSimilarity)
+              in
+              if there_is_no_cs then
+                let edge1 = (m1_vertex, NodeWiseSimilarity, m2_vertex)
+                and edge2 = (m2_vertex, NodeWiseSimilarity, m1_vertex) in
+                acc := edge1 :: edge2 :: !acc )
+            m2_vertices )
+        m1_vertices ) ;
+  Array.iter udf_array ~f:(fun array ->
+      let method1 = array.(0) and method2 = array.(1) in
+      let m1_vertices = G.this_method_vertices graph method1
+      and m2_vertices = G.this_method_vertices graph method2 in
+      List.iter
+        ~f:(fun m1_vertex ->
+          List.iter
+            ~f:(fun m2_vertex ->
+              let m1_vertex_method = Vertex.get_method m1_vertex
+              and m2_vertex_method = Vertex.get_method m2_vertex in
+              let there_is_no_cs =
+                not
+                @@ List.exists
+                     ~f:(fun (v1, _, v2) ->
+                       let v1_method = Vertex.get_method v1 and v2_method = Vertex.get_method v2 in
+                       Method.equal m1_vertex_method v1_method
+                       && Method.equal m2_vertex_method v2_method )
+                     (G.get_edges graph ~label:ContextualSimilarity)
+              in
+              if there_is_no_cs then
+                let edge1 = (m1_vertex, NodeWiseSimilarity, m2_vertex)
+                and edge2 = (m2_vertex, NodeWiseSimilarity, m1_vertex) in
+                acc := edge1 :: edge2 :: !acc )
+            m2_vertices )
+        m1_vertices ) ;
+  let dieted = diet_edge_list !acc in
   let out =
-    G.fold_edges (fun v1 v2 acc -> G.add_edge_e acc (v1, NodeWiseSimilarity, v2)) dieted graph
+    List.fold
+      ~f:(fun acc (v1, _, v2) -> G.add_edge_e acc (v1, NodeWiseSimilarity, v2))
+      dieted ~init:graph
   in
   Out_channel.print_endline "done" ;
   out
@@ -142,67 +139,3 @@ let all_ns_clusters (graph : G.t) : G.V.t list list =
   let udf_mst_vertices = udf_parsed >>| fun tuplist -> tuplist >>= ident |> List.stable_dedup
   and api_mst_vertices = api_parsed >>| fun tuplist -> tuplist >>= ident |> List.stable_dedup in
   udf_mst_vertices @ api_mst_vertices >>| fun cluster -> cluster >>= G.this_method_vertices graph
-
-
-(** NOTE This function is wrong. Deprecated. *)
-let temp_make_nodewise_sim_edge_Mapping (graph : G.t) : G.t =
-  let mapping_annotated_vertices =
-    Array.of_list
-    @@ List.filter
-         ~f:(fun vertex ->
-           let method_ = Vertex.get_method vertex in
-           Annotations.has_annot method_
-           &&
-           let annots = Annotations.get_annots method_ in
-           List.exists annots ~f:(fun annot ->
-               let annot_name = annot.name in
-               String.is_substring annot_name ~substring:"Mapping" ) )
-         (G.all_vertices_of_graph graph)
-  in
-  let raw_edges =
-    Array.cartesian_product mapping_annotated_vertices mapping_annotated_vertices
-    |> Array.filter ~f:(fun (v1, v2) ->
-           not @@ Method.equal (Vertex.get_method v1) (Vertex.get_method v2) )
-    |> Array.map ~f:(fun (v1, v2) -> (v1, NodeWiseSimilarity, v2))
-  in
-  let mst_edges = Array.of_list @@ diet_edge_list (Array.to_list raw_edges) in
-  let acc = ref graph in
-  let history : (Method.t * Method.t) list ref = ref [] in
-  Array.iter
-    ~f:(fun (v1, label, v2) ->
-      let method1 = Vertex.get_method v1 and method2 = Vertex.get_method v2 in
-      if
-        not
-        @@ List.mem !history (method1, method2) ~equal:(fun (m11, m12) (m21, m22) ->
-               Method.equal m11 m21 && Method.equal m12 m22 )
-      then acc := G.add_edge_e !acc (v1, label, v2) ;
-      history := (method1, method2) :: !history )
-    mst_edges ;
-  !acc
-
-
-let temp_make_nodewise_sim_edge_Printer (graph : G.t) : G.t =
-  let printer_methods =
-    Array.of_list
-    @@ List.filter (G.all_vertices_of_graph graph) ~f:(fun vertex ->
-           String.equal (vertex |> Vertex.get_method |> Method.get_class_name) "Printer" )
-  in
-  let raw_edges =
-    Array.cartesian_product printer_methods printer_methods
-    |> Array.filter ~f:(fun (v1, v2) -> not @@ Vertex.equal v1 v2)
-    |> Array.map ~f:(fun (v1, v2) -> (v1, NodeWiseSimilarity, v2))
-  in
-  let mst_edges = Array.of_list @@ diet_edge_list (Array.to_list raw_edges) in
-  let acc = ref graph in
-  let history : (Method.t * Method.t) list ref = ref [] in
-  Array.iter
-    ~f:(fun (v1, label, v2) ->
-      let method1 = Vertex.get_method v1 and method2 = Vertex.get_method v2 in
-      if
-        not
-        @@ List.mem !history (method1, method2) ~equal:(fun (m11, m12) (m21, m22) ->
-               Method.equal m11 m21 && Method.equal m12 m22 )
-      then acc := G.add_edge_e !acc (v1, label, v2) ;
-      history := (method1, method2) :: !history )
-    mst_edges ;
-  !acc
