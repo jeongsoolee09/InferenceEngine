@@ -92,7 +92,7 @@ module Distribution = struct
     let all_sinks =
       G.all_vertices_of_graph graph
       >>| (fun vertex -> (vertex, ProbQuadruple.determine_label (Vertex.get_dist vertex)))
-      |> List.filter ~f:(fun (vertex, label) -> TaintLabel.equal label TaintLabel.Sink)
+      |> List.filter ~f:(fun (_, label) -> TaintLabel.equal label TaintLabel.Sink)
       >>| fst
     in
     List.fold
@@ -138,7 +138,6 @@ module Distribution = struct
     in
     List.fold all_init_vertices_with_no_immediate_lib_code
       ~f:(fun acc init_vertex ->
-        let init_vertex_dist = Vertex.get_dist init_vertex in
         let new_dist = DistManipulator.overwrite ~src:(-100.) ~sin:(-100.) ~san:(-100.) ~non:100. in
         G.strong_update_dist init_vertex new_dist acc )
       ~init:graph
@@ -158,7 +157,6 @@ module Distribution = struct
       List.fold this_project_main_vertices
         ~f:(fun acc main_vertex ->
           marked := main_vertex :: !marked ;
-          let main_vertex_dist = Vertex.get_dist main_vertex in
           let new_dist =
             DistManipulator.overwrite ~src:(-100.) ~sin:(-100.) ~san:(-100.) ~non:100.
           in
@@ -180,10 +178,7 @@ module Distribution = struct
               Int.( >= ) (List.length @@ G.get_preds graph vertex ~label:EdgeLabel.DataFlow) 1
             and data_flows_out =
               Int.( >= ) (List.length @@ G.get_succs graph vertex ~label:EdgeLabel.DataFlow) 1
-            and is_udf =
-              let meth = fst vertex in
-              Array.exists ~f:Method.is_udf all_udfs
-            in
+            and is_udf = Array.exists ~f:Method.is_udf all_udfs in
             data_flows_in && data_flows_out && is_udf
           in
           Hashtbl.add cache (graph, vertex) out ;
@@ -211,7 +206,6 @@ module Distribution = struct
     let propagated =
       List.fold
         ~f:(fun acc succ ->
-          let succ_dist = Vertex.get_dist succ in
           let new_dist =
             DistManipulator.overwrite ~src:(-100.) ~sin:(-100.) ~san:(-100.) ~non:100.
           in
@@ -240,7 +234,8 @@ end
 
 let all_distribution_axioms : axiom array =
   [| (* Distribution.mark_well_known_java_methods *)
-   (* ; *) Distribution.getters_setters_and_predicates_are_none
+     (* ; *)
+     Distribution.getters_setters_and_predicates_are_none
    ; Distribution.sink_can't_be_a_pred_of_sink
    ; Distribution.init_that_doesn't_call_lib_code_is_none
    ; Distribution.this_project_main_is_none
