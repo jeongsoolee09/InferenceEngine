@@ -160,9 +160,32 @@ let deserialize_return_stmts =
     else !cache
 
 
+(** deprecated *)
 let deserialize_solution () : (string * string list) array =
   let in_channel = In_channel.create solution_dir in
   let json = Json.from_channel in_channel in
   let assoc = Util.to_assoc json in
   List.map ~f:(fun (str, str_json) -> (str, Util.to_list str_json >>| Util.to_string)) assoc
   |> Array.of_list
+
+
+let deserialize_void_call =
+  let cache = ref [] in
+  fun () ->
+    match !cache with
+    | [] ->
+        let out =
+          let sexp_loaded = Sexp.parse @@ In_channel.read_all "void_calls.lisp" in
+          match sexp_loaded with
+          | Done (res, _) ->
+              let module LVList = struct
+                type t = (string * string) list [@@deriving sexp]
+              end in
+              List.map ~f:fst (LVList.t_of_sexp res)
+          | Cont _ ->
+              failwith "sexp parsing error"
+        in
+        cache := out ;
+        out
+    | res ->
+        res

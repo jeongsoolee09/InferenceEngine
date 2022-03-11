@@ -497,3 +497,97 @@ module Notebook103 = struct
 
   let _ = End
 end
+
+module Notebook104 = struct
+  let _ = Start
+
+  (* TODO: developing a graph splitter. *)
+
+  let is_isolated graph vertex =
+    (Int.equal 0 @@ G.in_degree graph vertex) && (Int.equal 0 @@ G.out_degree graph vertex)
+
+
+  let subgraphs = WeaklyConnectedComponents.find_distinct_subgraphs renderer_graph
+
+  let x = [1; 2; 3; 4; 5; 6]
+
+  let evens =
+    List.rev
+    @@ List.foldi ~f:(fun index acc elem -> if index mod 2 = 1 then elem :: acc else acc) ~init:[] x
+
+
+  let odds =
+    List.rev
+    @@ List.foldi ~f:(fun index acc elem -> if index mod 2 = 0 then elem :: acc else acc) ~init:[] x
+
+
+  let subgraphs_sorted =
+    Array.sorted_copy subgraphs ~compare:(fun g1 g2 ->
+        Int.compare (G.nb_vertex g1) (G.nb_vertex g2) )
+
+
+  let even_indices =
+    List.rev
+    @@ Array.foldi
+         ~f:(fun index acc elem -> if index mod 2 = 0 then elem :: acc else acc)
+         ~init:[] subgraphs_sorted
+
+
+  let odd_indices =
+    List.rev
+    @@ Array.foldi
+         ~f:(fun index acc elem -> if index mod 2 = 1 then elem :: acc else acc)
+         ~init:[] subgraphs_sorted
+
+
+  let _ = List.map ~f:G.nb_vertex even_indices
+
+  let _ = List.map ~f:G.nb_vertex odd_indices
+
+  let _ = Array.map ~f:G.nb_vertex subgraphs_sorted
+
+  let subgraphs = WeaklyConnectedComponents.find_distinct_subgraphs site_graph
+
+  let subgraphs_sorted =
+    Array.sorted_copy subgraphs ~compare:(fun g1 g2 ->
+        Int.compare (G.nb_vertex g1) (G.nb_vertex g2) )
+
+
+  let even_indices =
+    List.rev
+    @@ Array.foldi
+         ~f:(fun index acc elem -> if index mod 2 = 0 then elem :: acc else acc)
+         ~init:[] subgraphs_sorted
+
+
+  let odd_indices =
+    List.rev
+    @@ Array.foldi
+         ~f:(fun index acc elem -> if index mod 2 = 1 then elem :: acc else acc)
+         ~init:[] subgraphs_sorted
+
+
+  let _ = List.map ~f:G.nb_vertex even_indices
+
+  let _ = List.map ~f:G.nb_vertex odd_indices
+
+  let _ = Array.map ~f:G.nb_vertex subgraphs_sorted
+
+  let _ = List.length @@ G.get_unmarked_vertices @@ Axioms.apply_axioms site_graph
+
+  let _ = "아... 약간 빡치는데... 이것도 돌려야 해??ㅡㅡ 몰겠당"
+
+  let _ = End
+end
+
+module Notebook105 = struct
+  let _ = Start
+
+  (* hmmmmm....... *)
+
+  let _ = NodeWiseFeatures.NodeWiseFeatureMap.init_for_graph_udfs site_graph
+
+  let _ = NodeWiseFeatures.NodeWiseFeatureMap.init_for_graph_apis site_graph
+
+  let _ = End
+end

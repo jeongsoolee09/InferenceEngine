@@ -146,18 +146,7 @@ module SingleFeature = struct
     fun (method_ : Method.t) : bool ->
       match Hashtbl.find_opt cache method_ with
       | None ->
-          let out =
-            let sexp_loaded = Sexp.parse @@ In_channel.read_all "void_calls.lisp" in
-            match sexp_loaded with
-            | Done (res, _) ->
-                let module LVList = struct
-                  type t = G.LiteralVertex.t list [@@deriving sexp]
-                end in
-                let void_call_methods = List.map ~f:fst (LVList.t_of_sexp res) in
-                List.mem ~equal:Method.equal void_call_methods method_
-            | Cont _ ->
-                failwith "sexp parsing error"
-          in
+          let out = List.mem ~equal:Method.equal (Deserializer.deserialize_void_call ()) method_ in
           Hashtbl.add cache method_ out ;
           out
       | Some res ->
