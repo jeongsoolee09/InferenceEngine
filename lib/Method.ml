@@ -81,6 +81,17 @@ module NormalString = struct
     with Assert_failure _ -> ""
 
 
+  let get_parent_class_name (normalstring : String.t) : string =
+    try
+      assert (Str.string_match normalstring_regex normalstring 0) ;
+      let out = Str.matched_group 2 normalstring in
+      if String.is_substring out ~substring:"$" then
+        String.split normalstring ~on:' ' |> List.last_exn |> String.split ~on:'.' |> List.hd_exn
+        |> String.split ~on:'$' |> List.hd_exn
+      else out
+    with Assert_failure _ -> ""
+
+
   let get_method_name (normalstring : String.t) : string =
     try
       if is_dunder normalstring then normalstring
@@ -103,6 +114,17 @@ module InitString = struct
     with Assert_failure _ -> failwithf "extract_class_name_from_initstring: %s" initstring ()
 
 
+  let get_parent_class_name (initstring : String.t) : string =
+    try
+      assert (Str.string_match initstring_regex initstring 0) ;
+      let out = Str.matched_group 2 initstring in
+      if String.is_substring out ~substring:"$" then
+        String.split initstring ~on:' ' |> List.last_exn |> String.split ~on:'.' |> List.hd_exn
+        |> String.split ~on:'$' |> List.hd_exn
+      else out
+    with Assert_failure _ -> ""
+
+
   let get_method_name (initstring : String.t) : string =
     try
       assert (Str.string_match initstring_regex initstring 0) ;
@@ -119,9 +141,15 @@ let get_return_type (method_ : t) : string =
 
 
 let get_class_name (method_ : t) : string =
-  if String.is_prefix method_ ~prefix:"__" then ""
+  if is_dunder method_ then ""
   else if is_initializer method_ then InitString.get_class_name method_
   else NormalString.get_class_name method_
+
+
+let get_parent_class_name (method_ : t) : string =
+  if is_dunder method_ then ""
+  else if is_initializer method_ then InitString.get_parent_class_name method_
+  else NormalString.get_parent_class_name method_
 
 
 let get_method_name (method_ : t) : string =
@@ -203,7 +231,7 @@ let get_package_name (method_ : t) : string =
   with _ -> (
     (* we couldn't find an unique_id for this method. *)
     (* is it an interface method? *)
-    let class_name = get_class_name method_ in
+    let class_name = get_parent_class_name method_ in
     let class_name_file_opt =
       let all_java_files = walk_for_extension Deserializer.project_root ".java" in
       List.find all_java_files ~f:(fun java_file ->
@@ -349,8 +377,7 @@ let get_declaration_file (method_ : t) : string =
         String.equal filename_short (this_method_classname ^ ".java") )
   in
   if is_some result then Option.value_exn result
-  else (
-    print_endline "hihi" ;
+  else
     (* 1차가 안 되면, 2차로 classes_and_files를 본다. *)
     let all_filenames_and_their_classes =
       ClassnameScraper.get_filenames_and_their_classes Deserializer.project_root
@@ -364,7 +391,7 @@ let get_declaration_file (method_ : t) : string =
         (* 그래도 안되면 나는 모르겠다 *)
         failwithf "get_declaration_file failed for %s" method_ ()
     | Some (filename, _) ->
-        filename )
+        filename
 
 
 let classname_implements_some_interface (method_ : t) : bool =

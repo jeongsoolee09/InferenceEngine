@@ -583,11 +583,43 @@ end
 module Notebook105 = struct
   let _ = Start
 
-  (* hmmmmm....... *)
-
-  let _ = NodeWiseFeatures.NodeWiseFeatureMap.init_for_graph_udfs site_graph
+  (* DONE debugging init_for_graph_apis for sagan_site *)
 
   let _ = NodeWiseFeatures.NodeWiseFeatureMap.init_for_graph_apis site_graph
+
+  let setDraw = "void BadgeSvg$Path.setDraw(String)"
+
+  let method_ = setDraw
+
+  let normalstring = method_
+   
+  let get_package_name (method_ : Method.t) : string =
+    try
+      let unique_id = find_unique_identifier method_ in
+      UniqueID.get_package_name unique_id
+    with _ -> (
+      (* we couldn't find an unique_id for this method. *)
+      (* is it an interface method? *)
+      let class_name = get_parent_class_name method_ in
+      let class_name_file_opt =
+        let all_java_files = walk_for_extension Deserializer.project_root ".java" in
+        List.find all_java_files ~f:(fun java_file ->
+            String.is_substring java_file ~substring:(class_name ^ ".java") )
+      in
+      match class_name_file_opt with
+      | None ->
+          let other_method_with_same_classname =
+            List.find_exn
+              ~f:(fun other_method ->
+                String.equal (get_class_name method_) (UniqueID.get_class_name other_method) )
+              (Deserializer.deserialize_skip_func () @ Deserializer.deserialize_method_txt ())
+          in
+          UniqueID.get_package_name other_method_with_same_classname
+      | Some class_name_file ->
+          List.hd_exn @@ PackageScraper.scrape_package_decls_in_single_file class_name_file )
+
+
+  let _ = Method.get_package_name setDraw
 
   let _ = End
 end

@@ -146,7 +146,7 @@ module SingleFeature = struct
     fun (method_ : Method.t) : bool ->
       match Hashtbl.find_opt cache method_ with
       | None ->
-          let out = List.mem ~equal:Method.equal (Deserializer.deserialize_void_call ()) method_ in
+          let out = Array.mem ~equal:Method.equal (Deserializer.deserialize_void_call ()) method_ in
           Hashtbl.add cache method_ out ;
           out
       | Some res ->

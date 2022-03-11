@@ -170,10 +170,10 @@ let deserialize_solution () : (string * string list) array =
 
 
 let deserialize_void_call =
-  let cache = ref [] in
+  let cache = ref [||] in
   fun () ->
-    match !cache with
-    | [] ->
+    match Array.is_empty !cache with
+    | true ->
         let out =
           let sexp_loaded = Sexp.parse @@ In_channel.read_all "void_calls.lisp" in
           match sexp_loaded with
@@ -181,11 +181,11 @@ let deserialize_void_call =
               let module LVList = struct
                 type t = (string * string) list [@@deriving sexp]
               end in
-              List.map ~f:fst (LVList.t_of_sexp res)
+              Array.of_list @@ List.map ~f:fst (LVList.t_of_sexp res)
           | Cont _ ->
               failwith "sexp parsing error"
         in
         cache := out ;
         out
-    | res ->
-        res
+    | false ->
+        !cache
