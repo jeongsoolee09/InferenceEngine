@@ -211,9 +211,15 @@ module PackageScraper = struct
 end
 
 module InterfaceScraper = struct
-  let regexp = Re2.create_exn "[a-z ]*([@a-zA-Z.()]+)? ?implements ([a-zA-Z<>]+).*{"
+  let implements_regexp = Re2.create_exn "[a-z ]*([@a-zA-Z.()]+)? ?implements ([a-zA-Z<>]+).*{"
 
-  let is_implements_decl = Re2.matches regexp
+  let interface_regexp = Re2.create_exn "[a-z ]*(@[a-zA-Z.() ]*)? ?interface ([a-zA-Z]+).*{"
+
+  let is_interface_decl = Re2.matches interface_regexp
+
+  let has_interface_decl = List.exists ~f:is_interface_decl
+
+  let is_implements_decl = Re2.matches implements_regexp
 
   let has_implements_decl = List.exists ~f:is_implements_decl
 
@@ -222,7 +228,7 @@ module InterfaceScraper = struct
     if not @@ is_implements_decl implements_decl then
       raise @@ Invalid_argument (F.asprintf "%s is not an implements decl" implements_decl)
     else
-      let matches = Re2.find_submatches_exn regexp implements_decl in
+      let matches = Re2.find_submatches_exn implements_regexp implements_decl in
       let classname = Option.value_exn matches.(1)
       and interfacename = Option.value_exn matches.(2) in
       (classname, interfacename)
@@ -291,5 +297,57 @@ module InterfaceScraper = struct
       | Some res ->
           res
 
-  (* let scrape_interfaces_from_directory = *)
+
+  let extract_interface_name_from_implements_decl (interface_decl : string) : string =
+    if not @@ is_interface_decl interface_decl then
+      raise @@ Invalid_argument (F.asprintf "%s is not an interface decl" interface_decl)
+    else
+      let matches = Re2.find_submatches_exn interface_regexp interface_decl in
+      let interface_name = Option.value_exn matches.(2) in
+      interface_name
+
+
+  let scrape_interface_from_single_file =
+    let cache = Hashtbl.create 777 in
+    fun (file_absdir : string) : string option ->
+      match Hashtbl.find_opt cache file_absdir with
+      | None ->
+          let out =
+            let file_line_by_line = In_channel.read_lines file_absdir in
+            let interface_line_opt = List.find file_line_by_line ~f:is_interface_decl in
+            match interface_line_opt with
+            | None ->
+                None
+            | Some line ->
+                Some (extract_interface_name_from_implements_decl line)
+          in
+          Hashtbl.add cache file_absdir out ;
+          out
+      | Some res ->
+          res
+
+
+  let scrape_interfaces_from_directory =
+    let cache = Hashtbl.create 777 in
+    fun (root_dir : string) : string list ->
+      match Hashtbl.find_opt cache root_dir with
+      | None ->
+          let out =
+            let java_files = walk_for_extension root_dir ".java" in
+            let lst1 =
+              List.fold java_files
+                ~f:(fun acc java_file ->
+                  match scrape_interface_from_single_file java_file with
+                  | None ->
+                      acc
+                  | Some res ->
+                      res :: acc )
+                ~init:[]
+            and lst2 = scrape_implemented_interfaces_from_directory Deserializer.project_root in
+            lst1 @ lst2
+          in
+          Hashtbl.add cache root_dir out ;
+          out
+      | Some res ->
+          res
 end
