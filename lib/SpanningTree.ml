@@ -29,12 +29,9 @@ module KWeight = struct
   let compare = EdgeLabel.compare
 end
 
-module UPrim = Graph.Prim.Make (U) (Weight)
 module UKruskal = Graph.Kruskal.Make (U) (KWeight)
 
 let run_kruskal (undigraph : U.t) : Weight.edge list = UKruskal.spanningtree undigraph
-
-let run_prim (undigraph : U.t) : Weight.edge list = UPrim.spanningtree undigraph
 
 let prune_to_mst (digraph : G.t) : G.t =
   (* mst stands for minimum spanning tree *)
