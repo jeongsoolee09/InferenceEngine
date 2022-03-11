@@ -49,6 +49,9 @@ open Annotations
 open Trunk
 open Main
 open SpanningTree
+open WeaklyConnectedComponents
+open TaintLabel
+open EdgeLabel
 module Json = Yojson.Basic
 
 exception End
