@@ -7,8 +7,9 @@ let to_undirected (g : G.t) : U.t =
   let empty = U.empty in
   let vertices = G.all_vertices_of_graph g and edges = G.all_edges_of_graph g in
   empty
-  |> fun g ->
-  List.fold vertices ~f:U.add_vertex ~init:g |> fun g -> List.fold edges ~f:U.add_edge_e ~init:g
+  |> fun subgraph ->
+  List.fold vertices ~f:U.add_vertex ~init:subgraph
+  |> fun subgraph -> List.fold edges ~f:U.add_edge_e ~init:subgraph
 
 
 module Components = Graph.Components.Make (U)
