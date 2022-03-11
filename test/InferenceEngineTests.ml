@@ -167,7 +167,7 @@ module Notebook99 = struct
 
   let _ = AutoTest.get_vertexwise_precision_of_snapshot round2
 
-  let _ = Visualizer.visualize_snapshot round2 ~autoopen:true ~micro:false
+  let _ = Visualizer.visualize_and_open round2
 
   let snapshot = round1
 
@@ -413,15 +413,19 @@ end
 module Notebook102 = struct
   let _ = Start
 
-  (* TODO Debugging GetterSetter.ml *)
+  (* DONE Debugging GetterSetter.ml *)
 
   let _ = GetterSetter.is_setter "void AtomFeedView.setRenderedContent(Post,Entry)"
+
+  let gettersetter_none_marked =
+    Axioms.Distribution.getters_setters_and_predicates_are_none renderer_graph
+
 
   let gettersetter_none_marked =
     Axioms.Distribution.getters_setters_and_predicates_are_none site_graph
 
 
-  let _ = Visualizer.visualize_snapshot gettersetter_none_marked ~autoopen:true ~micro:false
+  let _ = Visualizer.visualize_and_open gettersetter_none_marked
 
   let unmarked_udfs = G.get_unmarked_udfs gettersetter_none_marked
 
@@ -461,7 +465,7 @@ module Notebook103 = struct
       ~f:G.add_edge_e ~init:g
 
 
-  let _ = Visualizer.visualize_snapshot test_graph ~autoopen:true ~micro:false
+  let _ = Visualizer.visualize_and_open test_graph
 
   let find_distinct_subgraphs (g : G.t) : G.t array =
     let undirected = to_undirected g in
@@ -485,9 +489,9 @@ module Notebook103 = struct
 
   let subgraph2 = subgraphs.(1)
 
-  let _ = Visualizer.visualize_snapshot subgraph1 ~autoopen:true ~micro:false
+  let _ = Visualizer.visualize_and_open subgraph1
 
-  let _ = Visualizer.visualize_snapshot subgraph2 ~autoopen:true ~micro:false
+  let _ = Visualizer.visualize_and_open subgraph2
 
   (* working nicely! *)
 
