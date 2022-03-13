@@ -23,8 +23,7 @@ let make_now_string (gmt_diff : int) : string =
 module TaintLabel = struct
   type t = Source | Sink | Sanitizer | None | Indeterminate [@@deriving equal, compare]
 
-  let to_string (label : t) : string =
-    match label with
+  let to_string : t -> string = function
     | Source ->
         "source"
     | Sink ->
@@ -37,8 +36,7 @@ module TaintLabel = struct
         "indeterminate"
 
 
-  let to_string_short (label : t) : string =
-    match label with
+  let to_string_short : t -> string = function
     | Source ->
         "src"
     | Sink ->

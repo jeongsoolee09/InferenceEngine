@@ -29,7 +29,10 @@ let build_graph (graph_fragment : G.t) : G.t =
 
 let one_pass (graph_fragment : G.t) : unit =
   let finished_graph = build_graph graph_fragment in
-  ignore @@ loop finished_graph NodeWiseFeatures.NodeWiseFeatureMap.empty ~auto_test:true
+  let loop_finished =
+    loop finished_graph NodeWiseFeatures.NodeWiseFeatureMap.empty ~auto_test:true
+  in
+  Output.output_result loop_finished
 
 
 let main () =

@@ -592,7 +592,7 @@ module Notebook105 = struct
   let method_ = setDraw
 
   let normalstring = method_
-   
+
   let get_package_name (method_ : Method.t) : string =
     try
       let unique_id = find_unique_identifier method_ in
@@ -620,6 +620,35 @@ module Notebook105 = struct
 
 
   let _ = Method.get_package_name setDraw
+
+  let _ = End
+end
+
+module Notebook106 = struct
+  let _ = Start
+
+  let _ =
+    let api_map = NodeWiseFeatureMap.init_for_graph_apis site_graph
+    and udf_map = NodeWiseFeatureMap.init_for_graph_udfs site_graph in
+    NodeWiseFeatureMap.CSVSerializer.serialize api_map
+      ~filename:(F.asprintf "NodeWiseFeatures_%s_apis.csv" site_graph.comp_unit) ;
+    NodeWiseFeatureMap.CSVSerializer.serialize udf_map
+      ~filename:(F.asprintf "NodeWiseFeatures_%s_udfs.csv" site_graph.comp_unit)
+
+
+  let _ = End
+end
+
+module Notebook107 = struct
+  let _ = Start
+  
+  (* DONE Memoization test *)
+
+  let _ = G.all_methods_of_graph site_graph
+
+  let _ = G.all_vertices_of_graph site_graph
+
+  let _ = G.all_edges_of_graph site_graph
 
   let _ = End
 end
