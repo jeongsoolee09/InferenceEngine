@@ -7,12 +7,7 @@ type t = G.V.t array [@@deriving compare, equal]
 
 module Hashtbl = Caml.Hashtbl
 
-module Cache = struct
-  module WithGraphDomain = Caml.Map.Make (G)
-  include WithGraphDomain
-
-  type t = Int.t WithGraphDomain.t
-end
+module Cache = G.MemoMap
 
 module PathUtils = struct
   let is_reachable (source : G.LiteralVertex.t) (dest : G.LiteralVertex.t) (graph : G.t) : bool =
@@ -91,7 +86,7 @@ let find_longest_path (paths : t array) : t =
 let identify_longest_trunks =
   let cache = ref Cache.empty in
   fun (graph : G.t) : t array ->
-    match Cache.find_opt graph !cache with
+    match Cache.find_opt graph.graph !cache with
     | None ->
         let out =
           let df_only_graph = G.leave_only_df_edges graph in
@@ -116,7 +111,7 @@ let identify_longest_trunks =
               find_longest_path all_paths )
             reachable_root_and_leaf_pairs
         in
-        cache := Cache.add graph out !cache ;
+        cache := Cache.add graph.graph out !cache ;
         out
     | Some res ->
         res

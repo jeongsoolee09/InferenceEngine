@@ -302,6 +302,13 @@ module G = struct
 
   (* ====================================================================== *)
 
+  module MemoMap = struct
+    module WithGraphDomain = Caml.Map.Make (BiDiGraph)
+    include WithGraphDomain
+
+    type t = Int.t WithGraphDomain.t
+  end
+
   let equal (snapshot1 : t) (snapshot2 : t) : bool =
     (* G1 = G2 <=> V1 = V2 && E1 = E2 *)
     let module VertexSet = Caml.Set.Make (V) in
@@ -681,10 +688,20 @@ module G = struct
       graph graph
 
 
-  let all_vertices_of_graph (graph : t) : V.t list =
-    let all_vertices_with_dup = fold_vertex List.cons graph [] in
-    let module VertexSet = Caml.Set.Make (V) in
-    all_vertices_with_dup |> VertexSet.of_list |> VertexSet.elements
+  let all_vertices_of_graph =
+    let cache = ref MemoMap.empty in
+    fun (graph : t) : V.t list ->
+      match MemoMap.find_opt graph.graph !cache with
+      | None ->
+          let out =
+            let all_vertices_with_dup = fold_vertex List.cons graph [] in
+            let module VertexSet = Caml.Set.Make (V) in
+            all_vertices_with_dup |> VertexSet.of_list |> VertexSet.elements
+          in
+          cache := MemoMap.add graph.graph out !cache ;
+          out
+      | Some res ->
+          res
 
 
   let all_non_frontend_vertices_of_graph (graph : t) : V.t list =
@@ -703,10 +720,20 @@ module G = struct
            not @@ String.is_prefix (vertex |> Vertex.get_method |> Method.to_string) ~prefix:"__" )
 
 
-  let all_methods_of_graph (graph : t) : Method.t list =
-    let all_vertices = all_vertices_of_graph graph in
-    let module MethodSet = Caml.Set.Make (Method) in
-    all_vertices >>| Vertex.get_method |> MethodSet.of_list |> MethodSet.elements
+  let all_methods_of_graph =
+    let cache = ref MemoMap.empty in
+    fun (graph : t) : Method.t list ->
+      match MemoMap.find_opt graph.graph !cache with
+      | None ->
+          let out =
+            let all_vertices = all_vertices_of_graph graph in
+            let module MethodSet = Caml.Set.Make (Method) in
+            all_vertices >>| Vertex.get_method |> MethodSet.of_list |> MethodSet.elements
+          in
+          cache := MemoMap.add graph.graph out !cache ;
+          out
+      | Some res ->
+          res
 
 
   let all_non_frontend_methods_of_graph (graph : t) : Method.t list =
@@ -716,7 +743,17 @@ module G = struct
     |> List.filter ~f:(not << String.is_prefix ~prefix:"__" << Method.to_string)
 
 
-  let all_edges_of_graph (graph : t) : E.t list = fold_edges_e List.cons graph []
+  let all_edges_of_graph =
+    let cache = ref MemoMap.empty in
+    fun (graph : t) : E.t list ->
+      match MemoMap.find_opt graph.graph !cache with
+      | None ->
+          let out = fold_edges_e List.cons graph [] in
+          cache := MemoMap.add graph.graph out !cache ;
+          out
+      | Some res ->
+          res
+
 
   let is_bidirectional_vertex (vertex : LiteralVertex.t) (graph : t) ~(label : EdgeLabel.t) : bool =
     let vertex_succs = get_succs graph vertex ~label in
