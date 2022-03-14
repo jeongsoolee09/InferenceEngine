@@ -1,21 +1,12 @@
 open GraphRepr
 open ListMonad
-open RulesOfInference
 
-(** (1) receive a rule to propagate, (2) use that propagation rule, and (3) spawn itself to the
+(** (1) use the received propagation rule, and (2) spawn itself to the
     propagation targets. *)
 let rec propagator (new_fact : Response.t) (current_snapshot : G.t)
     (rules_to_propagate : PropagationRules.t list) (prev_facts : Response.t list)
     (history : Vertex.t list) (prop_rule_pool : PropagationRules.t list) : G.t * Vertex.t list =
-  if List.is_empty rules_to_propagate then
-    (* if we can't propagate any further, terminate *)
-    (current_snapshot, [])
-  else if
-    (* if we have been here before, terminate *)
-    List.mem (history >>| Vertex.get_method) (Response.get_method new_fact) ~equal:Method.equal
-  then (current_snapshot, history)
-  else
-    (* first, mark the current method's vertices as absolute *)
+    (* First, mark the current method's vertices as absolute *)
     let new_fact_vertices =
       G.this_method_vertices current_snapshot (Response.get_method new_fact)
     in
@@ -27,7 +18,7 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t)
             snapshot_acc )
         ~init:current_snapshot
     in
-    (* do the propagation on current targets *)
+    (* Next, do the propagation on current targets *)
     let propagated_snapshot, current_propagation_targets =
       List.fold
         ~f:(fun (snapshot_acc, affected_vertices) (rule : PropagationRules.t) ->
@@ -43,7 +34,7 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t)
         then (acc, history)
         else
           let target_meth = Vertex.get_method target and target_loc = Vertex.get_loc target in
-          (* summarize this node's distribution into a Response.t! *)
+          (* summarize this node's distribution into a Response.t *)
           let target_rule_summary =
             Response.response_of_dist target_meth
               (G.lookup_dist_for_meth_and_loc target_meth target_loc propagated_snapshot)
