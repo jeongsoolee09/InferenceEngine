@@ -78,7 +78,11 @@ def serialize_to_json(edges, filename):
 
 def main(bidigraph, filename):
     subgraph_nodesets = weakly_connected_components(bidigraph)
-    subgraphs = set(map(lambda nodeset: node_set_to_undigraph(nodeset, bidigraph), subgraph_nodesets))
+    subgraphs = set(
+        map(
+            lambda nodeset: node_set_to_undigraph(nodeset, bidigraph), subgraph_nodesets
+        )
+    )
     mst_edges = list(map(run_prim, subgraphs))
     serialize_to_json(mst_edges, f"{filename}.json")
     all_edges = flatten(mst_edges)

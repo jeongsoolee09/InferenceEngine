@@ -9,7 +9,7 @@ import weakly
 
 # NOTE KEEP THIS SCRIPT SIMPLE
 
-ns_threshold = 10                # TEMP
+ns_threshold = 8  # TEMP
 
 parser = argparse.ArgumentParser()
 parser.add_argument("comp_unit", nargs=1)
@@ -22,34 +22,38 @@ def deserialize_csv(csv_directory):
 def make_carpro_of_dataframe(dataframe):
     # prepare lhs
     dataframe1 = dataframe.copy()
-    dataframe1 = dataframe1.rename(columns={
-        "methname": "methname",
-        "return_type": "return_type1",
-        "class_name": "class_name1",
-        "method_name": "method_name1",
-        "package_name": "package_name1",
-        "is_framework_method": "is_framework_method1",
-        "is_java_builtin_method": "is_java_builtin_method1",
-        "is_library_code": "is_library_code1",
-        "returnval_not_used_in_caller": "returnval_not_used_in_caller1",
-        "is_initializer": "is_initializer1",
-        "annots": "annots1"
-    })
+    dataframe1 = dataframe1.rename(
+        columns={
+            "methname": "methname",
+            "return_type": "return_type1",
+            "class_name": "class_name1",
+            "method_name": "method_name1",
+            "package_name": "package_name1",
+            "is_framework_method": "is_framework_method1",
+            "is_java_builtin_method": "is_java_builtin_method1",
+            "is_library_code": "is_library_code1",
+            "returnval_not_used_in_caller": "returnval_not_used_in_caller1",
+            "is_initializer": "is_initializer1",
+            "annots": "annots1",
+        }
+    )
     # prepare rhs
     dataframe2 = dataframe.copy()
-    dataframe2 = dataframe2.rename(columns={
-        "methname": "methname",
-        "return_type": "return_type2",
-        "class_name": "class_name2",
-        "method_name": "method_name2",
-        "package_name": "package_name2",
-        "is_framework_method": "is_framework_method2",
-        "is_java_builtin_method": "is_java_builtin_method2",
-        "is_library_code": "is_library_code2",
-        "returnval_not_used_in_caller": "returnval_not_used_in_caller2",
-        "is_initializer": "is_initializer2",
-        "annots": "annots2"
-    })
+    dataframe2 = dataframe2.rename(
+        columns={
+            "methname": "methname",
+            "return_type": "return_type2",
+            "class_name": "class_name2",
+            "method_name": "method_name2",
+            "package_name": "package_name2",
+            "is_framework_method": "is_framework_method2",
+            "is_java_builtin_method": "is_java_builtin_method2",
+            "is_library_code": "is_library_code2",
+            "returnval_not_used_in_caller": "returnval_not_used_in_caller2",
+            "is_initializer": "is_initializer2",
+            "annots": "annots2",
+        }
+    )
     carpro = pd.merge(dataframe1, dataframe2, how="cross")
     return carpro
 
@@ -57,7 +61,8 @@ def make_carpro_of_dataframe(dataframe):
 # https://stackoverflow.com/questions/29916065/how-to-do-camelcase-split-in-python
 def camel_case_split(identifier):
     matches = re.finditer(
-        '.+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)', identifier)
+        ".+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)", identifier
+    )
     return [m.group(0) for m in matches]
 
 
@@ -77,7 +82,7 @@ class PairwiseFeature:
         "is_both_initializer": 4,
         "has_same_annots": 9,
         "method_contains_same_words": 3,
-        "method_has_same_prefixes": 4
+        "method_has_same_prefixes": 4,
     }
 
     @staticmethod
@@ -111,8 +116,16 @@ class PairwiseFeature:
     def returnval_not_used_in_caller(row):
         method1_returnval_not_used_in_caller = row.returnval_not_used_in_caller1
         method2_returnval_not_used_in_caller = row.returnval_not_used_in_caller2
-        if (method1_returnval_not_used_in_caller, method2_returnval_not_used_in_caller) == (True, True) or\
-                (method1_returnval_not_used_in_caller, method2_returnval_not_used_in_caller) == (False, False):
+        if (
+            method1_returnval_not_used_in_caller,
+            method2_returnval_not_used_in_caller,
+        ) == (True, True) or (
+            method1_returnval_not_used_in_caller,
+            method2_returnval_not_used_in_caller,
+        ) == (
+            False,
+            False,
+        ):
             return PairwiseFeature.scores["belong_to_same_package"]
         else:
             return 0
@@ -123,7 +136,10 @@ class PairwiseFeature:
         method1_class_name = row.class_name1
         method2_return_type = row.return_type2
         method2_class_name = row.class_name2
-        if (method1_return_type == method2_class_name or method2_return_type == method1_class_name):
+        if (
+            method1_return_type == method2_class_name
+            or method2_return_type == method1_class_name
+        ):
             return PairwiseFeature.scores["return_type_is_anothers_class"]
         else:
             return 0
@@ -132,7 +148,7 @@ class PairwiseFeature:
     def has_same_return_type(row):
         method1_return_type = row.return_type1
         method2_return_type = row.return_type2
-        if (method1_return_type == method2_return_type):
+        if method1_return_type == method2_return_type:
             return PairwiseFeature.scores["has_same_return_type"]
         else:
             return 0
@@ -184,18 +200,23 @@ class PairwiseFeature:
 
 
 def run_all_pairwise_feature(row):
-    return reduce(lambda acc, feature: acc + feature(row),
-                  [PairwiseFeature.is_both_framework_code,
-                   PairwiseFeature.belong_to_same_class,
-                   PairwiseFeature.belong_to_same_package,
-                   PairwiseFeature.returnval_not_used_in_caller,
-                   PairwiseFeature.return_type_is_anothers_class,
-                   PairwiseFeature.has_same_return_type,
-                   PairwiseFeature.is_both_java_builtin,
-                   PairwiseFeature.is_both_initializer,
-                   PairwiseFeature.has_same_annots,
-                   PairwiseFeature.method_contains_same_words,
-                   PairwiseFeature.method_has_same_prefixes], 0)
+    return reduce(
+        lambda acc, feature: acc + feature(row),
+        [
+            PairwiseFeature.is_both_framework_code,
+            PairwiseFeature.belong_to_same_class,
+            PairwiseFeature.belong_to_same_package,
+            PairwiseFeature.returnval_not_used_in_caller,
+            PairwiseFeature.return_type_is_anothers_class,
+            PairwiseFeature.has_same_return_type,
+            PairwiseFeature.is_both_java_builtin,
+            PairwiseFeature.is_both_initializer,
+            PairwiseFeature.has_same_annots,
+            PairwiseFeature.method_contains_same_words,
+            PairwiseFeature.method_has_same_prefixes,
+        ],
+        0,
+    )
 
 
 def no_reflexive(dataframe):
@@ -207,10 +228,25 @@ def no_reflexive(dataframe):
     cond6 = dataframe["is_framework_method1"] != dataframe["is_framework_method2"]
     cond7 = dataframe["is_java_builtin_method1"] != dataframe["is_java_builtin_method2"]
     cond8 = dataframe["is_library_code1"] != dataframe["is_library_code2"]
-    cond9 = dataframe["returnval_not_used_in_caller1"] != dataframe["returnval_not_used_in_caller2"]
+    cond9 = (
+        dataframe["returnval_not_used_in_caller1"]
+        != dataframe["returnval_not_used_in_caller2"]
+    )
     cond10 = dataframe["is_initializer1"] != dataframe["is_initializer2"]
     cond11 = dataframe["annots1"] != dataframe["annots2"]
-    return dataframe[cond1 | cond2 | cond3 | cond4 | cond5 | cond6 | cond7 | cond8 | cond9 | cond10 | cond11]
+    return dataframe[
+        cond1
+        | cond2
+        | cond3
+        | cond4
+        | cond5
+        | cond6
+        | cond7
+        | cond8
+        | cond9
+        | cond10
+        | cond11
+    ]
 
 
 def leave_only_most_similar_pairs(carpro):
@@ -221,9 +257,10 @@ def leave_only_most_similar_pairs(carpro):
         acc = []
         for method in lhs_unique_values:
             rows_with_this_method_as_lhs = carpro[carpro.methname_x == method]
-            rows_with_max_similarity_with_lhs =\
-                rows_with_this_method_as_lhs[rows_with_this_method_as_lhs.ns_score ==
-                                            rows_with_this_method_as_lhs.ns_score.max()]
+            rows_with_max_similarity_with_lhs = rows_with_this_method_as_lhs[
+                rows_with_this_method_as_lhs.ns_score
+                == rows_with_this_method_as_lhs.ns_score.max()
+            ]
             acc.append(rows_with_max_similarity_with_lhs)
         return pd.concat(acc)
 
@@ -239,8 +276,10 @@ def main():
     print(f"Python is spawn on {os.getcwd()}")
     args = parser.parse_args()
     comp_unit = args.comp_unit[0]
-    for csvfile in (f"NodeWiseFeatures_{comp_unit}_apis.csv",
-                    f"NodeWiseFeatures_{comp_unit}_udfs.csv"):
+    for csvfile in (
+        f"NodeWiseFeatures_{comp_unit}_apis.csv",
+        f"NodeWiseFeatures_{comp_unit}_udfs.csv",
+    ):
         print(f"working on {csvfile}...")
         dataframe = deserialize_csv(csvfile)
         carpro = make_carpro_of_dataframe(dataframe)
@@ -248,11 +287,20 @@ def main():
         carpro["ns_score"] = nodewise_sim_column
         # filter rows based on ns_score
         filtered_above_threshold = carpro[carpro.ns_score > ns_threshold]
-        filtered = leave_only_most_similar_pairs(
-            no_reflexive(filtered_above_threshold))
+        filtered = leave_only_most_similar_pairs(no_reflexive(filtered_above_threshold))
         bidigraph = build_ns_graph(filtered)
         weakly.main(bidigraph, f"{csvfile}_filtered")
 
 
 if __name__ == "__main__":
     main()
+
+
+def comment():
+    getmappings = [
+        "ResourceSupport IndexController.index()",
+        "Resources GuidesController.listGuides()",
+        "ResponseEntity GuidesController.renderGuide(String,String)",
+        "ResponseEntity GuidesController.showGuide(String,String)",
+        "ResponseEntity MarkupController.renderMarkup(MediaType,String)",
+    ]
