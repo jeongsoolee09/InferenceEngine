@@ -33,7 +33,7 @@ let to_json_repr ((graph : G.t), (table : (Method.t, TaintLabel.t list) Hashtbl.
 
 
 let output_json (filename, json) =
-  let out_chan = Out_channel.create filename in
+  let out_chan = Out_channel.create @@ F.asprintf "%s_inference_results.json" filename in
   JSON.pretty_to_channel out_chan json ;
   Out_channel.close out_chan
 

@@ -634,31 +634,25 @@ module G = struct
 
 
   let get_succs (g : t) (vertex : LiteralVertex.t) ~(label : EdgeLabel.t) : V.t list =
-    let out_df_edges =
-      fold_edges_e
-        (fun ((v1, target_label, _) as edge) acc ->
-          if
-            Vertex.equal v1 (LiteralVertex.to_vertex vertex g.graph)
-            && EdgeLabel.equal target_label label
-          then edge :: acc
-          else acc )
-        g []
-    in
-    out_df_edges >>| trd3
+    fold_edges_e
+      (fun (v1, target_label, v2) acc ->
+        if
+          Vertex.equal v1 (LiteralVertex.to_vertex vertex g.graph)
+          && EdgeLabel.equal target_label label
+        then v2 :: acc
+        else acc )
+      g []
 
 
   let get_preds (g : t) (vertex : LiteralVertex.t) ~(label : EdgeLabel.t) : V.t list =
-    let in_df_edges =
-      fold_edges_e
-        (fun ((_, target_label, v2) as edge) acc ->
-          if
-            Vertex.equal v2 (LiteralVertex.to_vertex vertex g.graph)
-            && EdgeLabel.equal target_label label
-          then edge :: acc
-          else acc )
-        g []
-    in
-    in_df_edges >>| fst3
+    fold_edges_e
+      (fun (v1, target_label, v2) acc ->
+        if
+          Vertex.equal v2 (LiteralVertex.to_vertex vertex g.graph)
+          && EdgeLabel.equal target_label label
+        then v1 :: acc
+        else acc )
+      g []
 
 
   let is_pointing_to_each_other (v1 : LiteralVertex.t) (v2 : LiteralVertex.t) (g : t)
@@ -686,20 +680,34 @@ module G = struct
       graph graph
 
 
-  let all_vertices_of_graph =
-    let cache = ref MemoMap.empty in
-    fun (graph : t) : V.t list ->
-      match MemoMap.find_opt graph.graph !cache with
-      | None ->
-          let out =
-            let all_vertices_with_dup = fold_vertex List.cons graph [] in
-            let module VertexSet = Caml.Set.Make (V) in
-            all_vertices_with_dup |> VertexSet.of_list |> VertexSet.elements
-          in
-          cache := MemoMap.add graph.graph out !cache ;
-          out
-      | Some res ->
-          res
+  let leave_only_ns_edges (graph : t) : t =
+    empty
+    |> fun g ->
+    fold_vertex (fun vertex acc -> add_vertex acc vertex) graph g
+    |> fun g ->
+    List.fold
+      ~f:(fun acc edge -> add_edge_e acc edge)
+      (get_edges graph ~label:EdgeLabel.NodeWiseSimilarity)
+      ~init:g
+
+
+  let leave_only_cs_edges (graph : t) : t =
+    empty
+    |> fun g ->
+    fold_vertex (fun vertex acc -> add_vertex acc vertex) graph g
+    |> fun g ->
+    List.fold
+      ~f:(fun acc edge -> add_edge_e acc edge)
+      (get_edges graph ~label:EdgeLabel.ContextualSimilarity)
+      ~init:g
+
+
+  (* let leave_only_cs_edges (graph : t) : t = raise TODO *)
+
+  let all_vertices_of_graph (graph : t) =
+    let all_vertices_with_dup = fold_vertex List.cons graph [] in
+    let module VertexSet = Caml.Set.Make (V) in
+    all_vertices_with_dup |> VertexSet.of_list |> VertexSet.elements
 
 
   let all_non_frontend_vertices_of_graph (graph : t) : V.t list =
@@ -716,6 +724,14 @@ module G = struct
                 ~substring:"lambda$" )
     |> List.filter ~f:(fun vertex ->
            not @@ String.is_prefix (vertex |> Vertex.get_method |> Method.to_string) ~prefix:"__" )
+
+
+  let all_udf_vertices_of_graph (graph : t) : V.t list =
+    List.filter ~f:(Method.is_udf << Vertex.get_method) (all_vertices_of_graph graph)
+
+
+  let all_api_vertices_of_graph (graph : t) : V.t list =
+    List.filter ~f:(Method.is_api << Vertex.get_method) (all_vertices_of_graph graph)
 
 
   let all_methods_of_graph =
@@ -741,17 +757,7 @@ module G = struct
     |> List.filter ~f:(not << String.is_prefix ~prefix:"__" << Method.to_string)
 
 
-  let all_edges_of_graph =
-    let cache = ref MemoMap.empty in
-    fun (graph : t) : E.t list ->
-      match MemoMap.find_opt graph.graph !cache with
-      | None ->
-          let out = fold_edges_e List.cons graph [] in
-          cache := MemoMap.add graph.graph out !cache ;
-          out
-      | Some res ->
-          res
-
+  let all_edges_of_graph (graph : t) = fold_edges_e List.cons graph []
 
   let is_bidirectional_vertex (vertex : LiteralVertex.t) (graph : t) ~(label : EdgeLabel.t) : bool =
     let vertex_succs = get_succs graph vertex ~label in
@@ -889,3 +895,7 @@ let get_recursive_succs (g : G.t) (vertex : G.LiteralVertex.t) ~(label : EdgeLab
         ~init:big_acc to_explore
   in
   inner (G.LiteralVertex.to_vertex vertex g.graph) []
+
+
+let vertex_list_to_method_list (vertex_list : Vertex.t list) : Method.t list =
+  List.stable_dedup @@ List.map ~f:Vertex.get_method vertex_list

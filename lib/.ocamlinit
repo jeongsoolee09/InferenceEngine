@@ -38,7 +38,9 @@ open InfixOperators
 open ContextualFeatures
 open SimilarityHandler
 open Loop
-open RulesOfInference
+open AskingRules
+open PropagationRules
+open MetaRules
 open NodeWiseFeatures
 open Yojson.Basic
 open DirectoryManager

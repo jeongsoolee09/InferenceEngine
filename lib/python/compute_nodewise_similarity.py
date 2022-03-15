@@ -9,7 +9,7 @@ import weakly
 
 # NOTE KEEP THIS SCRIPT SIMPLE
 
-ns_threshold = 8  # TEMP
+ns_threshold = 10  # TEMP
 
 parser = argparse.ArgumentParser()
 parser.add_argument("comp_unit", nargs=1)
@@ -78,7 +78,7 @@ class PairwiseFeature:
         "returnval_not_used_in_caller": 3,
         "return_type_is_anothers_class": 4,
         "has_same_return_type": 2,
-        "is_both_java_builtin": 2,
+        "is_both_java_builtin": 0,
         "is_both_initializer": 4,
         "has_same_annots": 9,
         "method_contains_same_words": 3,
@@ -175,7 +175,10 @@ class PairwiseFeature:
     def has_same_annots(row):
         method1_annotation = row.annots1
         method2_annotation = row.annots2
-        if method1_annotation == method2_annotation:
+        there_is_common_annotation = len(
+            set(method1_annotation).intersection(set(method2_annotation))
+        )
+        if there_is_common_annotation:
             return PairwiseFeature.scores["has_same_annots"]
         else:
             return 0
@@ -269,6 +272,7 @@ def build_ns_graph(dataframe):
     acc = nx.DiGraph()
     for tup in dataframe.itertuples():
         acc.add_edge(tup[1], tup[12])
+        acc.add_edge(tup[12], tup[1])
     return acc
 
 
@@ -287,7 +291,8 @@ def main():
         carpro["ns_score"] = nodewise_sim_column
         # filter rows based on ns_score
         filtered_above_threshold = carpro[carpro.ns_score > ns_threshold]
-        filtered = leave_only_most_similar_pairs(no_reflexive(filtered_above_threshold))
+        # filtered = leave_only_most_similar_pairs(no_reflexive(filtered_above_threshold))
+        filtered = no_reflexive(filtered_above_threshold)
         bidigraph = build_ns_graph(filtered)
         weakly.main(bidigraph, f"{csvfile}_filtered")
 
@@ -296,11 +301,78 @@ if __name__ == "__main__":
     main()
 
 
-def comment():
+def repl():
+    comp_unit = "sagan-renderer"
+    csvfile = f"NodeWiseFeatures_{comp_unit}_udfs.csv"
+    dataframe = deserialize_csv(csvfile)
+
+
+def comment(dataframe):
+    index = "ResourceSupport IndexController.index()"
+    listGuides = "Resources GuidesController.listGuides()"
+    renderGuide = "ResponseEntity GuidesController.renderGuide(String,String)"
+    showGuide = "ResponseEntity GuidesController.showGuide(String,String)"
+    renderMarkup = "ResponseEntity MarkupController.renderMarkup(MediaType,String)"
     getmappings = [
-        "ResourceSupport IndexController.index()",
-        "Resources GuidesController.listGuides()",
-        "ResponseEntity GuidesController.renderGuide(String,String)",
-        "ResponseEntity GuidesController.showGuide(String,String)",
-        "ResponseEntity MarkupController.renderMarkup(MediaType,String)",
+        index,
+        listGuides,
+        renderGuide,
+        showGuide,
+        renderMarkup
     ]
+    index_row = dataframe[
+        dataframe.methname == "ResourceSupport IndexController.index()"
+    ]
+    listGuides_row = dataframe[
+        dataframe.methname == "Resources GuidesController.listGuides()"
+    ]
+    renderGuide_row = dataframe[
+        dataframe.methname
+        == "ResponseEntity GuidesController.renderGuide(String,String)"
+    ]
+    showGuide_row = dataframe[
+        dataframe.methname == "ResponseEntity GuidesController.showGuide(String,String)"
+    ]
+    renderMarkup_row = dataframe[
+        dataframe.methname
+        == "ResponseEntity MarkupController.renderMarkup(MediaType,String)"
+    ]
+
+    index_row.annots[0]
+    listGuides_row.annots[0]
+    renderGuide_row.annots[0]
+    showGuide_row.annots[0]
+    renderMarkup_row.annots[0]
+
+    # bidigraph에서 listGuides가 나머지와 reachable한가?
+    bidigraph = build_ns_graph(filtered)
+
+    def reachable(n1, n2):
+        return n2 in nx.algorithms.descendants(bidigraph, n1) or\
+            n2 in nx.algorithms.ancestors(bidigraph, n1)
+
+    renderMarkup in bidigraph.nodes
+    index in bidigraph.nodes
+    listGuides in bidigraph.nodes
+
+    reachable(index, listGuides) # 0
+    reachable(index, renderGuide) # 0
+    reachable(index, showGuide) # 0
+    reachable(index, renderMarkup) # 0
+    reachable(renderMarkup, renderGuide) # 0
+    reachable(listGuides, renderGuide) # 1
+    reachable(renderGuide, showGuide) # 1
+    reachable(showGuide, renderMarkup) # 1
+
+    reachable(listGuides, renderMarkup)
+
+    nx.draw_networkx(bidigraph)
+    import matplotlib.pyplot as plt
+    plt.show()
+
+    # 이쯤 되면 carpro를 좀 보고 싶어진다.
+
+    carpro[(carpro.methname_x == index) &\
+           (carpro.methname_y == listGuides)]
+
+    # uh...nani...???

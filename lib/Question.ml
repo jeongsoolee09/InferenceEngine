@@ -4,6 +4,8 @@ open GraphRepr
 
 type t = AskingForLabel of Method.t | AskingForConfirmation of (Method.t * TaintLabel.t)
 
+let dummy = AskingForLabel Method.dummy
+
 let to_string = function
   | AskingForLabel meth ->
       F.asprintf "AskingForLabel (%s)" (Method.to_string meth)

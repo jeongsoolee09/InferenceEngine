@@ -1,8 +1,6 @@
 open GraphRepr
 open ListMonad
 open Propagator
-open RulesOfInference
-(* open FeatureMaps *)
 
 exception TODO
 
@@ -18,7 +16,7 @@ let rec loop_inner (current_snapshot : G.t) (received_responses : Response.t lis
     let question_maker =
       MetaRules.ForAsking.asking_rules_selector current_snapshot received_responses
     in
-    let question = question_maker.rule current_snapshot received_responses in
+    let question = question_maker.rule current_snapshot received_responses ~dry_run:false in
     let prompt = Question.make_prompt question in
     Out_channel.output_string Out_channel.stdout prompt ;
     Out_channel.flush Out_channel.stdout ;

@@ -4,7 +4,9 @@ open InfixOperators
 open ContextualFeatures
 open SimilarityHandler
 open Loop
-open RulesOfInference
+open AskingRules
+open PropagationRules
+open MetaRules
 open NodeWiseFeatures
 open Yojson.Basic
 open DataFlowEdges
@@ -146,32 +148,6 @@ module Notebook98 = struct
   let _ =
     Array.length @@ Array.append Sagan_solution.sagan_udf_solution Sagan_solution.sagan_api_solution
 
-
-  let _ = End
-end
-
-module Notebook99 = struct
-  let _ = Start
-
-  let renderer_finished = build_graph renderer_graph
-
-  let _ = Loop.loop renderer_finished NodeWiseFeatureMap.empty ~auto_test:true
-
-  let round1, round1_responses =
-    AutoTest.auto_test_spechunter_for_snapshot_once renderer_finished []
-
-
-  let round2, round2_responses =
-    AutoTest.auto_test_spechunter_for_snapshot_once round1 round1_responses
-
-
-  let _ = AutoTest.get_vertexwise_precision_of_snapshot round2
-
-  let _ = Visualizer.visualize_and_open round2
-
-  let snapshot = round1
-
-  let received_responses = round1_responses
 
   let _ = End
 end
@@ -641,7 +617,7 @@ end
 
 module Notebook107 = struct
   let _ = Start
-  
+
   (* DONE Memoization test *)
 
   let _ = G.all_methods_of_graph site_graph
@@ -649,6 +625,32 @@ module Notebook107 = struct
   let _ = G.all_vertices_of_graph site_graph
 
   let _ = G.all_edges_of_graph site_graph
+
+  let _ = End
+end
+
+module Notebook109 = struct
+  let _ = Start
+
+  (* TODO debugging @GetMapping reachability *)
+
+  let renderer_finished = build_graph renderer_graph
+
+  let _ = G.get_edges renderer_finished ~label:NodeWiseSimilarity
+
+  let ns_view = G.leave_only_ns_edges renderer_finished
+
+  let ns_subgraphs = WeaklyConnectedComponents.find_distinct_subgraphs ns_view
+
+  let ns_largest_subgraph =
+    (Array.sorted_copy ns_subgraphs ~compare:(fun g1 g2 ->
+         -Int.compare (G.nb_vertex g1) (G.nb_vertex g2) ) ).(2)
+
+  let _ = Visualizer.visualize_and_open ns_largest_subgraph
+
+  (* Seems like not all @GetMappings are connected to one another. *)
+
+  (* equality on annotations is kinda doubtful *)
 
   let _ = End
 end

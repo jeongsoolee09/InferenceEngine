@@ -233,8 +233,8 @@ module Topology = struct
 end
 
 let all_distribution_axioms : axiom array =
-  [| (* Distribution.mark_well_known_java_methods *)
-     (* ; *)
+  [| (*Distribution.mark_well_known_java_methods
+       ;*)
      Distribution.getters_setters_and_predicates_are_none
    ; Distribution.sink_can't_be_a_pred_of_sink
    ; Distribution.init_that_doesn't_call_lib_code_is_none

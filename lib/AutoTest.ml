@@ -4,7 +4,6 @@ open InfixOperators
 open ListMonad
 open GraphRepr
 open TaintLabel
-open RulesOfInference
 open Propagator
 open Utils
 module Hashtbl = Caml.Hashtbl
@@ -16,8 +15,7 @@ let prepare_solution (raw_solution : (string * string list) array) :
     ~f:(fun (method_, label_strs) ->
       Hashtbl.add acc method_
         ( label_strs
-        >>| fun label_str ->
-        match label_str with
+        >>| function
         | "src" ->
             Source
         | "sin" ->
@@ -97,51 +95,12 @@ let responder =
               List.filter solution_labels ~f:(fun label ->
                   not @@ List.mem responded_labels label ~equal:TaintLabel.equal )
         in
-        let not_responded_label = random_select_elem not_responded_labels in
+        let not_responded_label = Utils.random_elem not_responded_labels in
         Response.ForLabel (meth, not_responded_label)
     | AskingForConfirmation (meth, asked_label) ->
         (* see if the asked_label is in the solution_labels. *)
         let is_correct = List.mem (get_solution meth) asked_label ~equal:TaintLabel.equal in
         Response.ForYesOrNo (meth, asked_label, is_correct)
-
-
-let auto_test_spechunter_for_snapshot_once (current_snapshot : G.t)
-    (received_responses : Response.t list) =
-  if G.Saturation.all_dists_in_graph_are_saturated current_snapshot then
-    (current_snapshot, received_responses)
-  else
-    (* find the most appropriate Asking Rule. *)
-    let question_maker =
-      MetaRules.ForAsking.asking_rules_selector current_snapshot received_responses
-    in
-    let question = question_maker.rule current_snapshot received_responses in
-    print_endline @@ F.asprintf "Question: %s" (Question.to_string question) ;
-    let response = responder question in
-    (* sort applicable Propagation Rules by adequacy. *)
-    let propagation_rules_to_apply =
-      MetaRules.ForPropagation.sort_propagation_rules_by_priority current_snapshot response
-    in
-    let propagated =
-      fst
-      @@ propagator response current_snapshot propagation_rules_to_apply received_responses []
-           PropagationRules.all_rules
-    in
-    let propagated' = Axioms.apply_axioms propagated in
-    let stats =
-      let correct_vertices =
-        List.filter (G.all_vertices_of_graph propagated') ~f:vertex_inference_result_is_correct
-      in
-      F.asprintf "stats: [%d / %d] (%f) <vertex>, [%d / %d] <indeterminate>"
-        (G.nb_vertex propagated') (List.length correct_vertices)
-        (get_vertexwise_precision_of_snapshot propagated')
-        ( List.length
-        @@ List.filter
-             (G.all_vertices_of_graph propagated')
-             ~f:(ProbQuadruple.is_indeterminate << Vertex.get_dist) )
-        (G.nb_vertex propagated')
-    in
-    print_endline stats ;
-    (propagated', response :: received_responses)
 
 
 (** auto-question-n-answer version of Loop.loop_inner. *)
@@ -156,8 +115,7 @@ let rec auto_test_spechunter_for_snapshot_inner (current_snapshot : G.t)
     let question_maker =
       MetaRules.ForAsking.asking_rules_selector current_snapshot received_responses
     in
-    let question = question_maker.rule current_snapshot received_responses in
-    (* let question = AskByDegree.ask_by_degree current_snapshot received_responses in *)
+    let question = question_maker.rule current_snapshot received_responses ~dry_run:false in
     print_endline @@ F.asprintf "Question: %s" (Question.to_string question) ;
     let response = responder question in
     (* sort applicable Propagation Rules by adequacy. *)
@@ -172,11 +130,13 @@ let rec auto_test_spechunter_for_snapshot_inner (current_snapshot : G.t)
     let propagated' = Axioms.apply_axioms propagated in
     (* output to stdout *)
     let stats =
-      let correct_vertices =
-        List.filter (G.all_vertices_of_graph propagated') ~f:vertex_inference_result_is_correct
+      let correct_vertices_count =
+        G.fold_vertex
+          (fun vertex acc -> if vertex_inference_result_is_correct vertex then acc + 1 else acc)
+          propagated' 0
       in
-      F.asprintf "stats: [%d / %d] (%f) <vertex>, [%d / %d] <indeterminate>"
-        (G.nb_vertex propagated') (List.length correct_vertices)
+      F.asprintf "stats: [%d / %d] (%f) <vertex>, [%d / %d] <indeterminate>" correct_vertices_count
+        (G.nb_vertex propagated')
         (get_vertexwise_precision_of_snapshot propagated')
         ( List.length
         @@ List.filter
@@ -185,8 +145,7 @@ let rec auto_test_spechunter_for_snapshot_inner (current_snapshot : G.t)
         (G.nb_vertex propagated')
     in
     print_endline stats ;
-    watch propagated' to_watch count ;
-    Visualizer.visualize_snapshot propagated' ~autoopen:false ~micro:false ;
+    (* watch propagated' to_watch count ; *)
     auto_test_spechunter_for_snapshot_inner propagated' (response :: received_responses)
       nodewise_featuremap (count + 1) (stats :: log_data_acc)
 
