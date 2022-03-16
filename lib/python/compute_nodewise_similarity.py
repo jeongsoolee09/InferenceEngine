@@ -9,7 +9,7 @@ import weakly
 
 # NOTE KEEP THIS SCRIPT SIMPLE
 
-ns_threshold = 10  # TEMP
+ns_threshold = 9  # TEMP
 
 parser = argparse.ArgumentParser()
 parser.add_argument("comp_unit", nargs=1)
@@ -17,6 +17,11 @@ parser.add_argument("comp_unit", nargs=1)
 
 def deserialize_csv(csv_directory):
     return pd.read_csv(csv_directory)
+
+
+def parse_annotation_list(annot_list_str):
+    splitted = annot_list_str.lstrip("[").rstrip("]").split(", ")
+    return list(filter(lambda x: x, splitted))
 
 
 def make_carpro_of_dataframe(dataframe):
@@ -81,7 +86,7 @@ class PairwiseFeature:
         "is_both_java_builtin": 0,
         "is_both_initializer": 4,
         "has_same_annots": 9,
-        "method_contains_same_words": 3,
+        "method_contains_same_words": 2,
         "method_has_same_prefixes": 4,
     }
 
@@ -173,8 +178,8 @@ class PairwiseFeature:
 
     @staticmethod
     def has_same_annots(row):
-        method1_annotation = row.annots1
-        method2_annotation = row.annots2
+        method1_annotation = parse_annotation_list(row.annots1)
+        method2_annotation = parse_annotation_list(row.annots2)
         there_is_common_annotation = len(
             set(method1_annotation).intersection(set(method2_annotation))
         )
@@ -291,8 +296,8 @@ def main():
         carpro["ns_score"] = nodewise_sim_column
         # filter rows based on ns_score
         filtered_above_threshold = carpro[carpro.ns_score > ns_threshold]
-        # filtered = leave_only_most_similar_pairs(no_reflexive(filtered_above_threshold))
-        filtered = no_reflexive(filtered_above_threshold)
+        filtered = leave_only_most_similar_pairs(no_reflexive(filtered_above_threshold))
+        # filtered = no_reflexive(filtered_above_threshold)
         bidigraph = build_ns_graph(filtered)
         weakly.main(bidigraph, f"{csvfile}_filtered")
 
@@ -301,25 +306,22 @@ if __name__ == "__main__":
     main()
 
 
-def repl():
+def repl_setup():
     comp_unit = "sagan-renderer"
-    csvfile = f"NodeWiseFeatures_{comp_unit}_udfs.csv"
+    csvfile = f"NodeWiseFeatures_{comp_unit}_apis.csv"
     dataframe = deserialize_csv(csvfile)
 
 
 def comment(dataframe):
+    comp_unit = "sagan-renderer"
+    csvfile = f"NodeWiseFeatures_{comp_unit}_udfs.csv"
+
     index = "ResourceSupport IndexController.index()"
     listGuides = "Resources GuidesController.listGuides()"
     renderGuide = "ResponseEntity GuidesController.renderGuide(String,String)"
     showGuide = "ResponseEntity GuidesController.showGuide(String,String)"
     renderMarkup = "ResponseEntity MarkupController.renderMarkup(MediaType,String)"
-    getmappings = [
-        index,
-        listGuides,
-        renderGuide,
-        showGuide,
-        renderMarkup
-    ]
+    getmappings = [index, listGuides, renderGuide, showGuide, renderMarkup]
     index_row = dataframe[
         dataframe.methname == "ResourceSupport IndexController.index()"
     ]
@@ -348,31 +350,59 @@ def comment(dataframe):
     bidigraph = build_ns_graph(filtered)
 
     def reachable(n1, n2):
-        return n2 in nx.algorithms.descendants(bidigraph, n1) or\
-            n2 in nx.algorithms.ancestors(bidigraph, n1)
+        return n2 in nx.algorithms.descendants(
+            bidigraph, n1
+        ) or n2 in nx.algorithms.ancestors(bidigraph, n1)
 
     renderMarkup in bidigraph.nodes
     index in bidigraph.nodes
     listGuides in bidigraph.nodes
 
-    reachable(index, listGuides) # 0
-    reachable(index, renderGuide) # 0
-    reachable(index, showGuide) # 0
-    reachable(index, renderMarkup) # 0
-    reachable(renderMarkup, renderGuide) # 0
-    reachable(listGuides, renderGuide) # 1
-    reachable(renderGuide, showGuide) # 1
-    reachable(showGuide, renderMarkup) # 1
+    reachable(index, listGuides)  # 0
+    reachable(index, renderGuide)  # 0
+    reachable(index, showGuide)  # 0
+    reachable(index, renderMarkup)  # 0
+    reachable(renderMarkup, renderGuide)  # 0
+    reachable(listGuides, renderGuide)  # 1
+    reachable(renderGuide, showGuide)  # 1
+    reachable(showGuide, renderMarkup)  # 1
 
     reachable(listGuides, renderMarkup)
 
     nx.draw_networkx(bidigraph)
     import matplotlib.pyplot as plt
+
     plt.show()
 
     # 이쯤 되면 carpro를 좀 보고 싶어진다.
 
-    carpro[(carpro.methname_x == index) &\
-           (carpro.methname_y == listGuides)]
+    carpro[(carpro.methname_x == index) & (carpro.methname_y == listGuides)]
 
     # uh...nani...???
+
+    file_methods = [
+        "File File.createTempFile(String,String)",
+        "File.<init>(String)",
+        "File[] File.listFiles()",
+        "String File.getAbsolutePath()",
+        "String File.getName()",
+        "String File.getParent()",
+        "boolean File.exists()",
+        "boolean File.isDirectory()",
+        "boolean File.isFile()",
+        "boolean File.mkdir()",
+        "void File.deleteOnExit()",
+    ]
+
+    # we're going to just test these.
+
+    csvfile = f"NodeWiseFeatures_{comp_unit}_apis.csv"
+
+    dataframe = deserialize_csv(csvfile)
+    file_rows = dataframe[dataframe["methname"].isin(file_methods)]
+    dataframe = file_rows
+
+    getParent = "String File.getParent()"
+    replace = "String String.replace(CharSequence,CharSequence)"
+
+    carpro[(carpro.methname_x == getParent) & (carpro.methname_y == replace)]
