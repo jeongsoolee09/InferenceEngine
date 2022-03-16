@@ -9,7 +9,7 @@ import weakly
 
 # NOTE KEEP THIS SCRIPT SIMPLE
 
-ns_threshold = 9  # TEMP
+ns_threshold = 12  # TEMP
 
 parser = argparse.ArgumentParser()
 parser.add_argument("comp_unit", nargs=1)
@@ -85,9 +85,9 @@ class PairwiseFeature:
         "has_same_return_type": 2,
         "is_both_java_builtin": 0,
         "is_both_initializer": 4,
-        "has_same_annots": 9,
         "method_contains_same_words": 2,
         "method_has_same_prefixes": 4,
+        "class_name_has_same_words": 5
     }
 
     @staticmethod
@@ -131,7 +131,7 @@ class PairwiseFeature:
             False,
             False,
         ):
-            return PairwiseFeature.scores["belong_to_same_package"]
+            return PairwiseFeature.scores["returnval_not_used_in_caller"]
         else:
             return 0
 
@@ -177,18 +177,6 @@ class PairwiseFeature:
             return 0
 
     @staticmethod
-    def has_same_annots(row):
-        method1_annotation = parse_annotation_list(row.annots1)
-        method2_annotation = parse_annotation_list(row.annots2)
-        there_is_common_annotation = len(
-            set(method1_annotation).intersection(set(method2_annotation))
-        )
-        if there_is_common_annotation:
-            return PairwiseFeature.scores["has_same_annots"]
-        else:
-            return 0
-
-    @staticmethod
     def method_contains_same_words(row):
         method1_method_word_set = get_word_set(row.method_name1)
         method2_method_word_set = get_word_set(row.method_name2)
@@ -206,6 +194,24 @@ class PairwiseFeature:
         else:
             return 0
 
+    @staticmethod
+    def class_name_has_same_words(row):
+        method1_class_name = row.class_name1
+        method2_class_name = row.class_name2
+        method1_class_name_camelcase = (
+            method1_class_name[0].lower() + method1_class_name[1:]
+        )
+        method2_class_name_camelcase = (
+            method2_class_name[0].lower() + method2_class_name[2:]
+        )
+        method1_method_words = camel_case_split(method1_class_name_camelcase)
+        method2_method_words = camel_case_split(method2_class_name_camelcase)
+        there_is_common_word = len(set(method1_method_words).intersection(method2_method_words))
+        if there_is_common_word:
+            return PairwiseFeature.scores["class_name_has_same_words"]
+        else:
+            return 0
+
 
 def run_all_pairwise_feature(row):
     return reduce(
@@ -219,9 +225,9 @@ def run_all_pairwise_feature(row):
             PairwiseFeature.has_same_return_type,
             PairwiseFeature.is_both_java_builtin,
             PairwiseFeature.is_both_initializer,
-            PairwiseFeature.has_same_annots,
             PairwiseFeature.method_contains_same_words,
             PairwiseFeature.method_has_same_prefixes,
+            PairwiseFeature.class_name_has_same_words,
         ],
         0,
     )
@@ -285,21 +291,17 @@ def main():
     print(f"Python is spawn on {os.getcwd()}")
     args = parser.parse_args()
     comp_unit = args.comp_unit[0]
-    for csvfile in (
-        f"NodeWiseFeatures_{comp_unit}_apis.csv",
-        f"NodeWiseFeatures_{comp_unit}_udfs.csv",
-    ):
-        print(f"working on {csvfile}...")
-        dataframe = deserialize_csv(csvfile)
-        carpro = make_carpro_of_dataframe(dataframe)
-        nodewise_sim_column = carpro.apply(run_all_pairwise_feature, axis=1)
-        carpro["ns_score"] = nodewise_sim_column
-        # filter rows based on ns_score
-        filtered_above_threshold = carpro[carpro.ns_score > ns_threshold]
-        filtered = leave_only_most_similar_pairs(no_reflexive(filtered_above_threshold))
-        # filtered = no_reflexive(filtered_above_threshold)
-        bidigraph = build_ns_graph(filtered)
-        weakly.main(bidigraph, f"{csvfile}_filtered")
+    csvfile = f"NodeWiseFeatures_{comp_unit}_apis.csv"
+    dataframe = deserialize_csv(csvfile)
+    carpro = make_carpro_of_dataframe(dataframe)
+    nodewise_sim_column = carpro.apply(run_all_pairwise_feature, axis=1)
+    carpro["ns_score"] = nodewise_sim_column
+    # filter rows based on ns_score
+    filtered_above_threshold = carpro[carpro.ns_score > ns_threshold]
+    filtered = leave_only_most_similar_pairs(no_reflexive(filtered_above_threshold))
+    # filtered = no_reflexive(filtered_above_threshold)
+    bidigraph = build_ns_graph(filtered)
+    weakly.main(bidigraph, f"{csvfile}_filtered")
 
 
 if __name__ == "__main__":
@@ -313,96 +315,4 @@ def repl_setup():
 
 
 def comment(dataframe):
-    comp_unit = "sagan-renderer"
-    csvfile = f"NodeWiseFeatures_{comp_unit}_udfs.csv"
-
-    index = "ResourceSupport IndexController.index()"
-    listGuides = "Resources GuidesController.listGuides()"
-    renderGuide = "ResponseEntity GuidesController.renderGuide(String,String)"
-    showGuide = "ResponseEntity GuidesController.showGuide(String,String)"
-    renderMarkup = "ResponseEntity MarkupController.renderMarkup(MediaType,String)"
-    getmappings = [index, listGuides, renderGuide, showGuide, renderMarkup]
-    index_row = dataframe[
-        dataframe.methname == "ResourceSupport IndexController.index()"
-    ]
-    listGuides_row = dataframe[
-        dataframe.methname == "Resources GuidesController.listGuides()"
-    ]
-    renderGuide_row = dataframe[
-        dataframe.methname
-        == "ResponseEntity GuidesController.renderGuide(String,String)"
-    ]
-    showGuide_row = dataframe[
-        dataframe.methname == "ResponseEntity GuidesController.showGuide(String,String)"
-    ]
-    renderMarkup_row = dataframe[
-        dataframe.methname
-        == "ResponseEntity MarkupController.renderMarkup(MediaType,String)"
-    ]
-
-    index_row.annots[0]
-    listGuides_row.annots[0]
-    renderGuide_row.annots[0]
-    showGuide_row.annots[0]
-    renderMarkup_row.annots[0]
-
-    # bidigraph에서 listGuides가 나머지와 reachable한가?
-    bidigraph = build_ns_graph(filtered)
-
-    def reachable(n1, n2):
-        return n2 in nx.algorithms.descendants(
-            bidigraph, n1
-        ) or n2 in nx.algorithms.ancestors(bidigraph, n1)
-
-    renderMarkup in bidigraph.nodes
-    index in bidigraph.nodes
-    listGuides in bidigraph.nodes
-
-    reachable(index, listGuides)  # 0
-    reachable(index, renderGuide)  # 0
-    reachable(index, showGuide)  # 0
-    reachable(index, renderMarkup)  # 0
-    reachable(renderMarkup, renderGuide)  # 0
-    reachable(listGuides, renderGuide)  # 1
-    reachable(renderGuide, showGuide)  # 1
-    reachable(showGuide, renderMarkup)  # 1
-
-    reachable(listGuides, renderMarkup)
-
-    nx.draw_networkx(bidigraph)
-    import matplotlib.pyplot as plt
-
-    plt.show()
-
-    # 이쯤 되면 carpro를 좀 보고 싶어진다.
-
-    carpro[(carpro.methname_x == index) & (carpro.methname_y == listGuides)]
-
-    # uh...nani...???
-
-    file_methods = [
-        "File File.createTempFile(String,String)",
-        "File.<init>(String)",
-        "File[] File.listFiles()",
-        "String File.getAbsolutePath()",
-        "String File.getName()",
-        "String File.getParent()",
-        "boolean File.exists()",
-        "boolean File.isDirectory()",
-        "boolean File.isFile()",
-        "boolean File.mkdir()",
-        "void File.deleteOnExit()",
-    ]
-
-    # we're going to just test these.
-
-    csvfile = f"NodeWiseFeatures_{comp_unit}_apis.csv"
-
-    dataframe = deserialize_csv(csvfile)
-    file_rows = dataframe[dataframe["methname"].isin(file_methods)]
-    dataframe = file_rows
-
-    getParent = "String File.getParent()"
-    replace = "String String.replace(CharSequence,CharSequence)"
-
-    carpro[(carpro.methname_x == getParent) & (carpro.methname_y == replace)]
+    pass
