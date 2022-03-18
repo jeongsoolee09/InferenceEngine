@@ -13,7 +13,7 @@ let visualize_snapshot (snapshot : G.t) ~(micro : bool) ~(autoopen : bool) : uni
   @@ Unix.system
        (F.asprintf "dot -Tsvg -o %s.svg %s.dot" filename_without_extension
           filename_without_extension ) ;
-  if autoopen then ignore @@ Unix.system (F.asprintf "open %s.svg" filename_without_extension)
+  if autoopen then ignore @@ Unix.system (F.asprintf "open %s.svg -a 'Google Chrome.app'" filename_without_extension)
 
 
 let visualize_and_open (snapshot : G.t) = visualize_snapshot snapshot ~autoopen:true ~micro:false
