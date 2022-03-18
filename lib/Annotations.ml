@@ -56,12 +56,12 @@ let single_annot_of_string : string -> single_annot =
 
 
 let string_of_single_annot (single_annot : single_annot) : string =
-  let acc =
+  let out =
     List.fold
-      ~f:(fun acc (param, paramval) -> F.asprintf "%s=%s," param paramval)
+      ~f:(fun acc (param, paramval) -> acc ^ F.asprintf "%s=%s," param paramval)
       ~init:(single_annot.name ^ "(") single_annot.params
   in
-  acc ^ ")"
+  out ^ ")"
 
 
 let to_string (annot_list : t) : string =

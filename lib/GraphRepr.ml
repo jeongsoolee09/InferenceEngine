@@ -197,6 +197,12 @@ module EdgeLabel = struct
   type t = DataFlow | NodeWiseSimilarity | ContextualSimilarity [@@deriving equal, compare]
 
   let default : t = DataFlow (* beware when using add_edge, since its label defaults to DataFlow! *)
+
+  let is_df = function DataFlow -> true | _ -> false
+
+  let is_ns = function NodeWiseSimilarity -> true | _ -> false
+
+  let is_cs = function ContextualSimilarity -> true | _ -> false
 end
 
 module VertexPair = struct
@@ -566,47 +572,64 @@ module G = struct
       g []
 
 
-  let get_preds_any (vertex : LiteralVertex.t) (g : t) : Vertex.t list =
+  let get_preds_any (g : t) (vertex : LiteralVertex.t) : Vertex.t list =
     fold_pred List.cons g (LiteralVertex.to_vertex vertex g.graph) []
 
 
-  let get_succs_any (vertex : LiteralVertex.t) (g : t) : Vertex.t list =
+  let get_succs_any (g : t) (vertex : LiteralVertex.t) : Vertex.t list =
     fold_succ List.cons g (LiteralVertex.to_vertex vertex g.graph) []
 
 
-  let is_df_root (vertex : LiteralVertex.t) (df_only_graph : t) : bool =
-    try
-      Int.equal (in_degree df_only_graph (LiteralVertex.to_vertex vertex df_only_graph.graph)) 0
-      && Int.( > ) (out_degree df_only_graph (LiteralVertex.to_vertex vertex df_only_graph.graph)) 0
-    with _ -> failwith @@ F.asprintf "is_df_root failed for %s" @@ LiteralVertex.to_string vertex
+  let in_degree_label (g : t) (vertex : LiteralVertex.t) ~(label : EdgeLabel.t) : int =
+    let this_vertex_df_edges =
+      fold_edges_e
+        (fun ((_, label_, v2) as edge) acc ->
+          if EdgeLabel.equal label label_ && LiteralVertex.equal vertex (LiteralVertex.of_vertex v2)
+          then edge :: acc
+          else acc )
+        g []
+    in
+    List.length this_vertex_df_edges
 
 
-  let is_df_leaf (vertex : LiteralVertex.t) (df_only_graph : t) : bool =
-    try
-      Int.equal (out_degree df_only_graph (LiteralVertex.to_vertex vertex df_only_graph.graph)) 0
-      && Int.( > ) (in_degree df_only_graph (LiteralVertex.to_vertex vertex df_only_graph.graph)) 0
-    with _ -> failwith @@ F.asprintf "is_df_leaf failed for %s" @@ LiteralVertex.to_string vertex
+  let out_degree_label (g : t) (vertex : LiteralVertex.t) ~(label : EdgeLabel.t) : int =
+    let this_vertex_df_edges =
+      fold_edges_e
+        (fun ((v1, label_, _) as edge) acc ->
+          if EdgeLabel.equal label label_ && LiteralVertex.equal vertex (LiteralVertex.of_vertex v1)
+          then edge :: acc
+          else acc )
+        g []
+    in
+    List.length this_vertex_df_edges
 
 
-  let is_df_internal (vertex : LiteralVertex.t) (df_only_graph : t) : bool =
-    try
-      Int.( > ) (out_degree df_only_graph (LiteralVertex.to_vertex vertex df_only_graph.graph)) 0
-      && Int.( > ) (in_degree df_only_graph (LiteralVertex.to_vertex vertex df_only_graph.graph)) 0
-    with _ ->
-      failwith @@ F.asprintf "is_df_internal failed for %s" @@ LiteralVertex.to_string vertex
+  let is_df_root (graph : t) (vertex : LiteralVertex.t) : bool =
+    Int.equal (in_degree_label graph vertex ~label:DataFlow) 0
+    && Int.( > ) (out_degree_label graph vertex ~label:DataFlow) 0
+
+
+  let is_df_leaf (graph : t) (vertex : LiteralVertex.t) : bool =
+    Int.equal (out_degree_label graph vertex ~label:DataFlow) 0
+    && Int.( > ) (in_degree_label graph vertex ~label:DataFlow) 0
+
+
+  let is_df_internal (graph : t) (vertex : LiteralVertex.t) : bool =
+    Int.( > ) (out_degree_label graph vertex ~label:DataFlow) 0
+    && Int.( > ) (in_degree_label graph vertex ~label:DataFlow) 0
 
 
   let collect_df_roots (graph : t) : V.t list =
     fold_vertex
       (fun vertex acc ->
-        if is_df_root (LiteralVertex.of_vertex vertex) graph then vertex :: acc else acc )
+        if is_df_root graph (LiteralVertex.of_vertex vertex) then vertex :: acc else acc )
       graph []
 
 
   let collect_df_leaves (graph : t) : V.t list =
     fold_vertex
       (fun vertex acc ->
-        if is_df_leaf (LiteralVertex.of_vertex vertex) graph then vertex :: acc else acc )
+        if is_df_leaf graph (LiteralVertex.of_vertex vertex) then vertex :: acc else acc )
       graph []
 
 
@@ -813,6 +836,20 @@ module G = struct
     let out_channel = Out_channel.create json_filename in
     pretty_to_channel out_channel json_repr ;
     Out_channel.close out_channel
+
+
+  let fold_edges_e_label f g init ~label =
+    let this_label_edges_only =
+      List.filter (all_edges_of_graph g) ~f:(EdgeLabel.equal label << snd3)
+    in
+    List.fold ~f ~init this_label_edges_only
+
+
+  let iter_edges_e_label f g ~label =
+    let this_label_edges_only =
+      List.filter (all_edges_of_graph g) ~f:(EdgeLabel.equal label << snd3)
+    in
+    List.iter ~f this_label_edges_only
 end
 
 module Dot = Graph.Graphviz.Dot (G)
@@ -865,36 +902,38 @@ let all_ns_clusters (graph : G.t) : G.V.t list list =
       memoized_result
 
 
-let get_recursive_preds (g : G.t) (vertex : G.LiteralVertex.t) ~(label : EdgeLabel.t) : G.V.t list =
-  let rec inner (current_vertex : G.V.t) (big_acc : G.V.t list) =
+let get_recursive_preds (g : G.t) (vertex : G.LiteralVertex.t) ~(label : EdgeLabel.t) :
+    (G.V.t * int) list =
+  let rec inner (current_vertex : G.V.t) (big_acc : (G.V.t * int) list) (count : int) =
     let current_vertex_df_preds = G.get_preds g (G.LiteralVertex.of_vertex current_vertex) ~label in
     let to_explore =
       List.filter current_vertex_df_preds ~f:(fun pred ->
-          not @@ List.mem big_acc pred ~equal:Vertex.equal )
+          not @@ List.mem (big_acc >>| fst) pred ~equal:Vertex.equal )
     in
     if List.is_empty current_vertex_df_preds || List.is_empty to_explore then big_acc
     else
       List.fold
-        ~f:(fun smol_acc vertex -> inner vertex (vertex :: smol_acc))
+        ~f:(fun smol_acc vertex -> inner vertex ((vertex, count) :: smol_acc) (count + 1))
         ~init:big_acc to_explore
   in
-  inner (G.LiteralVertex.to_vertex vertex g.graph) []
+  inner (G.LiteralVertex.to_vertex vertex g.graph) [] 1
 
 
-let get_recursive_succs (g : G.t) (vertex : G.LiteralVertex.t) ~(label : EdgeLabel.t) : G.V.t list =
-  let rec inner (current_vertex : G.V.t) (big_acc : G.V.t list) =
+let get_recursive_succs (g : G.t) (vertex : G.LiteralVertex.t) ~(label : EdgeLabel.t) :
+    (G.V.t * int) list =
+  let rec inner (current_vertex : G.V.t) (big_acc : (G.V.t * int) list) (count : int) =
     let current_vertex_df_succs = G.get_succs g (G.LiteralVertex.of_vertex current_vertex) ~label in
     let to_explore =
       List.filter current_vertex_df_succs ~f:(fun succ ->
-          not @@ List.mem big_acc succ ~equal:Vertex.equal )
+          not @@ List.mem (big_acc >>| fst) succ ~equal:Vertex.equal )
     in
     if List.is_empty current_vertex_df_succs || List.is_empty to_explore then big_acc
     else
       List.fold
-        ~f:(fun smol_acc vertex -> inner vertex (vertex :: smol_acc))
+        ~f:(fun smol_acc vertex -> inner vertex ((vertex, count) :: smol_acc) (count + 1))
         ~init:big_acc to_explore
   in
-  inner (G.LiteralVertex.to_vertex vertex g.graph) []
+  inner (G.LiteralVertex.to_vertex vertex g.graph) [] 1
 
 
 let vertex_list_to_method_list (vertex_list : Vertex.t list) : Method.t list =

@@ -272,7 +272,7 @@ module NodeWiseFeatureMap = struct
     | true ->
         deserialize_bin filename
     | false ->
-        let unmarked_udfs_of_graph = G.get_unmarked_udfs graph in
+        let unmarked_udfs_of_graph = G.get_unmarked_udfs (Axioms.apply_axioms graph) in
         let out = init unmarked_udfs_of_graph in
         serialize_to_bin out ~filename ;
         out
@@ -284,7 +284,7 @@ module NodeWiseFeatureMap = struct
     | true ->
         deserialize_bin filename
     | false ->
-        let unmarked_apis_of_graph = G.get_unmarked_apis graph in
+        let unmarked_apis_of_graph = G.get_unmarked_apis (Axioms.apply_axioms graph) in
         let out = init unmarked_apis_of_graph in
         serialize_to_bin out ~filename ;
         out

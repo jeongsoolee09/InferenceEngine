@@ -47,7 +47,9 @@ let make_nodewise_sim_edge (graph : G.t) : G.t =
   let udf_csv_filename = F.asprintf "NodeWiseFeatures_%s_udfs.csv_filtered.csv" graph.comp_unit in
   if not @@ Sys.file_exists_exn api_csv_filename then (
     Out_channel.print_string "spawning python process compute_nodewise_similarity.py..." ;
-    SpawnPython.spawn_python ~pyfile:"./lib/python/compute_nodewise_similarity.py"
+    SpawnPython.spawn_python ~pyfile:"./lib/python/compute_nodewise_similarity_apis.py"
+      ~args:[graph.comp_unit] ;
+    SpawnPython.spawn_python ~pyfile:"./lib/python/compute_nodewise_similarity_udfs.py"
       ~args:[graph.comp_unit] ) ;
   Out_channel.print_endline "done" ;
   let api_in_chan = In_channel.create api_csv_filename in

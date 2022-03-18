@@ -51,7 +51,7 @@ let rec loop_inner (current_snapshot : G.t) (received_responses : Response.t lis
 let loop (current_snapshot : G.t) (nodewise_featuremap : NodeWiseFeatures.NodeWiseFeatureMap.t)
     ~(auto_test : bool) =
   print_endline "Starting question-&-answer loop." ;
-  G.snapshot_to_json current_snapshot ;
+  (* G.snapshot_to_json current_snapshot ; *)
   if auto_test then
     fst
     @@ AutoTest.auto_test_spechunter_for_snapshot_inner current_snapshot [] nodewise_featuremap 1 []

@@ -646,11 +646,313 @@ module Notebook109 = struct
     (Array.sorted_copy ns_subgraphs ~compare:(fun g1 g2 ->
          -Int.compare (G.nb_vertex g1) (G.nb_vertex g2) ) ).(2)
 
+
   let _ = Visualizer.visualize_and_open ns_largest_subgraph
 
   (* Seems like not all @GetMappings are connected to one another. *)
 
   (* equality on annotations is kinda doubtful *)
+
+  let _ = End
+end
+
+module Notebook110 = struct
+  let _ = Start
+
+  let renderer_finished = build_graph renderer_graph
+
+  let ns_view = G.leave_only_ns_edges renderer_finished
+
+  let _ = Visualizer.visualize_and_open ns_view
+
+  (* DONE Working on milestone 1. *)
+
+  (* Testing if File vertices are reachable from one another. *)
+
+  let file_vertices =
+    List.filter
+      ~f:(fun vertex -> String.equal "File" (vertex |> Vertex.get_method |> Method.get_class_name))
+      (G.all_vertices_of_graph renderer_finished)
+    |> Array.of_list
+
+
+  let file_methods =
+    List.filter
+      ~f:(fun method_ -> String.equal "File" (Method.get_class_name method_))
+      (G.all_methods_of_graph renderer_finished)
+    |> Array.of_list
+
+
+  module LV = G.LiteralVertex
+
+  let file_vertices_are_reachable_with_one_another =
+    let cartesian_product = Array.cartesian_product file_vertices file_vertices in
+    Array.iter cartesian_product ~f:(fun (v1, v2) ->
+        let lv1 = LV.of_vertex v1 and lv2 = LV.of_vertex v2 in
+        if PathUtils.is_reachable lv1 lv2 ns_view then
+          print_endline
+          @@ F.asprintf "%s and %s are connected" (LV.to_string lv1) (LV.to_string lv2) )
+
+
+  let _ =
+    let ns_succs_of_file_vertices =
+      Array.to_list file_vertices
+      >>= fun vertex -> G.get_succs ns_view (LV.of_vertex vertex) ~label:NodeWiseSimilarity
+    in
+    List.filter
+      ~f:(fun succ ->
+        not @@ String.equal (succ |> Vertex.get_method |> Method.get_class_name) "File" )
+      ns_succs_of_file_vertices
+
+
+  let replace_succs =
+    List.filter ~f:(fun succ ->
+        String.equal (succ |> Vertex.get_method |> Method.get_class_name) "File" )
+    @@ G.get_succs ns_view
+         ("String String.replace(CharSequence,CharSequence)", "{ line 37 }")
+         ~label:NodeWiseSimilarity
+
+
+  let _ = End
+end
+
+module Notebook111 = struct
+  let _ = Start
+
+  let renderer_finished = build_graph renderer_graph
+
+  let axiom_applied = Axioms.apply_axioms renderer_graph
+
+  let _ = Visualizer.visualize_and_open renderer_graph
+
+  let _ = Visualizer.visualize_and_open renderer_finished
+
+  let _ = Visualizer.visualize_and_open axiom_applied
+
+  let ns_view = G.leave_only_ns_edges renderer_finished
+
+  let getMappings =
+    [ "ResourceSupport IndexController.index()"
+    ; "Resources GuidesController.listGuides()"
+    ; "ResponseEntity GuidesController.renderGuide(String,String)"
+    ; "ResponseEntity GuidesController.showGuide(String,String)"
+    ; "ResponseEntity MarkupController.renderMarkup(MediaType,String)" ]
+
+
+  let getMapping_vertices = getMappings >>= G.this_method_vertices ns_view
+
+  let _ =
+    let ns_succs_of_getMapping_vertices =
+      getMapping_vertices
+      >>= fun vertex -> G.get_succs ns_view (LV.of_vertex vertex) ~label:NodeWiseSimilarity
+    in
+    List.filter
+      ~f:(fun succ -> not @@ List.mem getMappings (Vertex.get_method succ) ~equal:Method.equal)
+      ns_succs_of_getMapping_vertices
+    |> List.map ~f:Vertex.get_method |> List.stable_dedup
+
+
+  let _ = Visualizer.visualize_and_open ns_view
+
+  (* GuideContentResource GuideRenderer.render(GuideType,String) is the problem. *)
+
+  (* This can be mitigated by making a separate compute_nodewise_similarity for udfs. *)
+
+  let unmarked_udfs_of_graph = G.get_unmarked_udfs
+
+  let _ = End
+end
+
+module Notebook112 = struct
+  let _ = Start
+
+  let _ = Visualizer.visualize_and_open renderer_graph
+
+  let file_vertices =
+    List.filter
+      ~f:(fun vertex -> String.equal "File" (vertex |> Vertex.get_method |> Method.get_class_name))
+      (G.all_vertices_of_graph renderer_graph)
+    |> Array.of_list
+
+
+  let getAbsolutePath = ("String File.getAbsolutePath()", "{ line 30 }")
+
+  let getName = ("String File.getName()", "{ line 43 }")
+
+  (* let _ = *)
+  (*   Trunk.find_position_of_vertex renderer_graph (G.LiteralVertex.to_vertex_cheap getAbsolutePath) *)
+
+
+  let longest_trunk_containing_vertex =
+    Array.filter (identify_longest_trunks renderer_graph) ~f:(fun trunk ->
+        Array.mem trunk (G.LiteralVertex.to_vertex_cheap getName) ~equal:Vertex.equal )
+
+
+  (* let _ = Trunk.find_position_of_vertex renderer_graph (G.LiteralVertex.to_vertex_cheap getName) *)
+
+  let contribute =
+    ("void ImagesGuideContentContributor.contribute(GuideContentResource,File)", "{ line 29 }")
+
+
+  let contribute_trunks =
+    PathUtils.enumerate_df_paths_from_source_to_leaves renderer_graph contribute
+
+
+  let contribute_trunks_ending_with_itself =
+    Array.filter
+      ~f:(fun trunk ->
+        Array.mem trunk (G.LiteralVertex.to_vertex_cheap contribute) ~equal:Vertex.equal )
+      contribute_trunks
+
+
+  let _ =
+    (Array.sorted_copy contribute_trunks_ending_with_itself ~compare:(fun t1 t2 ->
+         -Int.compare (Array.length t1) (Array.length t2) ) ).(0)
+
+
+  (* DONE: "내가 속한 것 중에 제일 긴 거" *)
+
+  let find_my_roots graph vertex =
+    let ancestors = get_recursive_preds graph vertex ~label:DataFlow >>| fst in
+    List.filter ~f:(fun vertex -> G.is_df_root graph (G.LiteralVertex.of_vertex vertex)) ancestors
+
+
+  let getName = ("String File.getName()", "{ line 43 }")
+
+  let longest_trunks_where_i_belong graph vertex =
+    let my_roots = Array.of_list @@ find_my_roots graph vertex in
+    let all_trunks =
+      Array.fold
+        ~f:(fun acc root ->
+          Array.append acc
+            (Trunk.PathUtils.enumerate_df_paths_from_source_to_leaves graph
+               (G.LiteralVertex.of_vertex root) ) )
+        ~init:[||] my_roots
+    in
+    let my_trunks =
+      Array.filter all_trunks ~f:(fun trunk ->
+          Array.mem trunk (G.LiteralVertex.to_vertex_cheap vertex) ~equal:Vertex.equal )
+    in
+    Array.sort my_trunks ~compare:(fun t1 t2 -> -Int.compare (Array.length t1) (Array.length t2)) ;
+    my_trunks.(0)
+
+
+  (* 개발 완료!!! *)
+
+  let _ = longest_trunks_where_i_belong renderer_graph getName
+
+  let _ = Array.of_list @@ find_my_roots renderer_graph getName
+
+  let _ = End
+end
+
+module Notebook113 = struct
+  let _ = Start
+
+  (* ABORTED: debugging current implementation of find_position_of_vertex *)
+
+  let add = ("void ResourceSupport.add(Link)", "{ line 90 }")
+
+  let _ = Visualizer.visualize_and_open renderer_graph
+
+  let graph = renderer_graph
+
+  let _ = build_graph renderer_graph
+
+  let vertex = add
+
+  let _ = Visualizer.visualize_and_open graph
+
+  let _ =
+    let my_roots = Array.of_list @@ find_my_roots graph vertex in
+    let all_trunks =
+      Array.fold
+        ~f:(fun acc root ->
+          Array.append acc
+            (PathUtils.enumerate_df_paths_from_source_to_leaves graph (LV.of_vertex root)) )
+        ~init:[||] my_roots
+    in
+    let my_trunks =
+      Array.filter all_trunks ~f:(fun trunk ->
+          Array.mem trunk (LV.to_vertex_cheap vertex) ~equal:Vertex.equal )
+    in
+    let out =
+      try
+        Array.sort my_trunks ~compare:(fun t1 t2 ->
+            -Int.compare (Array.length t1) (Array.length t2) ) ;
+        my_trunks.(0)
+      with _ -> failwith (LV.to_string vertex)
+    in
+    out
+
+
+  (* let _ = find_position_of_vertex graph (LV.to_vertex_cheap vertex) *)
+
+  let (graph : G.t) =
+    Deserializer.deserialize_graph "2022-3-18_21:55:40_sagan-renderer_ahahahhah.bin"
+
+
+  let withRel = ("Link LinkBuilderSupport.withRel(String)", "{ line 90 }")
+
+  let vertex = withRel
+
+  let linkTo = ("ControllerLinkBuilder ControllerLinkBuilder.linkTo(Object)", "{ line 90 }")
+
+  let vertex = linkTo
+
+  let _ = End
+end
+
+module Notebook114 = struct
+  let _ = Start
+
+  (* TODO: alternative implementation of find_position_of_vertex *)
+
+  let get_recursive_preds (g : G.t) (vertex : G.LiteralVertex.t) ~(label : EdgeLabel.t) :
+      (G.V.t * int) list =
+    let rec inner (current_vertex : G.V.t) (big_acc : (G.V.t * int) list) (count : int) =
+      let current_vertex_df_preds =
+        G.get_preds g (G.LiteralVertex.of_vertex current_vertex) ~label
+      in
+      let to_explore =
+        List.filter current_vertex_df_preds ~f:(fun pred ->
+            not @@ List.mem (big_acc >>| fst) pred ~equal:Vertex.equal )
+      in
+      if List.is_empty current_vertex_df_preds || List.is_empty to_explore then big_acc
+      else
+        List.fold
+          ~f:(fun smol_acc vertex -> inner vertex ((vertex, count) :: smol_acc) (count + 1))
+          ~init:big_acc to_explore
+    in
+    inner (G.LiteralVertex.to_vertex vertex g.graph) [] 1
+
+
+  let linkTo = ("ControllerLinkBuilder ControllerLinkBuilder.linkTo(Object)", "{ line 90 }")
+
+  let _ = get_recursive_preds renderer_graph linkTo ~label:DataFlow
+
+  let find_position_of_vertex (graph : G.t) (vertex : G.LiteralVertex.t) : vertex_position =
+    let recursive_preds_and_distances =
+      Array.of_list @@ get_recursive_preds graph vertex ~label:DataFlow
+    and recursive_succs_and_distances =
+      Array.of_list @@ get_recursive_succs graph vertex ~label:DataFlow
+    in
+    Array.sort recursive_preds_and_distances ~compare:(fun (pred1, distance1) (pred2, distance2) ->
+        -Int.compare distance1 distance2 ) ;
+    Array.sort recursive_succs_and_distances ~compare:(fun (pred1, distance1) (pred2, distance2) ->
+        -Int.compare distance1 distance2 ) ;
+    let farthest_pred_distance = snd recursive_preds_and_distances.(0)
+    and farthest_succ_distance = snd recursive_succs_and_distances.(0) in
+    match Int.compare farthest_pred_distance farthest_succ_distance with
+    | -1 ->
+        Close_to_Root
+    | 0 ->
+        Right_at_Middle
+    | 1 ->
+        Close_to_Leaf
+    | _ ->
+        failwith "WTF"
+
 
   let _ = End
 end

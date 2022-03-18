@@ -42,22 +42,24 @@ let get_solution (method_ : Method.t) : TaintLabel.t list =
   if Method.is_initializer method_ then [None] else Hashtbl.find solution_table method_
 
 
-let vertex_inference_result_is_correct (vertex : Vertex.t) : bool =
-  let ground = get_solution (Vertex.get_method vertex)
-  and inferred = ProbQuadruple.determine_label (Vertex.get_dist vertex) in
-  List.mem ground inferred ~equal:TaintLabel.equal
+module Scoring = struct
+  let vertex_inference_result_is_correct (vertex : Vertex.t) : bool =
+    let ground = get_solution (Vertex.get_method vertex)
+    and inferred = ProbQuadruple.determine_label (Vertex.get_dist vertex) in
+    List.mem ground inferred ~equal:TaintLabel.equal
 
 
-(** get the percentage of correct vertices in this snapshot. *)
-let get_vertexwise_precision_of_snapshot (snapshot : G.t) : Float.t =
-  let correct_vertices_count =
-    G.fold_vertex
-      (fun vertex acc -> if vertex_inference_result_is_correct vertex then acc + 1 else acc)
-      snapshot 0
-  in
-  let num_of_all_vertices = List.length @@ G.all_vertices_of_graph snapshot in
-  Float.of_int correct_vertices_count /. Float.of_int num_of_all_vertices *. 100.
-
+  (** get the percentage of correct vertices in this snapshot. *)
+  let get_vertexwise_precision_of_snapshot (snapshot : G.t) : Float.t =
+    let correct_vertices_count =
+      G.fold_vertex
+        (fun vertex acc ->
+          if vertex_inference_result_is_correct vertex then acc + 1 else acc )
+        snapshot 0
+    in
+    let num_of_all_vertices = List.length @@ G.all_vertices_of_graph snapshot in
+    Float.of_int correct_vertices_count /. Float.of_int num_of_all_vertices *. 100.
+end
 
 let watch (snapshot : G.t) (methods : Method.t list) (count : int) : unit =
   let vertices_to_watch = methods >>= G.this_method_vertices snapshot in
@@ -132,12 +134,13 @@ let rec auto_test_spechunter_for_snapshot_inner (current_snapshot : G.t)
     let stats =
       let correct_vertices_count =
         G.fold_vertex
-          (fun vertex acc -> if vertex_inference_result_is_correct vertex then acc + 1 else acc)
+          (fun vertex acc ->
+            if Scoring.vertex_inference_result_is_correct vertex then acc + 1 else acc )
           propagated' 0
       in
       F.asprintf "stats: [%d / %d] (%f) <vertex>, [%d / %d] <indeterminate>" correct_vertices_count
         (G.nb_vertex propagated')
-        (get_vertexwise_precision_of_snapshot propagated')
+        (Scoring.get_vertexwise_precision_of_snapshot propagated')
         ( List.length
         @@ List.filter
              (G.all_vertices_of_graph propagated')

@@ -7,6 +7,25 @@ exception TODO
 
 type axiom = G.t -> G.t
 
+let is_library_code =
+  let cache = Hashtbl.create 777 in
+  fun (method_ : Method.t) : bool ->
+    match Hashtbl.find_opt cache method_ with
+    | None ->
+        let out =
+          let classname = Method.get_class_name method_
+          and methname = Method.get_method_name method_ in
+          let classname_methname = F.asprintf "%s.%s" classname methname in
+          List.exists
+            ~f:(fun line -> String.is_substring ~substring:classname_methname line)
+            (Deserializer.deserialize_skip_func ())
+        in
+        Hashtbl.add cache method_ out ;
+        out
+    | Some res ->
+        res
+
+
 module Distribution = struct
   let mark_well_known_java_methods : axiom =
    fun (graph : G.t) : G.t ->
@@ -98,7 +117,7 @@ module Distribution = struct
     List.fold
       ~f:(fun big_acc sink_vertex ->
         let recursive_df_preds =
-          get_recursive_preds graph
+          List.map ~f:fst @@ get_recursive_preds graph
             (G.LiteralVertex.of_vertex sink_vertex)
             ~label:EdgeLabel.DataFlow
         in
@@ -134,7 +153,7 @@ module Distribution = struct
             G.get_succs graph (G.LiteralVertex.of_vertex vertex) ~label:EdgeLabel.DataFlow
           in
           List.for_all df_succ_vertices ~f:(fun vertex ->
-              not @@ NodeWiseFeatures.SingleFeature.is_library_code (Vertex.get_method vertex) ) )
+              not @@ is_library_code (Vertex.get_method vertex) ) )
     in
     List.fold all_init_vertices_with_no_immediate_lib_code
       ~f:(fun acc init_vertex ->
@@ -195,7 +214,7 @@ module Distribution = struct
         (fun vertex acc ->
           if
             Method.is_udf (Vertex.get_method vertex)
-            && G.is_df_internal (G.LiteralVertex.of_vertex vertex) graph
+            && G.is_df_internal graph (G.LiteralVertex.of_vertex vertex)
             &&
             let annot = vertex |> Vertex.get_method |> Annotations.get_annots in
             Annotations.equal annot Annotations.empty

@@ -22,9 +22,9 @@ let ask_if_leaf_is_sink : rule =
            | Some containing_cluster ->
                not
                @@ List.exists containing_cluster ~f:(fun vertex ->
-                      G.is_df_internal (LV.of_vertex vertex) snapshot
+                      G.is_df_internal  snapshot (LV.of_vertex vertex)
                       || List.exists
-                           (get_recursive_preds snapshot (LV.of_vertex vertex) ~label:DataFlow)
+                           (get_recursive_preds snapshot (LV.of_vertex vertex) ~label:DataFlow >>| fst)
                            ~f:(fun vertex ->
                              NodeWiseFeatures.SingleFeature.is_main_method
                                (Vertex.get_method vertex) ) ) )
@@ -156,7 +156,7 @@ let ask_from_ns_cluster_if_it_contains_internal_src_or_sink : rule =
   let there_is_some_cluster_that_has_internal_src_or_sink =
     List.for_all (SimilarityHandler.all_ns_clusters snapshot) ~f:(fun ns_cluster ->
         List.exists ns_cluster ~f:(fun vertex ->
-            G.is_df_internal (LV.of_vertex vertex) snapshot
+            G.is_df_internal  snapshot (LV.of_vertex vertex)
             && ( ProbQuadruple.is_source (Vertex.get_dist vertex)
                || ProbQuadruple.is_sin (Vertex.get_dist vertex) ) ) )
   in
@@ -213,7 +213,8 @@ let ask_annotated_method : rule =
   let all_received_forlabels_are_pairedup =
     let all_received_forlabels_that_are_not_none =
       List.filter all_received_forlabels ~f:(fun forlabel ->
-          not @@ TaintLabel.is_none @@ Response.get_label forlabel )
+          (not @@ TaintLabel.is_none @@ Response.get_label forlabel)
+          && Annotations.has_annot (Response.get_method forlabel) )
     in
     List.for_all all_received_forlabels_that_are_not_none ~f:forlabel_response_is_paired_up
   in
