@@ -87,7 +87,8 @@ class PairwiseFeature:
         "is_both_initializer": 4,
         "method_contains_same_words": 2,
         "method_has_same_prefixes": 5,
-        "class_name_has_same_words": 4
+        "class_name_has_same_words": 4,
+        "class_name_has_same_prefixes": 5
     }
 
     @staticmethod
@@ -212,6 +213,22 @@ class PairwiseFeature:
         else:
             return 0
 
+    @staticmethod
+    def class_name_has_same_prefixes(row):
+        method1_class_name = row.class_name1
+        method2_class_name = row.class_name2
+        method1_class_name_camelcase = (
+            method1_class_name[0].lower() + method1_class_name[1:]
+        )
+        method2_class_name_camelcase = (
+            method2_class_name[0].lower() + method2_class_name[2:]
+        )
+        method1_method_words = camel_case_split(method1_class_name_camelcase)
+        method2_method_words = camel_case_split(method2_class_name_camelcase)
+        if method1_method_words[0] == method2_method_words[0]:
+            return PairwiseFeature.scores["class_name_has_same_prefixes"]
+        else:
+            return 0
 
 def run_all_pairwise_feature(row):
     return reduce(
@@ -228,6 +245,7 @@ def run_all_pairwise_feature(row):
             PairwiseFeature.method_contains_same_words,
             PairwiseFeature.method_has_same_prefixes,
             PairwiseFeature.class_name_has_same_words,
+            PairwiseFeature.class_name_has_same_prefixes,
         ],
         0,
     )

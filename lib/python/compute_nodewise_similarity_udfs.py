@@ -9,7 +9,7 @@ import weakly
 
 # NOTE KEEP THIS SCRIPT SIMPLE
 
-ns_threshold = 8  # TEMP
+ns_threshold = 11  # TEMP
 
 parser = argparse.ArgumentParser()
 parser.add_argument("comp_unit", nargs=1)
@@ -274,5 +274,15 @@ def repl_setup():
     comp_unit = "sagan-renderer"
 
 
-def comment(dataframe):
-    pass
+def comment(dataframe, bidigraph):
+    render = "GuideContentResource GuideRenderer.render(GuideType,String)"
+    renderGuide = "ResponseEntity GuidesController.renderGuide(String,String)"
+    renderMarkup = "ResponseEntity MarkupController.renderMarkup(MediaType,String)"
+    filtered[(filtered["methname_x"] == renderGuide) & (filtered["methname_y"] == render)]
+    filtered[(filtered["methname_x"] == renderMarkup) & (filtered["methname_y"] == render)]
+
+    import matplotlib.pyplot as plt
+    bidigraph = build_ns_graph(filtered)
+    nx.draw(bidigraph, with_labels=True)
+    plt.show()
+
