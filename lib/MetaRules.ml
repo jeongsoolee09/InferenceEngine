@@ -64,9 +64,9 @@ module ForAsking = struct
     | "ask_foreign_package_label" ->
         (asking_rule, 4)
     | "ask_indeterminate" ->
+        (asking_rule, 3)
+    | "ask_from_ns_api_cluster" ->
         (asking_rule, 5)
-    | "ask_from_ns_cluster_if_it_contains_internal_src_or_sink" ->
-        (asking_rule, 2)
     | "ask_annotated_method" ->
         (asking_rule, 6)
     | otherwise ->

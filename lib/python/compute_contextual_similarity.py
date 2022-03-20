@@ -6,7 +6,7 @@ import argparse
 import weakly
 from functools import reduce
 
-cs_threshold = 1
+cs_threshold = 20
 
 parser = argparse.ArgumentParser()
 parser.add_argument("comp_unit", nargs=1)
@@ -36,12 +36,12 @@ def read_redefines():
 
 
 def read_apis():
-    with open("skip_func.txt", "r+") as f:
+    with open("APIs_unique_id.txt", "r+") as f:
         return list(map(lambda string: string.rstrip(), f.readlines()))
 
 
 def read_udfs():
-    with open("Methods.txt", "r+") as f:
+    with open("UDFs_unique_id.txt", "r+") as f:
         return list(map(lambda string: string.rstrip(), f.readlines()))
 
 
@@ -361,7 +361,6 @@ def main():
     for row in methods_to_connect_columns.to_frame().itertuples():
         all_edges += row[1]
 
-    # HERE
     bidigraph = build_cs_graph(all_edges)
     filename = os.path.split(jsonfile)[-1]
     weakly.main(bidigraph, f"{filename}_filtered")

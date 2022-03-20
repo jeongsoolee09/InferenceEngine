@@ -13,8 +13,9 @@ let ask_if_leaf_is_sink : rule =
     G.collect_df_leaves snapshot
     |> List.filter ~f:(fun leaf ->
            let containing_cluster_opt =
-             List.find (SimilarityHandler.all_ns_clusters snapshot) ~f:(fun cluster ->
-                 List.mem cluster leaf ~equal:Vertex.equal )
+             Array.find
+               (Array.map ~f:G.all_vertices_of_graph (SimilarityHandler.all_ns_clusters snapshot))
+               ~f:(fun cluster -> List.mem cluster leaf ~equal:Vertex.equal)
            in
            match containing_cluster_opt with
            | None ->
@@ -22,9 +23,10 @@ let ask_if_leaf_is_sink : rule =
            | Some containing_cluster ->
                not
                @@ List.exists containing_cluster ~f:(fun vertex ->
-                      G.is_df_internal  snapshot (LV.of_vertex vertex)
+                      G.is_df_internal snapshot (LV.of_vertex vertex)
                       || List.exists
-                           (get_recursive_preds snapshot (LV.of_vertex vertex) ~label:DataFlow >>| fst)
+                           ( get_recursive_preds snapshot (LV.of_vertex vertex) ~label:DataFlow
+                           >>| fst )
                            ~f:(fun vertex ->
                              NodeWiseFeatures.SingleFeature.is_main_method
                                (Vertex.get_method vertex) ) ) )
@@ -151,46 +153,32 @@ let ask_indeterminate : rule =
     Question.AskingForLabel random_indeterminate_method
 
 
-let ask_from_ns_cluster_if_it_contains_internal_src_or_sink : rule =
+let ask_from_ns_api_cluster : rule =
  fun (snapshot : G.t) (received_responses : Response.t list) ~(dry_run : bool) : Question.t ->
-  let there_is_some_cluster_that_has_internal_src_or_sink =
-    List.for_all (SimilarityHandler.all_ns_clusters snapshot) ~f:(fun ns_cluster ->
-        List.exists ns_cluster ~f:(fun vertex ->
-            G.is_df_internal  snapshot (LV.of_vertex vertex)
-            && ( ProbQuadruple.is_source (Vertex.get_dist vertex)
-               || ProbQuadruple.is_sin (Vertex.get_dist vertex) ) ) )
+  let not_asked_clusters =
+    Array.filter (SimilarityHandler.all_ns_clusters snapshot) ~f:(fun cluster ->
+        not
+        @@ List.exists received_responses ~f:(fun received_response ->
+               List.mem ~equal:Method.equal (G.all_methods_of_graph cluster)
+                 (Response.get_method received_response) ) )
   in
-  assert there_is_some_cluster_that_has_internal_src_or_sink ;
+  assert (not @@ Array.is_empty not_asked_clusters) ;
   if dry_run then Question.dummy
   else
-    let not_asked_clusters =
-      List.filter (SimilarityHandler.all_ns_clusters snapshot) ~f:(fun cluster ->
-          not
-          @@ List.exists received_responses ~f:(fun received_response ->
-                 List.mem ~equal:Method.equal
-                   (List.map ~f:Vertex.get_method cluster)
-                   (Response.get_method received_response) )
-          && List.exists cluster ~f:(fun vertex ->
-                 ProbQuadruple.is_source (Vertex.get_dist vertex)
-                 || ProbQuadruple.is_none (Vertex.get_dist vertex) ) )
+    let largest_cluster_opt =
+      Array.max_elt not_asked_clusters ~compare:(fun cluster1 cluster2 ->
+          Int.compare (G.nb_vertex cluster1) (G.nb_vertex cluster2) )
     in
-    let random_cluster = Utils.random_elem not_asked_clusters in
-    let random_method_in_picked_cluster =
-      let unasked_indeterminates =
-        List.filter
-          ~f:(fun vertex ->
-            ProbQuadruple.is_indeterminate (Vertex.get_dist vertex)
-            && not
-               @@ List.mem
-                    (received_responses >>| Response.get_method)
-                    (Vertex.get_method vertex) ~equal:Method.equal )
-          random_cluster
-      in
-      MethodSelector.select_by_degree
-        (vertex_list_to_method_list unasked_indeterminates)
-        received_responses snapshot
-    in
-    Question.AskingForLabel random_method_in_picked_cluster
+    match largest_cluster_opt with
+    | None ->
+        failwith "ask_from_ns_api_cluster"
+    | Some largest_cluster ->
+        let method_to_ask =
+          MethodSelector.select_by_degree
+            (G.all_methods_of_graph largest_cluster)
+            received_responses snapshot
+        in
+        Question.AskingForLabel method_to_ask
 
 
 let ask_annotated_method : rule =
@@ -269,6 +257,5 @@ let all_rules : t list =
   ; {label= "ask_if_root_is_source"; rule= ask_if_root_is_source}
   ; {label= "ask_foreign_package_label"; rule= ask_foreign_package_label}
   ; {label= "ask_indeterminate"; rule= ask_indeterminate}
-  ; { label= "ask_from_ns_cluster_if_it_contains_internal_src_or_sink"
-    ; rule= ask_from_ns_cluster_if_it_contains_internal_src_or_sink }
+  ; {label= "ask_from_ns_api_cluster"; rule= ask_from_ns_api_cluster}
   ; {label= "ask_annotated_method"; rule= ask_annotated_method} ]

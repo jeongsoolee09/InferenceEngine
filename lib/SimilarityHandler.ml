@@ -45,7 +45,8 @@ let make_contextual_sim_edge (graph : G.t) : G.t =
 let make_nodewise_sim_edge (graph : G.t) : G.t =
   let api_csv_filename = F.asprintf "NodeWiseFeatures_%s_apis.csv_filtered.csv" graph.comp_unit in
   let udf_csv_filename = F.asprintf "NodeWiseFeatures_%s_udfs.csv_filtered.csv" graph.comp_unit in
-  if not @@ Sys.file_exists_exn api_csv_filename then (
+  if (not @@ Sys.file_exists_exn api_csv_filename) || (not @@ Sys.file_exists_exn udf_csv_filename)
+  then (
     Out_channel.print_string "spawning python process compute_nodewise_similarity.py..." ;
     SpawnPython.spawn_python ~pyfile:"./lib/python/compute_nodewise_similarity_apis.py"
       ~args:[graph.comp_unit] ;
@@ -59,10 +60,9 @@ let make_nodewise_sim_edge (graph : G.t) : G.t =
   In_channel.close api_in_chan ;
   Out_channel.print_string "Now adding NS edges..." ;
   Out_channel.flush stdout ;
-  (* make a temporary empty graph *)
   let acc = ref [] in
   Array.iter api_array ~f:(fun array ->
-      let method1 = array.(0) and method2 = array.(1) in
+      let method1 = array.(1) and method2 = array.(2) in
       let m1_vertices = G.this_method_vertices graph method1
       and m2_vertices = G.this_method_vertices graph method2 in
       List.iter
@@ -132,12 +132,11 @@ let parse_mst_json (filename : string) =
   >>| fun lst -> Json.Util.to_list lst >>| fun l -> Json.Util.to_list l |> Json.Util.filter_string
 
 
-(** cheap version of GraphRepr.all_ns_clusters *)
-let all_ns_clusters (graph : G.t) : G.V.t list list =
-  let udf_json_filename = F.asprintf "NodeWiseFeatures_%s_udfs.csv_filtered.json" graph.comp_unit
-  and api_json_filename = F.asprintf "NodeWiseFeatures_%s_apis.csv_filtered.json" graph.comp_unit in
-  let udf_parsed = parse_mst_json udf_json_filename
-  and api_parsed = parse_mst_json api_json_filename in
-  let udf_mst_vertices = udf_parsed >>| fun tuplist -> tuplist >>= ident |> List.stable_dedup
-  and api_mst_vertices = api_parsed >>| fun tuplist -> tuplist >>= ident |> List.stable_dedup in
-  udf_mst_vertices @ api_mst_vertices >>| fun cluster -> cluster >>= G.this_method_vertices graph
+let all_ns_clusters : G.t -> G.t array =
+  G.leave_only_ns_edges >> WeaklyConnectedComponents.find_distinct_subgraphs_with_edges
+
+
+let all_ns_clusters_api_only : G.t -> G.t array =
+  G.leave_only_ns_edges >> WeaklyConnectedComponents.find_distinct_subgraphs_with_edges
+  >> Array.filter ~f:(fun subgraph ->
+         List.for_all (G.all_methods_of_graph subgraph) ~f:Method.is_api )

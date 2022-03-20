@@ -23,7 +23,7 @@ let build_graph (graph_fragment : G.t) : G.t =
     ~filename:(F.asprintf "NodeWiseFeatures_%s_udfs.csv" healed.comp_unit) ;
   Trunk.Serializer.serialize_graph_trunks_to_json healed ;
   (* ======================================== *)
-  healed |> SimilarityHandler.make_contextual_sim_edge |> SimilarityHandler.make_nodewise_sim_edge
+  healed (*|> SimilarityHandler.make_contextual_sim_edge*) |> SimilarityHandler.make_nodewise_sim_edge
   |> Axioms.apply_axioms
 
 

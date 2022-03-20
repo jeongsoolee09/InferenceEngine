@@ -725,8 +725,6 @@ module G = struct
       ~init:g
 
 
-  (* let leave_only_cs_edges (graph : t) : t = raise TODO *)
-
   let all_vertices_of_graph (graph : t) =
     let all_vertices_with_dup = fold_vertex List.cons graph [] in
     let module VertexSet = Caml.Set.Make (V) in
@@ -853,54 +851,6 @@ module G = struct
 end
 
 module Dot = Graph.Graphviz.Dot (G)
-
-let all_ns_clusters (graph : G.t) : G.V.t list list =
-  let module Hashtbl = Caml.Hashtbl in
-  let cache = Hashtbl.create 777 in
-  match Hashtbl.find_opt cache graph.label with
-  | None ->
-      let rec inner (vertex : G.V.t) (acc : G.V.t list) : G.V.t list =
-        let all_ns_bidirectionals =
-          List.filter
-            ~f:(fun other_vertex ->
-              G.is_pointing_to_each_other
-                (G.LiteralVertex.of_vertex vertex)
-                (G.LiteralVertex.of_vertex other_vertex)
-                graph ~label:EdgeLabel.NodeWiseSimilarity )
-            (G.all_vertices_of_graph graph)
-        in
-        let vertices_to_explore =
-          List.filter
-            ~f:(fun vertex -> not @@ List.mem ~equal:Vertex.equal acc vertex)
-            all_ns_bidirectionals
-        in
-        if
-          not
-          @@ G.is_bidirectional_vertex
-               (G.LiteralVertex.of_vertex vertex)
-               graph ~label:EdgeLabel.NodeWiseSimilarity
-          || List.is_empty vertices_to_explore
-        then acc (* we can't recurse anymore *)
-        else
-          List.fold
-            ~f:(fun smol_acc new_vertex -> smol_acc @ inner new_vertex (vertex :: new_vertex :: acc))
-            ~init:[] vertices_to_explore
-      in
-      let out =
-        List.fold
-          ~f:(fun acc vertex ->
-            if not @@ List.mem ~equal:G.V.equal (List.join acc) vertex then
-              let res = inner vertex [] in
-              if List.is_empty res then acc else res :: acc
-            else acc )
-          ~init:[] (G.all_vertices_of_graph graph)
-        >>| List.stable_dedup
-      in
-      Hashtbl.add cache graph.label out ;
-      out
-  | Some memoized_result ->
-      memoized_result
-
 
 let get_recursive_preds (g : G.t) (vertex : G.LiteralVertex.t) ~(label : EdgeLabel.t) :
     (G.V.t * int) list =

@@ -105,8 +105,6 @@ let identify_longest_trunks : G.t -> t array =
         res
 
 
-type vertex_position = Close_to_Root | Close_to_Leaf | Right_at_Middle
-
 let find_my_roots (graph : G.t) (vertex : LV.t) =
   let ancestors = List.map ~f:fst @@ get_recursive_preds graph vertex ~label:DataFlow in
   List.filter ~f:(fun vertex -> G.is_df_root graph (LV.of_vertex vertex)) ancestors
@@ -136,27 +134,53 @@ let longest_trunks_where_i_belong (graph : G.t) (vertex : LV.t) =
   out
 
 
-let find_position_of_vertex (graph : G.t) (vertex : G.LiteralVertex.t) : vertex_position =
-  let recursive_preds_and_distances =
-    Array.of_list @@ get_recursive_preds graph vertex ~label:DataFlow
-  and recursive_succs_and_distances =
-    Array.of_list @@ get_recursive_succs graph vertex ~label:DataFlow
-  in
-  Array.sort recursive_preds_and_distances ~compare:(fun (_, distance1) (_, distance2) ->
-      -Int.compare distance1 distance2 ) ;
-  Array.sort recursive_succs_and_distances ~compare:(fun (_, distance1) (_, distance2) ->
-      -Int.compare distance1 distance2 ) ;
-  let farthest_pred_distance = if Array.is_empty recursive_preds_and_distances then 0 else snd recursive_preds_and_distances.(0)
-  and farthest_succ_distance = if Array.is_empty recursive_succs_and_distances then 0 else snd recursive_succs_and_distances.(0) in
-  match Int.compare farthest_pred_distance farthest_succ_distance with
-  | -1 ->
-      Close_to_Root
-  | 0 ->
-      Right_at_Middle
-  | 1 ->
-      Close_to_Leaf
-  | _ ->
-      failwith "WTF"
+module VertexPosition = struct
+  type t = Close_to_Root | Close_to_Leaf | Right_at_Middle
+
+  let is_close_to_root = function Close_to_Root -> true | _ -> false
+
+  let is_close_to_leaf = function Close_to_Leaf -> true | _ -> false
+
+  let is_right_at_middle = function Right_at_Middle -> true | _ -> false
+
+  let find_position_of_vertex (graph : G.t) (vertex : G.LiteralVertex.t) : t =
+    let recursive_preds_and_distances =
+      Array.of_list @@ get_recursive_preds graph vertex ~label:DataFlow
+    and recursive_succs_and_distances =
+      Array.of_list @@ get_recursive_succs graph vertex ~label:DataFlow
+    in
+    Array.sort recursive_preds_and_distances ~compare:(fun (_, distance1) (_, distance2) ->
+        -Int.compare distance1 distance2 ) ;
+    Array.sort recursive_succs_and_distances ~compare:(fun (_, distance1) (_, distance2) ->
+        -Int.compare distance1 distance2 ) ;
+    let farthest_pred_distance =
+      if Array.is_empty recursive_preds_and_distances then 0
+      else snd recursive_preds_and_distances.(0)
+    and farthest_succ_distance =
+      if Array.is_empty recursive_succs_and_distances then 0
+      else snd recursive_succs_and_distances.(0)
+    in
+    match Int.compare farthest_pred_distance farthest_succ_distance with
+    | -1 ->
+        Close_to_Root
+    | 0 ->
+        Right_at_Middle
+    | 1 ->
+        Close_to_Leaf
+    | _ ->
+        failwith "WTF"
+end
+
+let vertex_is_close_to_root (graph : G.t) (vertex : G.LiteralVertex.t) =
+  VertexPosition.is_close_to_root @@ VertexPosition.find_position_of_vertex graph vertex
+
+
+let vertex_is_close_to_leaf (graph : G.t) (vertex : G.LiteralVertex.t) =
+  VertexPosition.is_close_to_leaf @@ VertexPosition.find_position_of_vertex graph vertex
+
+
+let vertex_is_right_at_middle (graph : G.t) (vertex : G.LiteralVertex.t) =
+  VertexPosition.is_right_at_middle @@ VertexPosition.find_position_of_vertex graph vertex
 
 
 let longest_trunk_finder ~(start : LV.t) ~(end_ : LV.t) (graph : G.t) : t array =

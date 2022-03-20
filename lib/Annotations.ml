@@ -21,6 +21,15 @@ let get_name (single_annot : single_annot) : string = single_annot.name
 
 let get_param (single_annot : single_annot) = single_annot.params
 
+let equivalent (a1 : t) (a2 : t) : bool =
+  let a1_names = List.map a1 ~f:get_name and a2_names = List.map a2 ~f:get_name in
+  let module SingleAnnotSet = Caml.Set.Make (String) in
+  let a1_name_set = SingleAnnotSet.of_list a1_names
+  and a2_name_set = SingleAnnotSet.of_list a2_names in
+  let intersection = SingleAnnotSet.inter a1_name_set a2_name_set in
+  SingleAnnotSet.cardinal intersection > 0
+
+
 let capture_nonempty_angled_brackets (string : string) =
   let regex = Re2.create_exn "([^()<>\s]+(\([^()<>]*\))?)" in
   Re2.find_all_exn regex string

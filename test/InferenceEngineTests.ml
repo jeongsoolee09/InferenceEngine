@@ -782,7 +782,6 @@ module Notebook112 = struct
   (* let _ = *)
   (*   Trunk.find_position_of_vertex renderer_graph (G.LiteralVertex.to_vertex_cheap getAbsolutePath) *)
 
-
   let longest_trunk_containing_vertex =
     Array.filter (identify_longest_trunks renderer_graph) ~f:(fun trunk ->
         Array.mem trunk (G.LiteralVertex.to_vertex_cheap getName) ~equal:Vertex.equal )
@@ -906,7 +905,7 @@ end
 module Notebook114 = struct
   let _ = Start
 
-  (* TODO: alternative implementation of find_position_of_vertex *)
+  (* DONE: alternative implementation of find_position_of_vertex *)
 
   let get_recursive_preds (g : G.t) (vertex : G.LiteralVertex.t) ~(label : EdgeLabel.t) :
       (G.V.t * int) list =
@@ -931,7 +930,7 @@ module Notebook114 = struct
 
   let _ = get_recursive_preds renderer_graph linkTo ~label:DataFlow
 
-  let find_position_of_vertex (graph : G.t) (vertex : G.LiteralVertex.t) : vertex_position =
+  let find_position_of_vertex (graph : G.t) (vertex : G.LiteralVertex.t) : Trunk.VertexPosition.t =
     let recursive_preds_and_distances =
       Array.of_list @@ get_recursive_preds graph vertex ~label:DataFlow
     and recursive_succs_and_distances =
@@ -956,3 +955,78 @@ module Notebook114 = struct
 
   let _ = End
 end
+
+module Notebook115 = struct
+  let _ = Start
+
+  let renderer_finished = build_graph renderer_graph
+
+  let ns_graph = G.leave_only_ns_edges renderer_finished
+
+  let subgraphs = WeaklyConnectedComponents.find_distinct_subgraphs_with_edges ns_graph
+
+  let subgraphs_api_only =
+    Array.filter subgraphs ~f:(fun subgraph ->
+        List.for_all (G.all_methods_of_graph subgraph) ~f:Method.is_api )
+
+
+  let _ = Array.length subgraphs_api_only (* 19 *)
+
+  let subgraphs_integrated_apis_only =
+    G.empty
+    |> fun g ->
+    Array.fold
+      ~f:(fun big_acc subgraph ->
+        G.fold_vertex
+          (fun vertex smol_acc ->
+            if Method.is_api (Vertex.get_method vertex) then G.add_vertex smol_acc vertex
+            else smol_acc )
+          subgraph big_acc )
+      ~init:g subgraphs
+    |> fun g ->
+    Array.fold
+      ~f:(fun big_acc subgraph ->
+        G.fold_edges_e
+          (fun edge smol_acc ->
+            if
+              Method.is_api (Vertex.get_method (fst3 edge))
+              && Method.is_api (Vertex.get_method (trd3 edge))
+            then G.add_edge_e smol_acc edge
+            else smol_acc )
+          subgraph big_acc )
+      ~init:g subgraphs
+
+
+  let _ = Visualizer.visualize_and_open subgraphs_integrated_apis_only
+
+  let subgraphs_integrated =
+    G.empty
+    |> fun g ->
+    Array.fold
+      ~f:(fun big_acc subgraph ->
+        G.fold_vertex (fun vertex smol_acc -> G.add_vertex smol_acc vertex) subgraph big_acc )
+      ~init:g subgraphs
+    |> fun g ->
+    Array.fold
+      ~f:(fun big_acc subgraph ->
+        G.fold_edges_e (fun edge smol_acc -> G.add_edge_e smol_acc edge) subgraph big_acc )
+      ~init:g subgraphs
+
+
+  let _ = Visualizer.visualize_and_open subgraphs_integrated
+
+  let _ = End
+end
+
+module Notebook116 = struct
+  let _ = Start
+
+  let renderer_finished = build_graph renderer_graph
+
+  let cs_graph = G.leave_only_cs_edges renderer_finished
+
+  let _ = Visualizer.visualize_and_open cs_graph
+
+  let _ = End
+end
+

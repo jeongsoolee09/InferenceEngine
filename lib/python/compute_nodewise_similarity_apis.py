@@ -9,7 +9,7 @@ import weakly
 
 # NOTE KEEP THIS SCRIPT SIMPLE
 
-ns_threshold = 12  # TEMP
+ns_threshold = 15  # TEMP
 
 parser = argparse.ArgumentParser()
 parser.add_argument("comp_unit", nargs=1)
@@ -83,11 +83,11 @@ class PairwiseFeature:
         "returnval_not_used_in_caller": 3,
         "return_type_is_anothers_class": 4,
         "has_same_return_type": 2,
-        "is_both_java_builtin": 0,
+        "is_both_java_builtin": 3,
         "is_both_initializer": 4,
         "method_contains_same_words": 2,
-        "method_has_same_prefixes": 4,
-        "class_name_has_same_words": 5
+        "method_has_same_prefixes": 5,
+        "class_name_has_same_words": 4
     }
 
     @staticmethod
@@ -298,10 +298,9 @@ def main():
     carpro["ns_score"] = nodewise_sim_column
     # filter rows based on ns_score
     filtered_above_threshold = carpro[carpro.ns_score > ns_threshold]
-    filtered = leave_only_most_similar_pairs(no_reflexive(filtered_above_threshold))
-    # filtered = no_reflexive(filtered_above_threshold)
-    bidigraph = build_ns_graph(filtered)
-    weakly.main(bidigraph, f"{csvfile}_filtered")
+    # filtered = leave_only_most_similar_pairs(no_reflexive(filtered_above_threshold))
+    filtered = no_reflexive(filtered_above_threshold)
+    filtered[["methname_x", "methname_y", "ns_score"]].to_csv(f"NodeWiseFeatures_{comp_unit}_apis.csv_filtered.csv")
 
 
 if __name__ == "__main__":

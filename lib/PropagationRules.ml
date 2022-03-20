@@ -34,8 +34,9 @@ let contextual_similarity_rule : rule =
           let succ_dist = Vertex.get_dist succ in
           let is_inside_ns_cluster_containing_df_internals =
             let containing_cluster_opt =
-              List.find (SimilarityHandler.all_ns_clusters graph) ~f:(fun cluster ->
-                  List.mem cluster succ ~equal:Vertex.equal )
+              Array.find
+                (Array.map ~f:G.all_vertices_of_graph (SimilarityHandler.all_ns_clusters graph))
+                ~f:(fun cluster -> List.mem cluster succ ~equal:Vertex.equal)
             in
             match containing_cluster_opt with
             | None ->
@@ -88,23 +89,23 @@ let nodewise_similarity_propagation_rule : rule =
           let new_dist =
             match new_fact_label with
             | Source ->
-                if G.is_df_root graph (LV.of_vertex succ) then
+                if Trunk.vertex_is_close_to_root graph (LV.of_vertex succ) then
                   DistManipulator.bump succ_dist [Source] ~inc_delta:10. ~dec_delta:5.
-                else if G.is_df_leaf graph (LV.of_vertex succ) then
+                else if Trunk.vertex_is_close_to_leaf graph (LV.of_vertex succ) then
                   DistManipulator.bump succ_dist [Sink] ~inc_delta:10. ~dec_delta:5.
                 else
                   (* bump the likelihood of the successor being a source *)
                   DistManipulator.bump succ_dist [Source] ~inc_delta:10. ~dec_delta:5.
             | Sink ->
-                if G.is_df_root graph (LV.of_vertex succ) then
+                if Trunk.vertex_is_close_to_root graph (LV.of_vertex succ) then
                   DistManipulator.bump succ_dist [Source] ~inc_delta:10. ~dec_delta:5.
-                else if G.is_df_leaf graph (LV.of_vertex succ) then
+                else if Trunk.vertex_is_close_to_leaf graph (LV.of_vertex succ) then
                   DistManipulator.bump succ_dist [Sink] ~inc_delta:10. ~dec_delta:5.
                 else DistManipulator.bump succ_dist [Sink] ~inc_delta:10. ~dec_delta:5.
             | Sanitizer ->
-                if G.is_df_root graph (LV.of_vertex succ) then
+                if Trunk.vertex_is_close_to_root graph (LV.of_vertex succ) then
                   DistManipulator.bump succ_dist [Source] ~inc_delta:10. ~dec_delta:5.
-                else if G.is_df_leaf graph (LV.of_vertex succ) then
+                else if Trunk.vertex_is_close_to_leaf graph (LV.of_vertex succ) then
                   DistManipulator.bump succ_dist [Sink] ~inc_delta:10. ~dec_delta:5.
                 else DistManipulator.bump succ_dist [Sanitizer] ~inc_delta:10. ~dec_delta:5.
             | None ->
@@ -121,7 +122,6 @@ let nodewise_similarity_propagation_rule : rule =
 (** Propagate the same info to nodes with the same @annotations: requires that the new_fact's
       method have successors with nodewise simlarity edge bearing the same @annotation *)
 let annotation_rule : rule =
- (* NOTE Under construction *)
  fun (graph : G.t) (new_fact : Response.t) ~(dry_run : bool) : (G.t * Vertex.t list) ->
   if dry_run then (
     assert (Annotations.has_annot (Response.get_method new_fact)) ;
@@ -131,60 +131,60 @@ let annotation_rule : rule =
     | ForLabel (this_method, this_method_label) ->
         let this_method_vertices = G.this_method_vertices graph this_method
         and this_method_annotation = Annotations.get_annots this_method in
-        let cs_succs_with_same_annot =
-          let all_cs_succs =
+        let ns_succs_with_same_annot =
+          let all_ns_succs =
             let* this_method_vertex = this_method_vertices in
-            G.get_succs_any graph (LV.of_vertex this_method_vertex)
+            G.get_succs graph (LV.of_vertex this_method_vertex) ~label:NodeWiseSimilarity
           in
           List.filter
             ~f:(fun succ ->
               let successor_annotation = Annotations.get_annots (Vertex.get_method succ) in
-              Annotations.equal this_method_annotation successor_annotation )
-            all_cs_succs
+              Annotations.equivalent this_method_annotation successor_annotation )
+            all_ns_succs
         in
-        (* Propagate to CS successors *)
-        let cs_propagated =
+        (* Propagate to NS successors *)
+        let ns_propagated =
           List.fold
             ~f:(fun acc vertex ->
               let vertex_dist = Vertex.get_dist vertex in
               let new_dist =
                 match this_method_label with
                 | Source | Sink | Sanitizer ->
-                    if G.is_df_root graph (LV.of_vertex vertex) then
+                    if Trunk.vertex_is_close_to_root graph (LV.of_vertex vertex) then
                       DistManipulator.bump vertex_dist [Source] ~inc_delta:10. ~dec_delta:5.
-                    else if G.is_df_leaf graph (LV.of_vertex vertex) then
+                    else if Trunk.vertex_is_close_to_leaf graph (LV.of_vertex vertex) then
                       DistManipulator.bump vertex_dist [Sink] ~inc_delta:10. ~dec_delta:5.
                     else vertex_dist
                 | None | Indeterminate ->
                     vertex_dist
               in
               G.strong_update_dist vertex new_dist acc )
-            ~init:graph cs_succs_with_same_annot
+            ~init:graph ns_succs_with_same_annot
         in
-        (cs_propagated, cs_succs_with_same_annot)
+        (ns_propagated, ns_succs_with_same_annot)
     | ForYesOrNo (this_method, this_method_label, affirmative) when affirmative ->
         let this_method_vertices = G.this_method_vertices graph this_method
         and this_method_annotation = Annotations.get_annots this_method in
-        let cs_succs_with_same_annot =
-          let all_cs_succs =
+        let ns_succs_with_same_annot =
+          let all_ns_succs =
             let* this_method_vertex = this_method_vertices in
-            G.get_succs_any graph (LV.of_vertex this_method_vertex)
+            G.get_succs graph (LV.of_vertex this_method_vertex) ~label:NodeWiseSimilarity
           in
           List.filter
             ~f:(fun succ ->
               let successor_annotation = Annotations.get_annots (Vertex.get_method succ) in
-              Annotations.equal this_method_annotation successor_annotation )
-            all_cs_succs
+              Annotations.equivalent this_method_annotation successor_annotation )
+            all_ns_succs
         in
-        (* Propagate to CS successors *)
-        let cs_propagated =
+        (* Propagate to NS successors *)
+        let ns_propagated =
           List.fold
             ~f:(fun acc vertex ->
               let new_dist = DistManipulator.oracle_overwrite this_method_label in
               G.strong_update_dist vertex new_dist acc )
-            ~init:graph cs_succs_with_same_annot
+            ~init:graph ns_succs_with_same_annot
         in
-        (cs_propagated, cs_succs_with_same_annot)
+        (ns_propagated, ns_succs_with_same_annot)
     | _ ->
         (graph, [])
 
@@ -209,14 +209,8 @@ let mark_api_based_on_relative_position_in_its_trunk : rule =
           let vertex_dist = Vertex.get_dist df_succ in
           let new_dist =
             match Method.is_api (Vertex.get_method df_succ) with
-            | true -> (
-              match Trunk.find_position_of_vertex graph_acc (LV.of_vertex df_succ) with
-              | Close_to_Root ->
-                  DistManipulator.bump vertex_dist [Source] ~inc_delta:10. ~dec_delta:5.
-              | Close_to_Leaf ->
-                  DistManipulator.bump vertex_dist [Sink] ~inc_delta:10. ~dec_delta:5.
-              | Right_at_Middle ->
-                  vertex_dist )
+            | true ->
+                vertex_dist
             | false ->
                 DistManipulator.bump vertex_dist [None] ~inc_delta:10. ~dec_delta:5.
           in
