@@ -69,20 +69,19 @@ let transfer_graph (prev_graph : G.t) (next_graph : G.t) : G.t =
     prev_label_result_map next_graph
 
 
-let transfer_from_json (json : JSON.t) (next_graph : G.t) : G.t =
-  (* let label_result_map = JS *)
-  (* LabelResultMap.fold *)
-  (*   (fun method_ labels acc -> *)
-  (*     match labels with *)
-  (*     | [label] -> *)
-  (*         transfer_single_method method_ label acc *)
-  (*     | [_; _] as labels -> *)
-  (*         resolve_multiple_labels method_ labels acc *)
-  (*     | otherwise -> *)
-  (*         (\* skip instead of raising *\) *)
-  (*         print_endline *)
-  (*         @@ F.asprintf "transfer_graph encountered an edge case: %s." *)
-  (*              (TaintLabel.string_of_list otherwise) ; *)
-  (*         acc ) *)
-  (*   prev_label_result_map next_graph *)
-  raise TODO
+let transfer_from_json (filename : string) (comp_unit : string) (next_graph : G.t) : G.t =
+  let label_result_map = deserialize_label_result_map filename comp_unit in
+  LabelResultMap.fold
+    (fun method_ labels acc ->
+      match labels with
+      | [label] ->
+          transfer_single_method method_ label acc
+      | [_; _] as labels ->
+          resolve_multiple_labels method_ labels acc
+      | otherwise ->
+          (* skip instead of raising *)
+          print_endline
+          @@ F.asprintf "transfer_graph encountered an edge case: %s."
+               (TaintLabel.string_of_list otherwise) ;
+          acc )
+    label_result_map next_graph
