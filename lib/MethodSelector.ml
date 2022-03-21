@@ -32,12 +32,11 @@ let init_vertex_out_degree_assoc =
     | Some res ->
         res
 
-        (* If java.lang, then NS edge *)
 
 let select_by_degree (methods : Method.t list) (received_responses : Response.t list) (graph : G.t)
     : Method.t =
   (* select an unasked method that has the most out_degree. *)
-      if List.is_empty methods then failwith "empty list";
+  if List.is_empty methods then failwith "empty list" ;
   let methods_and_out_degrees_sorted = init_vertex_out_degree_assoc graph in
   let unasked_methods =
     Array.filter methods_and_out_degrees_sorted ~f:(fun (vertex, _) ->

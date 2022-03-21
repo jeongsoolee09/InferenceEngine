@@ -1,5 +1,6 @@
 exception TODO
 
+module JSON = Yojson.Basic
 type delimiters = Start | End
 
 let catMaybes (lst : 'a option list) : 'a list =
