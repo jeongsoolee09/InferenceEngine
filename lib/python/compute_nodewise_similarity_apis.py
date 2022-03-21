@@ -5,7 +5,7 @@ from functools import reduce
 import argparse
 from rich import print
 
-ns_threshold = 15
+ns_threshold = 16
 
 parser = argparse.ArgumentParser()
 parser.add_argument("comp_unit", nargs=1)
@@ -66,23 +66,25 @@ class PairwiseFeature:
     scores = {
         "is_both_framework_code": 4,
         "belong_to_same_class": 8,
-        "belong_to_same_package": 2,
+        "belong_to_same_package": 6,
         "returnval_not_used_in_caller": 3,
         "return_type_is_anothers_class": 4,
         "has_same_return_type": 2,
-        "is_both_java_builtin": 3,
+        "is_both_java_builtin": 4,
         "is_both_initializer": 4,
         "method_contains_same_words": 2,
         "method_has_same_prefixes": 5,
         "class_name_has_same_words": 4,
-        "class_name_has_same_prefixes": 5
+        "class_name_has_same_prefixes": 7,
+        "class_name_has_same_suffixes": 6
     }
 
     @staticmethod
     def is_both_framework_code(row):
         method1_is_framework_method = row.is_framework_method1
         method2_is_framework_method = row.is_framework_method2
-        if method1_is_framework_method and method2_is_framework_method:
+        # if method1_is_framework_method and method2_is_framework_method:
+        if method1_is_framework_method == method2_is_framework_method:
             return PairwiseFeature.scores["is_both_framework_code"]
         else:
             return 0
@@ -150,7 +152,8 @@ class PairwiseFeature:
     def is_both_java_builtin(row):
         method1_is_java_builtin_method = row.is_java_builtin_method1
         method2_is_java_builtin_method = row.is_java_builtin_method2
-        if method1_is_java_builtin_method and method2_is_java_builtin_method:
+        # if method1_is_java_builtin_method and method2_is_java_builtin_method:
+        if method1_is_java_builtin_method == method2_is_java_builtin_method:
             return PairwiseFeature.scores["is_both_java_builtin"]
         else:
             return 0
@@ -159,7 +162,8 @@ class PairwiseFeature:
     def is_both_initializer(row):
         method1_is_initializer = row.is_initializer1
         method2_is_initializer = row.is_initializer2
-        if method1_is_initializer and method2_is_initializer:
+        # if method1_is_initializer and method2_is_initializer:
+        if method1_is_initializer == method2_is_initializer:
             return PairwiseFeature.scores["is_both_initializer"]
         else:
             return 0
@@ -217,12 +221,29 @@ class PairwiseFeature:
             method1_class_name[0].lower() + method1_class_name[1:]
         )
         method2_class_name_camelcase = (
-            method2_class_name[0].lower() + method2_class_name[2:]
+            method2_class_name[0].lower() + method2_class_name[1:]
         )
-        method1_method_words = camel_case_split(method1_class_name_camelcase)
-        method2_method_words = camel_case_split(method2_class_name_camelcase)
-        if method1_method_words[0] == method2_method_words[0]:
+        method1_class_words = camel_case_split(method1_class_name_camelcase)
+        method2_class_words = camel_case_split(method2_class_name_camelcase)
+        if method1_class_words[0].lower() == method2_class_words[0].lower():
             return PairwiseFeature.scores["class_name_has_same_prefixes"]
+        else:
+            return 0
+
+    @staticmethod
+    def class_name_has_same_suffixes(row):
+        method1_class_name = row.class_name1
+        method2_class_name = row.class_name2
+        method1_class_name_camelcase = (
+            method1_class_name[0].lower() + method1_class_name[1:]
+        )
+        method2_class_name_camelcase = (
+            method2_class_name[0].lower() + method2_class_name[1:]
+        )
+        method1_class_words = camel_case_split(method1_class_name_camelcase)
+        method2_class_words = camel_case_split(method2_class_name_camelcase)
+        if method1_class_words[-1].lower() == method2_class_words[-1].lower():
+            return PairwiseFeature.scores["class_name_has_same_suffixes"]
         else:
             return 0
 
@@ -230,18 +251,19 @@ def run_all_pairwise_feature(row):
     return reduce(
         lambda acc, feature: acc + feature(row),
         [
-            PairwiseFeature.is_both_framework_code,
+            # PairwiseFeature.is_both_framework_code,
             PairwiseFeature.belong_to_same_class,
             PairwiseFeature.belong_to_same_package,
             PairwiseFeature.returnval_not_used_in_caller,
             PairwiseFeature.return_type_is_anothers_class,
             PairwiseFeature.has_same_return_type,
-            PairwiseFeature.is_both_java_builtin,
-            PairwiseFeature.is_both_initializer,
+            # PairwiseFeature.is_both_java_builtin,
+            # PairwiseFeature.is_both_initializer,
             PairwiseFeature.method_contains_same_words,
-            PairwiseFeature.method_has_same_prefixes,
+            # PairwiseFeature.method_has_same_prefixes,
             PairwiseFeature.class_name_has_same_words,
             PairwiseFeature.class_name_has_same_prefixes,
+            PairwiseFeature.class_name_has_same_suffixes,
         ],
         0,
     )
@@ -297,6 +319,7 @@ if __name__ == "__main__":
 
 
 def repl_setup():
+    os.chdir("/Users/jslee/Dropbox/InferenceEngine/")
     comp_unit = "sagan-renderer"
     csvfile = f"NodeWiseFeatures_{comp_unit}_apis.csv"
     dataframe = pd.read_csv(csvfile)

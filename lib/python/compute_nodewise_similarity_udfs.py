@@ -244,7 +244,7 @@ def main():
     filtered_above_threshold = carpro[carpro.ns_score > ns_threshold]
     filtered = no_reflexive(filtered_above_threshold)
     filtered = leave_only_most_similar_pairs(filtered)
-    filtered[["methname_x", "methname_y"]].to_csv(f"{source_comp_unit}->{target_comp_unit}_udf_filtered")
+    filtered[["methname_x", "methname_y"]].to_csv(f"NodeWiseFeatures_{comp_unit}_udfs.csv_filtered.csv")
 
 
 if __name__ == "__main__":
