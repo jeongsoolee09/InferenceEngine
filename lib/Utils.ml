@@ -1,5 +1,7 @@
 exception TODO
 
+type delimiters = Start | End
+
 let catMaybes (lst : 'a option list) : 'a list =
   List.rev
   @@ List.fold

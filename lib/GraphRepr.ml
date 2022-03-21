@@ -23,6 +23,19 @@ let make_now_string (gmt_diff : int) : string =
 module TaintLabel = struct
   type t = Source | Sink | Sanitizer | None | Indeterminate [@@deriving equal, compare]
 
+  let of_string : string -> t = function
+    | "src" | "\"src\"" | "source" | "Source" ->
+        Source
+    | "sin" | "\"sin\"" | "sink" | "Sink" ->
+        Sink
+    | "san" | "\"san\"" | "sanitizer" | "Sanitizer" ->
+        Sanitizer
+    | "non" | "\"non\"" | "none" | "None" ->
+        None
+    | otherwise ->
+        raise @@ Invalid_argument otherwise
+
+
   let to_string : t -> string = function
     | Source ->
         "source"
@@ -58,6 +71,14 @@ module TaintLabel = struct
   let is_none (label : t) : bool = equal label None
 
   let is_indeterminate (label : t) : bool = equal label Indeterminate
+
+  let string_of_list (labels : t list) : string =
+    let acc =
+      List.fold labels
+        ~f:(fun acc label -> acc ^ F.asprintf "%s, " (to_string_short label))
+        ~init:""
+    in
+    "[" ^ acc ^ "]"
 end
 
 module ProbQuadruple = struct
