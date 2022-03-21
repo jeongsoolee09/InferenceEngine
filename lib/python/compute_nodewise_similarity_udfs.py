@@ -1,22 +1,14 @@
-import networkx as nx
 import os
 import re
 import modin.pandas as pd
 from functools import reduce
 import argparse
 from rich import print
-import weakly
 
-# NOTE KEEP THIS SCRIPT SIMPLE
-
-ns_threshold = 11  # TEMP
+ns_threshold = 11
 
 parser = argparse.ArgumentParser()
 parser.add_argument("comp_unit", nargs=1)
-
-
-def deserialize_csv(csv_directory):
-    return pd.read_csv(csv_directory)
 
 
 def parse_annotation_list(annot_list_str):
@@ -240,29 +232,19 @@ def leave_only_most_similar_pairs(carpro):
         return pd.concat(acc)
 
 
-def build_ns_graph(dataframe):
-    acc = nx.DiGraph()
-    for tup in dataframe.itertuples():
-        acc.add_edge(tup[1], tup[12])
-        acc.add_edge(tup[12], tup[1])
-    return acc
-
-
 def main():
     print(f"Python is spawn on {os.getcwd()}")
     args = parser.parse_args()
     comp_unit = args.comp_unit[0]
     csvfile = f"NodeWiseFeatures_{comp_unit}_udfs.csv"
-    dataframe = deserialize_csv(csvfile)
+    dataframe = pd.read_csv(csvfile)
     carpro = make_carpro_of_dataframe(dataframe)
     nodewise_sim_column = carpro.apply(run_all_pairwise_feature, axis=1)
     carpro["ns_score"] = nodewise_sim_column
-    # filter rows based on ns_score
     filtered_above_threshold = carpro[carpro.ns_score > ns_threshold]
-    filtered = leave_only_most_similar_pairs(no_reflexive(filtered_above_threshold))
-    # filtered = no_reflexive(filtered_above_threshold)
-    bidigraph = build_ns_graph(filtered)
-    weakly.main(bidigraph, f"{csvfile}_filtered")
+    filtered = no_reflexive(filtered_above_threshold)
+    filtered = leave_only_most_similar_pairs(filtered)
+    filtered[["methname_x", "methname_y"]].to_csv(f"{source_comp_unit}->{target_comp_unit}_udf_filtered")
 
 
 if __name__ == "__main__":
@@ -275,14 +257,4 @@ def repl_setup():
 
 
 def comment(dataframe, bidigraph):
-    render = "GuideContentResource GuideRenderer.render(GuideType,String)"
-    renderGuide = "ResponseEntity GuidesController.renderGuide(String,String)"
-    renderMarkup = "ResponseEntity MarkupController.renderMarkup(MediaType,String)"
-    filtered[(filtered["methname_x"] == renderGuide) & (filtered["methname_y"] == render)]
-    filtered[(filtered["methname_x"] == renderMarkup) & (filtered["methname_y"] == render)]
-
-    import matplotlib.pyplot as plt
-    bidigraph = build_ns_graph(filtered)
-    nx.draw(bidigraph, with_labels=True)
-    plt.show()
-
+    pass

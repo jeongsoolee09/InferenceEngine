@@ -8,15 +8,16 @@ from rich import print
 ns_threshold = 15
 
 parser = argparse.ArgumentParser()
-parser.add_argument("comp_unit", nargs=1)
+parser.add_argument("-s", "--source")
+parser.add_argument("-t", "--target")
 
 
-def make_carpro_of_dataframe(dataframe):
+def make_carpro_of_dataframe(lhs_df, rhs_df):
     # prepare lhs
-    dataframe1 = dataframe.copy()
-    dataframe1 = dataframe1.rename(
+    lhs_df = lhs_df.copy()
+    lhs_df = lhs_df.rename(
         columns={
-            "methname": "methname",
+            "methname": "methname1",
             "return_type": "return_type1",
             "class_name": "class_name1",
             "method_name": "method_name1",
@@ -30,10 +31,10 @@ def make_carpro_of_dataframe(dataframe):
         }
     )
     # prepare rhs
-    dataframe2 = dataframe.copy()
-    dataframe2 = dataframe2.rename(
+    rhs_df = rhs_df.copy()
+    rhs_df = rhs_df.rename(
         columns={
-            "methname": "methname",
+            "methname": "methname2",
             "return_type": "return_type2",
             "class_name": "class_name2",
             "method_name": "method_name2",
@@ -46,7 +47,7 @@ def make_carpro_of_dataframe(dataframe):
             "annots": "annots2",
         }
     )
-    carpro = pd.merge(dataframe1, dataframe2, how="cross")
+    carpro = pd.merge(lhs_df, rhs_df, how="cross")
     return carpro
 
 
@@ -248,7 +249,7 @@ def run_all_pairwise_feature(row):
 
 
 def no_reflexive(dataframe):
-    cond1 = dataframe["methname_x"] != dataframe["methname_y"]
+    cond1 = dataframe["methname1"] != dataframe["methname2"]
     cond2 = dataframe["return_type1"] != dataframe["return_type2"]
     cond3 = dataframe["class_name1"] != dataframe["class_name2"]
     cond4 = dataframe["method_name1"] != dataframe["method_name2"]
@@ -280,26 +281,27 @@ def no_reflexive(dataframe):
 def main():
     print(f"Python is spawn on {os.getcwd()}")
     args = parser.parse_args()
-    comp_unit = args.comp_unit[0]
-    csvfile = f"NodeWiseFeatures_{comp_unit}_apis.csv"
-    dataframe = pd.read_csv(csvfile)
-    carpro = make_carpro_of_dataframe(dataframe)
+    source_comp_unit = args.source
+    target_comp_unit = args.target
+    source_apis = pd.read_csv(f"NodeWiseFeatures_{source_comp_unit}_apis.csv")
+    target_apis = pd.read_csv(f"NodeWiseFeatures_{target_comp_unit}_apis.csv")
+
+    carpro = make_carpro_of_dataframe(source_apis, target_apis)
     nodewise_sim_column = carpro.apply(run_all_pairwise_feature, axis=1)
     carpro["ns_score"] = nodewise_sim_column
-    # filter rows based on ns_score
     filtered_above_threshold = carpro[carpro.ns_score > ns_threshold]
     filtered = no_reflexive(filtered_above_threshold)
-    filtered[["methname_x", "methname_y", "ns_score"]].to_csv(f"NodeWiseFeatures_{comp_unit}_apis.csv_filtered.csv")
+    filtered[["methname1", "methname2"]].to_csv(f"{source_comp_unit}->{target_comp_unit}_api_filtered")
 
 
 if __name__ == "__main__":
     main()
 
 
-def repl_setup():
-    comp_unit = "sagan-renderer"
-    csvfile = f"NodeWiseFeatures_{comp_unit}_apis.csv"
-    dataframe = pd.read_csv(csvfile)
+def repl():
+    os.chdir("/Users/jslee/Dropbox/InferenceEngine/")
+    source_comp_unit = "sagan-renderer"
+    target_comp_unit = "sagan-site"
 
 
 def comment(dataframe):
