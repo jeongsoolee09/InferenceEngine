@@ -1033,7 +1033,18 @@ end
 module Notebook117 = struct
   let _ = Start
 
-  let 
+  let renderer_labelresultmap =
+    InferenceResult.deserialize_label_result_map "sagan-renderer_inference_results.json"
+      "sagan-renderer"
+
+
+  let site_transferred =
+    Transfer.transfer_from_json "sagan-renderer_inference_results.json" "sagan-renderer" site_graph
+
+
+  (* Transfers in a flash!!! That's a good sign. *)
+
+  (* Uh... wait. We're not using the calculation results!! *)
 
   let _ = End
 end
