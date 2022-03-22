@@ -291,7 +291,7 @@ def main():
     carpro["ns_score"] = nodewise_sim_column
     filtered_above_threshold = carpro[carpro.ns_score > ns_threshold]
     filtered = no_reflexive(filtered_above_threshold)
-    filtered[["methname1", "methname2"]].to_csv(f"{source_comp_unit}->{target_comp_unit}_api_filtered.csv")
+    filtered[["methname1", "methname2"]].to_csv(f"{source_comp_unit}->{target_comp_unit}_api_transferred.csv")
 
 
 if __name__ == "__main__":

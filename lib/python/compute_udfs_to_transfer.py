@@ -247,7 +247,7 @@ def main():
     filtered_above_threshold = carpro[carpro.ns_score > ns_threshold]
     filtered = leave_only_most_similar_pairs(
         no_reflexive(filtered_above_threshold))
-    filtered[["methname1", "methname2"]].to_csv(f"{source_comp_unit}->{target_comp_unit}_udf_filtered.csv")
+    filtered[["methname1", "methname2"]].to_csv(f"{source_comp_unit}->{target_comp_unit}_udf_transferred.csv")
 
 
 if __name__ == "__main__":

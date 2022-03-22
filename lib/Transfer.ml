@@ -55,9 +55,9 @@ let transfer_graph (prev_graph : G.t) (next_graph : G.t) : G.t =
   if G.is_empty prev_graph then next_graph
   else
     let csv_filename_api =
-      F.asprintf "%s->%s_api_filtered.csv" prev_graph.comp_unit next_graph.comp_unit
+      F.asprintf "%s->%s_api_transferred.csv" prev_graph.comp_unit next_graph.comp_unit
     and csv_filename_udf =
-      F.asprintf "%s->%s_udf_filtered.csv" prev_graph.comp_unit next_graph.comp_unit
+      F.asprintf "%s->%s_udf_transferred.csv" prev_graph.comp_unit next_graph.comp_unit
     in
     if not @@ Sys.file_exists_exn csv_filename_api then
       spawn_python ~pyfile:"./lib/python/compute_api_to_transfer.py"
