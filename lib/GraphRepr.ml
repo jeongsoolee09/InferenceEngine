@@ -11,12 +11,12 @@ module Hashtbl = Caml.Hashtbl
 let make_now_string (gmt_diff : int) : string =
   let open CalendarLib in
   let now_raw = Calendar.now () in
-  let year = Calendar.year now_raw in
-  let month = Date.int_of_month @@ Calendar.month now_raw in
-  let day = Calendar.day_of_month now_raw in
-  let hour = Calendar.hour now_raw + gmt_diff in
-  let minute = Calendar.minute now_raw in
-  let second = Calendar.second now_raw in
+  let year = Calendar.year now_raw
+  and month = Date.int_of_month @@ Calendar.month now_raw
+  and day = Calendar.day_of_month now_raw
+  and hour = Calendar.hour now_raw + gmt_diff
+  and minute = Calendar.minute now_raw
+  and second = Calendar.second now_raw in
   F.asprintf "%d-%d-%d_%d:%d:%d" year month day hour minute second
 
 
@@ -242,7 +242,7 @@ module G = struct
   type t = {graph: BiDiGraph.t; comp_unit: String.t; label: String.t; desc: String.t}
   [@@deriving compare]
 
-  (* ==================== Really Boring Wrapping Logic ==================== *)
+  (* ==================== Really Boring Wrappers ==================== *)
 
   module V = BiDiGraph.V
   module E = BiDiGraph.E
@@ -814,6 +814,15 @@ module G = struct
         in
         found || acc )
       ~init:false vertex_succs
+
+
+  let merge (lhs : t) (rhs : t) : t =
+    let big_acc = {empty with comp_unit= lhs.comp_unit ^ "_and_" ^ rhs.comp_unit} in
+    big_acc
+    |> (fun g -> List.fold (all_vertices_of_graph lhs) ~f:add_vertex ~init:g)
+    |> (fun g -> List.fold (all_edges_of_graph lhs) ~f:add_edge_e ~init:g)
+    |> (fun g -> List.fold (all_vertices_of_graph rhs) ~f:add_vertex ~init:g)
+    |> fun g -> List.fold (all_edges_of_graph rhs) ~f:add_edge_e ~init:g
 
 
   let dist_is_all_flat (graph : t) : bool =

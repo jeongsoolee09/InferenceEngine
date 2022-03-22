@@ -1048,3 +1048,11 @@ module Notebook117 = struct
 
   let _ = End
 end
+
+module Notebook = struct
+  let _ = Start
+
+  let x = 1
+
+  let _ = End
+end

@@ -1,5 +1,3 @@
-(* Module for easy debugging. *)
-
 open InfixOperators
 open ListMonad
 open GraphRepr
@@ -12,20 +10,7 @@ let prepare_solution (raw_solution : (string * string list) array) :
     (string, TaintLabel.t list) Hashtbl.t =
   let acc = Hashtbl.create 777 in
   Array.iter
-    ~f:(fun (method_, label_strs) ->
-      Hashtbl.add acc method_
-        ( label_strs
-        >>| function
-        | "src" ->
-            Source
-        | "sin" ->
-            Sink
-        | "san" ->
-            Sanitizer
-        | "non" ->
-            None
-        | otherwise ->
-            raise @@ Invalid_argument otherwise ) )
+    ~f:(fun (method_, label_strs) -> Hashtbl.add acc method_ (label_strs >>| TaintLabel.of_string))
     raw_solution ;
   acc
 
@@ -53,8 +38,7 @@ module Scoring = struct
   let get_vertexwise_precision_of_snapshot (snapshot : G.t) : Float.t =
     let correct_vertices_count =
       G.fold_vertex
-        (fun vertex acc ->
-          if vertex_inference_result_is_correct vertex then acc + 1 else acc )
+        (fun vertex acc -> if vertex_inference_result_is_correct vertex then acc + 1 else acc)
         snapshot 0
     in
     let num_of_all_vertices = List.length @@ G.all_vertices_of_graph snapshot in
@@ -72,14 +56,6 @@ let watch (snapshot : G.t) (methods : Method.t list) (count : int) : unit =
            (TaintLabel.to_string label) ) ;
   Out_channel.flush txt_file ;
   Out_channel.close txt_file
-
-
-let to_watch =
-  [ "ResourceSupport IndexController.index()"
-  ; "Resources GuidesController.listGuides()"
-  ; "ResponseEntity GuidesController.renderGuide(String,String)"
-  ; "ResponseEntity GuidesController.showGuide(String,String)"
-  ; "ResponseEntity MarkupController.renderMarkup(MediaType,String)" ]
 
 
 let responder =
@@ -130,7 +106,6 @@ let rec auto_test_spechunter_for_snapshot_inner (current_snapshot : G.t)
            PropagationRules.all_rules
     in
     let propagated' = Axioms.apply_axioms propagated in
-    (* output to stdout *)
     let stats =
       let correct_vertices_count =
         G.fold_vertex
@@ -148,13 +123,11 @@ let rec auto_test_spechunter_for_snapshot_inner (current_snapshot : G.t)
         (G.nb_vertex propagated')
     in
     print_endline stats ;
-    (* watch propagated' to_watch count ; *)
     auto_test_spechunter_for_snapshot_inner propagated' (response :: received_responses)
       nodewise_featuremap (count + 1) (stats :: log_data_acc)
 
 
 let auto_test (initial_snapshot : G.t) : unit =
-  watch initial_snapshot to_watch (-1) ;
   let _, log_data =
     auto_test_spechunter_for_snapshot_inner initial_snapshot []
       NodeWiseFeatures.NodeWiseFeatureMap.empty 0 []

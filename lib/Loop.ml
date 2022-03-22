@@ -1,15 +1,13 @@
 open GraphRepr
 open ListMonad
 open Propagator
-
-exception TODO
-
+open Utils
+open NodeWiseFeatures
 module In_channel = Core_kernel.In_channel
 module Out_channel = Core_kernel.Out_channel
 
-
 let rec loop_inner (current_snapshot : G.t) (received_responses : Response.t list)
-    (nodewise_featuremap : NodeWiseFeatures.NodeWiseFeatureMap.t) : G.t =
+    (nodewise_featuremap : NodeWiseFeatureMap.t) : G.t =
   if G.Saturation.all_dists_in_graph_are_saturated current_snapshot then current_snapshot
   else
     (* find the most appropriate Asking Rule. *)
@@ -48,10 +46,9 @@ let rec loop_inner (current_snapshot : G.t) (received_responses : Response.t lis
       loop_inner propagated' (response :: received_responses) nodewise_featuremap
 
 
-let loop (current_snapshot : G.t) (nodewise_featuremap : NodeWiseFeatures.NodeWiseFeatureMap.t)
+let loop (current_snapshot : G.t) (nodewise_featuremap : NodeWiseFeatureMap.t)
     ~(auto_test : bool) =
   print_endline "Starting question-&-answer loop." ;
-  (* G.snapshot_to_json current_snapshot ; *)
   if auto_test then
     fst
     @@ AutoTest.auto_test_spechunter_for_snapshot_inner current_snapshot [] nodewise_featuremap 1 []

@@ -857,54 +857,39 @@ toResource 고치기. 흐헤헤헤헤헤
 
 ** Notebook94
 
-InferenceResult는 추론된 결과를 나타내는 그냥 객체 모듈입니다.
+*** TODO ~Main.main~ 에 연결하기
 
-이제 우리가 진짜로 해야 하는 건 Transfer입니다.
-
-트랜스퍼 트랜스퍼 끼야아아홋
+바쁘당 흐에에
 
 #+begin_src tuareg
-  let resolve_multiple_labels (method_ : Method.t) (labels : TaintLabel.t list) (next_graph : G.t) =
-    raise TODO
-
-
-  let transfer_single_method (method_ : Method.t) (label : TaintLabel.t) (next_graph : G.t) : G.t =
-    let this_method_vertices_in_next_graph = G.this_method_vertices next_graph method_ in
-    List.fold this_method_vertices_in_next_graph
-      ~f:(fun acc vertex ->
-          let transferred_dist =
-            match label with
-            | Source ->
-              DistManipulator.overwrite ~src:8. ~sin:2. ~san:2. ~non:2.
-            | Sink ->
-              DistManipulator.overwrite ~src:2. ~sin:8. ~san:2. ~non:2.
-            | Sanitizer ->
-              DistManipulator.overwrite ~src:2. ~sin:2. ~san:8. ~non:2.
-            | None ->
-              DistManipulator.overwrite ~src:2. ~sin:2. ~san:2. ~non:8.
-            | Indeterminate ->
-              ProbQuadruple.initial
-          in
-          G.strong_update_dist vertex transferred_dist acc )
-      ~init:next_graph
-
-
-  let transfer_graph (prev_graph : G.t) (next_graph : G.t) : G.t =
-    let csv_file_read = read_csv_file () in
-    Array.fold csv_file_read
-      ~f:(fun acc (method_, labels) ->
-          match labels with
-          | [label] ->
-            transfer_single_method method_ label acc
-          | [_; _] as labels ->
-            resolve_multiple_labels method_ labels acc
-          | _ ->
-            (* skip instead of raising *)
-            print_endline "transfer_graph encountered an edge case.";
-            acc )
-      ~init:next_graph
+let main () =
+  Out_channel.print_endline @@ F.asprintf "Current directory is %s" @@ Sys.getcwd () ;
+  let json = Deserializer.deserialize_json () in
+  let df_edges_added =
+    match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" ~finished:false with
+    | None ->
+        let result =
+          G.empty |> batch_add_vertex json |> batch_add_edge json
+          |> ReturnStmtLocation.repair_vertices_with_incorrect_return_loc
+        in
+        result
+    | Some filename ->
+        Deserializer.deserialize_graph filename
+  in
+  Out_channel.print_endline "df_graph initialized." ;
+  RedefineHandler.make_and_output_redefine_dict json ;
+  let splitted = split_graph_by_comp_unit df_edges_added in
+  List.iter ~f:one_pass splitted
 #+end_src
 
-- [X] ~read_csv_file~
-  - 할 필요가 없다. 굳이 파일로 꺼내와야 하나??
-- [ ] ~resolve_multiple_labels~
+아... 이거 sliding window 식으로 해야 할 거 같은뎅.
+
+아니면 bicycle chain으로 하든가.
+--> 그건 아니고.. fold로 해야겠다.
+
+그럼 ~one-pass~ 는 리턴 타입이 unit이 아니라 G.t로 하자.
+...가 아니라 InferenceResult가 되어야 할 것 같다.
+
+그리고, InferenceResult를 보면,
+
+
