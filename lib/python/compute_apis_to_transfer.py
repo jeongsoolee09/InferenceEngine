@@ -76,7 +76,7 @@ class PairwiseFeature:
         "method_contains_same_words": 2,
         "method_has_same_prefixes": 5,
         "class_name_has_same_words": 4,
-        "class_name_has_same_prefixes": 5
+        "class_name_has_same_prefixes": 5,
     }
 
     @staticmethod
@@ -189,6 +189,8 @@ class PairwiseFeature:
         method2_method_words = camel_case_split(row.method_name2)
         if method1_method_words[0] == method2_method_words[0]:
             return PairwiseFeature.scores["method_has_same_prefixes"]
+        elif method1_method_words[0] == "get" and method2_method_words[0] == "set":
+            return -10
         else:
             return 0
 
@@ -204,7 +206,9 @@ class PairwiseFeature:
         )
         method1_method_words = camel_case_split(method1_class_name_camelcase)
         method2_method_words = camel_case_split(method2_class_name_camelcase)
-        there_is_common_word = len(set(method1_method_words).intersection(method2_method_words))
+        there_is_common_word = len(
+            set(method1_method_words).intersection(method2_method_words)
+        )
         if there_is_common_word:
             return PairwiseFeature.scores["class_name_has_same_words"]
         else:
@@ -226,6 +230,7 @@ class PairwiseFeature:
             return PairwiseFeature.scores["class_name_has_same_prefixes"]
         else:
             return 0
+
 
 def run_all_pairwise_feature(row):
     return reduce(
@@ -278,6 +283,22 @@ def no_reflexive(dataframe):
     ]
 
 
+def leave_only_most_similar_pairs(carpro):
+    if len(carpro) == 0:
+        return carpro
+    else:
+        rhs_unique_values = carpro.methname2.unique()
+        acc = []
+        for method in rhs_unique_values:
+            rows_with_this_method_as_rhs = carpro[carpro.methname2 == method]
+            rows_with_max_similarity_with_rhs = rows_with_this_method_as_rhs[
+                rows_with_this_method_as_rhs.ns_score
+                == rows_with_this_method_as_rhs.ns_score.max()
+            ]
+            acc.append(rows_with_max_similarity_with_rhs)
+        return pd.concat(acc)
+
+
 def main():
     print(f"Python is spawn on {os.getcwd()}")
     args = parser.parse_args()
@@ -291,7 +312,10 @@ def main():
     carpro["ns_score"] = nodewise_sim_column
     filtered_above_threshold = carpro[carpro.ns_score > ns_threshold]
     filtered = no_reflexive(filtered_above_threshold)
-    filtered[["methname1", "methname2"]].to_csv(f"{source_comp_unit}->{target_comp_unit}_api_transferred.csv")
+    filtered = leave_only_most_similar_pairs(filtered)
+    filtered[["methname1", "methname2"]].to_csv(
+        f"{source_comp_unit}->{target_comp_unit}_api_transferred.csv"
+    )
 
 
 if __name__ == "__main__":

@@ -221,14 +221,15 @@ def leave_only_most_similar_pairs(carpro):
     if len(carpro) == 0:
         return carpro
     else:
-        lhs_unique_values = carpro.methname1.unique()
+        rhs_unique_values = carpro.methname2.unique()
         acc = []
-        for method in lhs_unique_values:
-            rows_with_this_method_as_lhs = carpro[carpro.methname1 == method]
-            rows_with_max_similarity_with_lhs =\
-                rows_with_this_method_as_lhs[rows_with_this_method_as_lhs.ns_score ==
-                                            rows_with_this_method_as_lhs.ns_score.max()]
-            acc.append(rows_with_max_similarity_with_lhs)
+        for method in rhs_unique_values:
+            rows_with_this_method_as_rhs = carpro[carpro.methname2 == method]
+            rows_with_max_similarity_with_rhs = rows_with_this_method_as_rhs[
+                rows_with_this_method_as_rhs.ns_score
+                == rows_with_this_method_as_rhs.ns_score.max()
+            ]
+            acc.append(rows_with_max_similarity_with_rhs)
         return pd.concat(acc)
 
 
@@ -245,9 +246,11 @@ def main():
     nodewise_sim_column = carpro.apply(run_all_pairwise_feature, axis=1)
     carpro["ns_score"] = nodewise_sim_column
     filtered_above_threshold = carpro[carpro.ns_score > ns_threshold]
-    filtered = leave_only_most_similar_pairs(
-        no_reflexive(filtered_above_threshold))
-    filtered[["methname1", "methname2"]].to_csv(f"{source_comp_unit}->{target_comp_unit}_udf_transferred.csv")
+    filtered = no_reflexive(filtered_above_threshold)
+    filtered = leave_only_most_similar_pairs(filtered)
+    filtered[["methname1", "methname2"]].to_csv(
+        f"{source_comp_unit}->{target_comp_unit}_udf_transferred.csv"
+    )
 
 
 if __name__ == "__main__":
