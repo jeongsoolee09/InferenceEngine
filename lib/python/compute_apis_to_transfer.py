@@ -295,7 +295,7 @@ def leave_only_most_similar_pairs(carpro):
                 rows_with_this_method_as_rhs.ns_score
                 == rows_with_this_method_as_rhs.ns_score.max()
             ]
-            acc.append(rows_with_max_similarity_with_rhs)
+            acc.append(rows_with_max_similarity_with_rhs.iloc[1])
         return pd.concat(acc)
 
 
