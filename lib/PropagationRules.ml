@@ -221,8 +221,8 @@ let mark_api_based_on_relative_position_in_its_trunk : rule =
 
 
 let all_rules =
-  [ {rule= contextual_similarity_rule; label= "contextual_similarity_rule"}
-  ; {rule= nodewise_similarity_propagation_rule; label= "nodewise_similarity_propagation_rule"}
-  ; {rule= annotation_rule; label= "annotation_rule"}
-  ; { rule= mark_api_based_on_relative_position_in_its_trunk
-    ; label= "mark_api_based_on_relative_position_in_its_trunk" } ]
+  [| {rule= contextual_similarity_rule; label= "contextual_similarity_rule"}
+   ; {rule= nodewise_similarity_propagation_rule; label= "nodewise_similarity_propagation_rule"}
+   ; {rule= annotation_rule; label= "annotation_rule"}
+   ; { rule= mark_api_based_on_relative_position_in_its_trunk
+     ; label= "mark_api_based_on_relative_position_in_its_trunk" } |]

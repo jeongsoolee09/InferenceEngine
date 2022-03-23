@@ -7,8 +7,6 @@ type trunk = Trunk.t
 module TrunkFeatures = struct
   (** Do the two trunks share the same callee? **)
   let same_callee_in_trunk_count ((trunk1, trunk2) : trunk * trunk) : int =
-    let trunk1_only_methods = Array.map ~f:fst3 trunk1
-    and trunk2_only_methods = Array.map ~f:fst3 trunk2 in
     Array.fold
       ~f:(fun acc vertex ->
         let matching =

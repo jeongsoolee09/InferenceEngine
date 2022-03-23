@@ -716,6 +716,14 @@ module G = struct
       graph []
 
 
+  let this_method_vertices_array (graph : t) (method_ : Method.t) : V.t array =
+    Array.of_list
+    @@ fold_vertex
+         (fun vertex acc ->
+           if Method.equal method_ (Vertex.get_method vertex) then vertex :: acc else acc )
+         graph []
+
+
   let leave_only_df_edges (graph : t) : t =
     fold_edges_e
       (fun ((_, label, _) as edge) acc ->

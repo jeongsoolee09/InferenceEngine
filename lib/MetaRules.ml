@@ -6,33 +6,37 @@ open GraphRepr
     represents the highest priority. *)
 module ForPropagation = struct
   let take_subset_of_applicable_propagation_rules (graph : G.t) (new_fact : Response.t)
-      (prop_rules : PropagationRules.t list) : PropagationRules.t list =
+      (prop_rules : PropagationRules.t array) : PropagationRules.t array =
     (* rule R is applicable to vertex V <=> (def) V has successor with labeled edge required by rule R
                                         <=> (def) the embedded assertion succeeds *)
-    List.rev
-    @@ List.fold
-         ~f:(fun acc prop_rule ->
-           try
-             ignore @@ prop_rule.rule graph new_fact ~dry_run:true ;
-             prop_rule :: acc
-           with Assert_failure _ -> acc )
-         ~init:[] prop_rules
+    let out =
+      Array.of_list
+      @@ Array.fold
+           ~f:(fun acc prop_rule ->
+             try
+               ignore @@ prop_rule.rule graph new_fact ~dry_run:true ;
+               prop_rule :: acc
+             with Assert_failure _ -> acc )
+           ~init:[] prop_rules
+    in
+    Array.rev_inplace out ;
+    out
 
 
-  let assign_priority_on_propagation_rules prop_rules =
+  let assign_priority_on_propagation_rules (prop_rules : PropagationRules.t array) =
     (* TODO static for now, but could be dynamic *)
-    List.map ~f:(fun rule -> (rule, 1)) prop_rules
+    Array.map ~f:(fun rule -> (rule, 1)) prop_rules
 
 
-  let sort_propagation_rules_by_priority graph new_fact : PropagationRules.t list =
+  let sort_propagation_rules_by_priority graph new_fact : PropagationRules.t array =
     let priority_assigned =
       assign_priority_on_propagation_rules
         (take_subset_of_applicable_propagation_rules graph new_fact PropagationRules.all_rules)
     in
-    List.map ~f:fst
-    @@ List.sort
-         ~compare:(fun (_, priority1) (_, priority2) -> -Int.compare priority1 priority2)
-         priority_assigned
+    Array.sort
+      ~compare:(fun (_, priority1) (_, priority2) -> -Int.compare priority1 priority2)
+      priority_assigned;
+    Array.map ~f:fst priority_assigned
 end
 
 (** the priority of asking rules represent their current adequacy of application. *)

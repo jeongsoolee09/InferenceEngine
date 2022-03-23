@@ -108,7 +108,7 @@ let transfer_graph (prev_graph : G.t) (next_graph : G.t) : G.t =
                let propagated =
                  fst
                  @@ propagator response this_method_propagated propagation_rules_to_apply
-                      transferred_responses [] PropagationRules.all_rules
+                      transferred_responses [||] PropagationRules.all_rules
                in
                (Axioms.apply_axioms propagated, response :: transferred_responses)
            | [_; _] as labels ->
@@ -128,7 +128,7 @@ let transfer_graph (prev_graph : G.t) (next_graph : G.t) : G.t =
                    let propagated =
                      fst
                      @@ propagator response this_method_propagated propagation_rules_to_apply
-                          big_response_acc [] PropagationRules.all_rules
+                          big_response_acc [||] PropagationRules.all_rules
                    in
                    (Axioms.apply_axioms propagated, response :: big_response_acc) )
                  ~init:(graph_acc, [])
@@ -150,6 +150,7 @@ let transfer_from_json ~(filename : string) ~(prev_comp_unit : string) (next_gra
   fst
   @@ Array.fold all_pairs
        ~f:(fun (big_graph_acc, big_transferred_responses) method_pair ->
+         print_endline @@ F.asprintf "%s -> %s" method_pair.(1) method_pair.(2) ;
          let prev_graph_method = method_pair.(1) and next_graph_method = method_pair.(2) in
          let prev_graph_method_labels =
            LabelResultMap.find prev_graph_method prev_label_result_map
@@ -170,7 +171,7 @@ let transfer_from_json ~(filename : string) ~(prev_comp_unit : string) (next_gra
              let propagated =
                fst
                @@ propagator response this_method_propagated propagation_rules_to_apply
-                    big_transferred_responses [] PropagationRules.all_rules
+                    big_transferred_responses [||] PropagationRules.all_rules
              in
              (Axioms.apply_axioms propagated, response :: big_transferred_responses)
          | [_; _] as labels ->
@@ -190,7 +191,7 @@ let transfer_from_json ~(filename : string) ~(prev_comp_unit : string) (next_gra
                  let propagated =
                    fst
                    @@ propagator response this_method_propagated propagation_rules_to_apply
-                        big_response_acc [] PropagationRules.all_rules
+                        big_response_acc [||] PropagationRules.all_rules
                  in
                  (Axioms.apply_axioms propagated, response :: big_response_acc) )
                ~init:(next_graph, [])

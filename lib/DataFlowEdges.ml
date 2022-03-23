@@ -14,9 +14,9 @@ module VertexMaker = struct
     match chain_slice with
     | DefineSlice (current, _, loc, _) ->
         (Method.of_string current, LocationSet.of_string loc, ProbQuadruple.initial)
-    | CallSlice (current, callee, loc, _) ->
+    | CallSlice (_, callee, loc, _) ->
         (Method.of_string callee, LocationSet.of_string loc, ProbQuadruple.initial)
-    | VoidCallSlice (current, callee, loc, _) ->
+    | VoidCallSlice (_, callee, loc, _) ->
         (Method.of_string callee, LocationSet.of_string loc, ProbQuadruple.initial)
     | RedefineSlice (current, loc, _) ->
         (Method.of_string current, LocationSet.of_string loc, ProbQuadruple.initial)
@@ -60,7 +60,7 @@ module ChainRefiners = struct
 
 
   let delete_inner_deads (chain_slices : ChainSlice.t list) : ChainSlice.t list =
-    let all_but_last = List.drop_last_exn chain_slices in
+    (* let all_but_last = List.drop_last_exn chain_slices in *)
     (* let exception_condition = *)
     (*   (\* JavaExpert에 있지 않고, rtntype이 void가 아니라면 dead slice를 없애지 말 것 *\) *)
     (*   let second_last_slice = List.nth_exn (List.rev chain_slices) 1 in *)
@@ -125,9 +125,9 @@ module EdgeMaker = struct
       (ChainSlice.t * ChainSlice.t) list * G.LiteralVertex.t option =
     if List.is_empty bicycle_chain then ([], None)
     else
-      let slice1, slice2 = List.last_exn bicycle_chain in
+      let _, slice2 = List.last_exn bicycle_chain in
       match slice2 with
-      | DefineSlice (_, ap, loc, using) as void_call_slice ->
+      | DefineSlice (_, ap, loc, using) ->
           let is_frontend_tmp_var_ap = String.is_prefix ~prefix:"($" in
           if is_frontend_tmp_var_ap ap then
             ( (* List.slice bicycle_chain 0 (List.length bicycle_chain - 1) *) bicycle_chain

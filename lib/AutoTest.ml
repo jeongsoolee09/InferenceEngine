@@ -102,7 +102,7 @@ let rec auto_test_spechunter_for_snapshot_inner (current_snapshot : G.t)
     in
     let propagated =
       fst
-      @@ propagator response current_snapshot propagation_rules_to_apply received_responses []
+      @@ propagator response current_snapshot propagation_rules_to_apply received_responses [||]
            PropagationRules.all_rules
     in
     let propagated' = Axioms.apply_axioms propagated in

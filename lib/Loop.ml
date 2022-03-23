@@ -38,7 +38,7 @@ let rec loop_inner (current_snapshot : G.t) (received_responses : Response.t lis
       in
       let propagated =
         fst
-        @@ propagator response current_snapshot propagation_rules_to_apply received_responses []
+        @@ propagator response current_snapshot propagation_rules_to_apply received_responses [||]
              PropagationRules.all_rules
       in
       let propagated' = Axioms.apply_axioms propagated in

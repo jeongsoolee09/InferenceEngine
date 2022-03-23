@@ -1063,15 +1063,39 @@ module Notebook118 = struct
   let _ = End
 end
 
-module Notebook118 = struct
+module Notebook119 = struct
   let _ = Start
 
-  let site_finished = build_graph site_graph
+  let list = List.init ~f:(fun i -> i) 99999999
 
-  let site_transferred =
-    Transfer.transfer_from_json ~filename:"sagan-renderer_inference_results.json"
-      ~prev_comp_unit:"sagan-renderer" site_graph
+  let array = Array.init ~f:(fun i -> i) 99999999
 
+  let test_list_fold =
+    (* 15 seconds *)
+    let start = Unix.time () in
+    let _ = List.fold ~f:Int.( + ) ~init:0 list in
+    let end_ = Unix.time () in
+    end_ -. start
+
+
+  let test_array_fold =
+    (* 4 seconds *)
+    let start = Unix.time () in
+    let acc = ref 0 in
+    for i = 0 to Array.length array - 1 do
+      acc := array.(i) + !acc
+    done ;
+    let end_ = Unix.time () in
+    end_ -. start
+
+
+  let _ = End
+end
+
+module Notebook120 = struct
+  let _ = Start
+
+  let x = 1
 
   let _ = End
 end
