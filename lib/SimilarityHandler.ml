@@ -13,8 +13,8 @@ let make_contextual_sim_edge (graph : G.t) : G.t =
   if not @@ Sys.file_exists_exn csv_filename then (
     Out_channel.print_string "spawning python process compute_contextual_similarity.py..." ;
     SpawnPython.spawn_python ~pyfile:"./lib/python/compute_contextual_similarity.py"
-      ~args:[graph.comp_unit] ) ;
-  Out_channel.print_endline "done" ;
+      ~args:[graph.comp_unit] ;
+    Out_channel.print_endline "done" ) ;
   let in_chan = In_channel.create csv_filename in
   let csv_array = Csv.to_array @@ Csv.load_in in_chan in
   In_channel.close in_chan ;
@@ -38,7 +38,7 @@ let make_contextual_sim_edge (graph : G.t) : G.t =
   let out =
     G.fold_edges (fun v1 v2 acc -> G.add_edge_e acc (v1, ContextualSimilarity, v2)) dieted graph
   in
-  Out_channel.print_endline "done" ;
+  Out_channel.print_endline "done adding contextual edges." ;
   out
 
 
@@ -51,18 +51,19 @@ let make_nodewise_sim_edge (graph : G.t) : G.t =
     SpawnPython.spawn_python ~pyfile:"./lib/python/compute_nodewise_similarity_apis.py"
       ~args:[graph.comp_unit] ;
     SpawnPython.spawn_python ~pyfile:"./lib/python/compute_nodewise_similarity_udfs.py"
-      ~args:[graph.comp_unit] ) ;
-  Out_channel.print_endline "done" ;
-  let api_in_chan = In_channel.create api_csv_filename in
-  let api_array = Csv.to_array @@ Csv.load_in api_in_chan in
-  let udf_in_chan = In_channel.create udf_csv_filename in
-  let udf_array = Csv.to_array @@ Csv.load_in udf_in_chan in
+      ~args:[graph.comp_unit] ;
+    Out_channel.print_endline "done" ) ;
+  let api_in_chan = In_channel.create api_csv_filename
+  and udf_in_chan = In_channel.create udf_csv_filename in
+  let api_array = Csv.to_array @@ Csv.load_in api_in_chan
+  and udf_array = Csv.to_array @@ Csv.load_in udf_in_chan in
   In_channel.close api_in_chan ;
+  In_channel.close udf_in_chan ;
   Out_channel.print_string "Now adding NS edges..." ;
   Out_channel.flush stdout ;
   let acc = ref [] in
-  Array.iter api_array ~f:(fun array ->
-      let method1 = array.(1) and method2 = array.(2) in
+  Array.iter api_array ~f:(fun array_ ->
+      let method1 = array_.(1) and method2 = array_.(2) in
       let m1_vertices = G.this_method_vertices graph method1
       and m2_vertices = G.this_method_vertices graph method2 in
       List.iter
@@ -86,8 +87,8 @@ let make_nodewise_sim_edge (graph : G.t) : G.t =
                 acc := edge1 :: edge2 :: !acc )
             m2_vertices )
         m1_vertices ) ;
-  Array.iter udf_array ~f:(fun array ->
-      let method1 = array.(0) and method2 = array.(1) in
+  Array.iter udf_array ~f:(fun array_ ->
+      let method1 = array_.(0) and method2 = array_.(1) in
       let m1_vertices = G.this_method_vertices graph method1
       and m2_vertices = G.this_method_vertices graph method2 in
       List.iter
@@ -117,7 +118,7 @@ let make_nodewise_sim_edge (graph : G.t) : G.t =
       ~f:(fun acc (v1, _, v2) -> G.add_edge_e acc (v1, NodeWiseSimilarity, v2))
       dieted ~init:graph
   in
-  Out_channel.print_endline "done" ;
+  Out_channel.print_endline "done adding nodewise edges." ;
   out
 
 

@@ -18,12 +18,19 @@ let build_graph (graph_fragment : G.t) : G.t =
   let this_fragment_unmarked_apis_featuremap, this_fragment_unmarked_udfs_featuremap =
     init_for_graph healed
   in
+  print_endline "Serializing Nodewise Maps..." ;
   CSVSerializer.serialize this_fragment_unmarked_apis_featuremap
     ~filename:(F.asprintf "NodeWiseFeatures_%s_apis.csv" healed.comp_unit) ;
   CSVSerializer.serialize this_fragment_unmarked_udfs_featuremap
     ~filename:(F.asprintf "NodeWiseFeatures_%s_udfs.csv" healed.comp_unit) ;
-  Trunk.Serializer.serialize_graph_trunks_to_json healed ;
-  healed |> SimilarityHandler.make_nodewise_sim_edge |> Axioms.apply_axioms
+  (* Trunk.Serializer.serialize_graph_trunks_to_json healed ; *)
+  healed
+  |> fun i ->
+  print_endline "Making Similarity Edges..." ;
+  i |> SimilarityHandler.make_nodewise_sim_edge
+  |> fun i ->
+  print_endline "Applying Axioms..." ;
+  i |> Axioms.apply_axioms
 
 
 let one_pass (graph_fragment : G.t) : G.t =

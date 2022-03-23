@@ -1050,7 +1050,7 @@ module Notebook117 = struct
   let _ = End
 end
 
-module Notebook = struct
+module Notebook118 = struct
   let _ = Start
 
   (* test the transfer from renderer to site. *)
@@ -1059,7 +1059,19 @@ module Notebook = struct
     Transfer.transfer_from_json ~filename:"sagan-renderer_inference_results.json"
       ~prev_comp_unit:"sagan-renderer" site_graph
 
-  
+
+  let _ = End
+end
+
+module Notebook118 = struct
+  let _ = Start
+
+  let site_finished = build_graph site_graph
+
+  let site_transferred =
+    Transfer.transfer_from_json ~filename:"sagan-renderer_inference_results.json"
+      ~prev_comp_unit:"sagan-renderer" site_graph
+
 
   let _ = End
 end
