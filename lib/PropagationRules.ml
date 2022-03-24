@@ -17,15 +17,13 @@ let contextual_similarity_rule : rule =
   let new_fact_method = Response.get_method new_fact
   and new_fact_label = Response.get_label new_fact in
   let new_fact_method_vertices =
-    G.all_vertices_of_graph graph
-    |> List.filter ~f:(fun (meth, _, _) -> Method.equal meth new_fact_method)
+    List.filter (G.all_vertices_of_graph graph)
+      ~f:(Vertex.get_method >> Method.equal new_fact_method)
   in
   let contextual_succs =
-    new_fact_method_vertices
-    >>= fun vertex -> G.get_succs graph (LV.of_vertex vertex) ~label:ContextualSimilarity
+    new_fact_method_vertices >>= (LV.of_vertex >> G.get_succs graph ~label:ContextualSimilarity)
   in
   assert (Int.( >= ) (List.length contextual_succs) 1) ;
-  (* print_endline *)
   if dry_run then (graph, [])
   else
     let propagated =
@@ -66,20 +64,17 @@ let nodewise_similarity_propagation_rule : rule =
   let new_fact_method = Response.get_method new_fact
   and new_fact_label = Response.get_label new_fact in
   let new_fact_method_vertices =
-    G.all_vertices_of_graph graph
-    |> List.filter ~f:(fun (meth, _, _) -> Method.equal meth new_fact_method)
+    List.filter (G.all_vertices_of_graph graph)
+      ~f:(Vertex.get_method >> Method.equal new_fact_method)
   in
   let similarity_succs =
     let raw_succs =
-      new_fact_method_vertices
-      >>= fun vertex -> G.get_succs graph (LV.of_vertex vertex) ~label:NodeWiseSimilarity
+      new_fact_method_vertices >>= (LV.of_vertex >> G.get_succs graph ~label:NodeWiseSimilarity)
     in
     let module VertexSet = Caml.Set.Make (Vertex) in
     raw_succs |> VertexSet.of_list |> VertexSet.elements
   in
   assert (Int.( >= ) (List.length similarity_succs) 1) ;
-  (* print_endline *)
-  (* @@ F.asprintf "nodewise_similarity_rule chosen for %s" (Response.get_method new_fact) ; *)
   if dry_run then (graph, [])
   else
     let propagated =
@@ -93,9 +88,7 @@ let nodewise_similarity_propagation_rule : rule =
                   DistManipulator.bump succ_dist [Source] ~inc_delta:10. ~dec_delta:5.
                 else if Trunk.vertex_is_close_to_leaf graph (LV.of_vertex succ) then
                   DistManipulator.bump succ_dist [Sink] ~inc_delta:10. ~dec_delta:5.
-                else
-                  (* bump the likelihood of the successor being a source *)
-                  DistManipulator.bump succ_dist [Source] ~inc_delta:10. ~dec_delta:5.
+                else DistManipulator.bump succ_dist [Source] ~inc_delta:10. ~dec_delta:5.
             | Sink ->
                 if Trunk.vertex_is_close_to_root graph (LV.of_vertex succ) then
                   DistManipulator.bump succ_dist [Source] ~inc_delta:10. ~dec_delta:5.
@@ -142,7 +135,6 @@ let annotation_rule : rule =
               Annotations.equivalent this_method_annotation successor_annotation )
             all_ns_succs
         in
-        (* Propagate to NS successors *)
         let ns_propagated =
           List.fold
             ~f:(fun acc vertex ->
@@ -176,7 +168,6 @@ let annotation_rule : rule =
               Annotations.equivalent this_method_annotation successor_annotation )
             all_ns_succs
         in
-        (* Propagate to NS successors *)
         let ns_propagated =
           List.fold
             ~f:(fun acc vertex ->
@@ -202,7 +193,6 @@ let mark_api_based_on_relative_position_in_its_trunk : rule =
     (graph, []) )
   else
     let df_succs = this_method_vertices >>| LV.of_vertex >>= G.get_succs graph ~label:DataFlow in
-    (* propagate along DF edges *)
     let df_propagated =
       List.fold
         ~f:(fun graph_acc df_succ ->
