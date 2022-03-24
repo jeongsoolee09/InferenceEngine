@@ -1055,10 +1055,21 @@ module Notebook118 = struct
 
   (* test the transfer from renderer to site. *)
 
-  let _ =
-    Transfer.transfer_from_json ~filename:"sagan-renderer_inference_results.json"
-      ~prev_comp_unit:"sagan-renderer" site_graph
+  let site_axiom_applied = Axioms.apply_axioms site_graph
 
+  let transferred =
+    Transfer.transfer_from_json ~filename:"sagan-renderer_inference_results.json"
+      ~prev_comp_unit:"sagan-renderer" site_axiom_applied
+
+
+  let indeterminates =
+    List.filter (G.all_vertices_of_graph transferred) ~f:(fun vertex ->
+        ProbQuadruple.is_indeterminate @@ Vertex.get_dist vertex )
+
+
+  let _ = List.length indeterminates
+
+  let _ = Visualizer.visualize_and_open transferred
 
   let _ = End
 end
@@ -1066,36 +1077,68 @@ end
 module Notebook119 = struct
   let _ = Start
 
-  let list = List.init ~f:(fun i -> i) 99999999
+  let site_finished = build_graph site_graph
 
-  let array = Array.init ~f:(fun i -> i) 99999999
-
-  let test_list_fold =
-    (* 15 seconds *)
-    let start = Unix.time () in
-    let _ = List.fold ~f:Int.( + ) ~init:0 list in
-    let end_ = Unix.time () in
-    end_ -. start
+  let transferred =
+    Transfer.transfer_from_json ~filename:"sagan-renderer_inference_results.json"
+      ~prev_comp_unit:"sagan-renderer" site_finished
 
 
-  let test_array_fold =
-    (* 4 seconds *)
-    let start = Unix.time () in
-    let acc = ref 0 in
-    for i = 0 to Array.length array - 1 do
-      acc := array.(i) + !acc
-    done ;
-    let end_ = Unix.time () in
-    end_ -. start
+  let indeterminates =
+    List.filter (G.all_vertices_of_graph transferred) ~f:(fun vertex ->
+        ProbQuadruple.is_indeterminate @@ Vertex.get_dist vertex )
 
 
-  let _ = End
-end
+  (* DONE developing a function that initiates NS propagation on all NS clusters. *)
 
-module Notebook120 = struct
-  let _ = Start
+  let initiate_cluster (supergraph : G.t) (cluster : G.t) : G.t =
+    let there_is_no_indeterminate =
+      List.for_all (G.all_vertices_of_graph cluster)
+        ~f:(Vertex.get_dist >> ProbQuadruple.is_determined)
+    and all_vertices_are_indeterminate =
+      List.for_all (G.all_vertices_of_graph cluster)
+        ~f:(Vertex.get_dist >> ProbQuadruple.is_indeterminate)
+    in
+    if there_is_no_indeterminate || all_vertices_are_indeterminate then supergraph
+    else
+      let random_elem =
+        Utils.random_elem
+          (List.filter (G.all_vertices_of_graph cluster)
+             ~f:(Vertex.get_dist >> ProbQuadruple.is_determined) )
+      in
+      let this_elem_response =
+        let method_ = Vertex.get_method random_elem and dist = Vertex.get_dist random_elem in
+        Response.ForLabel (method_, ProbQuadruple.determine_label dist)
+      in
+      let ns_propagated, _ =
+        Propagator.propagator this_elem_response cluster
+          [| { rule= PropagationRules.nodewise_similarity_propagation_rule
+             ; label= "nodewise_similarity_propagation_rule" } |]
+          [] [||]
+          [| { rule= PropagationRules.nodewise_similarity_propagation_rule
+             ; label= "nodewise_similarity_propagation_rule" } |]
+      in
+      G.fold_vertex
+        (fun vertex current_supergraph ->
+          G.strong_update_dist vertex (Vertex.get_dist vertex) supergraph )
+        ns_propagated supergraph
 
-  let x = 1
+
+  let transferred_graph = transferred
+
+  let initiate_NS_propagation (transferred_graph : G.t) : G.t =
+    let ns_clusters = all_ns_clusters transferred_graph in
+    Array.fold ns_clusters ~f:initiate_cluster ~init:transferred_graph
+
+
+  let internal_ns_propagated = initiate_NS_propagation transferred
+
+  let indeterminates =
+    List.filter (G.all_vertices_of_graph internal_ns_propagated) ~f:(fun vertex ->
+        ProbQuadruple.is_indeterminate @@ Vertex.get_dist vertex )
+
+
+  let _ = List.length indeterminates
 
   let _ = End
 end
