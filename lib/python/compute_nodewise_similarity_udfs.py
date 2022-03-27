@@ -69,7 +69,7 @@ def get_word_set(identifier):
 
 class PairwiseFeature:
     scores = {
-        "belong_to_same_class": 3,
+        "belong_to_same_class": 5,
         "returnval_not_used_in_caller": 3,
         "return_type_is_anothers_class": 4,
         "has_same_return_type": 2,
@@ -77,6 +77,7 @@ class PairwiseFeature:
         "has_same_annots": 9,
         "method_contains_same_words": 2,
         "method_has_same_prefixes": 4,
+        "method_name_is_same": 8,
     }
 
     @staticmethod
@@ -148,7 +149,7 @@ class PairwiseFeature:
         if there_is_common_annotation:
             return PairwiseFeature.scores["has_same_annots"]
         else:
-            return 0
+            return -10
 
     @staticmethod
     def method_contains_same_words(row):
@@ -168,6 +169,15 @@ class PairwiseFeature:
         else:
             return 0
 
+    @staticmethod
+    def method_name_is_same(row):
+        method1_method_name = row.method_name1
+        method2_method_name = row.method_name2
+        if method1_method_name == method2_method_name:
+            return PairwiseFeature.scores["method_name_is_same"]
+        else:
+            return 0
+
 
 def run_all_pairwise_feature(row):
     return reduce(
@@ -181,6 +191,7 @@ def run_all_pairwise_feature(row):
             PairwiseFeature.has_same_annots,
             PairwiseFeature.method_contains_same_words,
             PairwiseFeature.method_has_same_prefixes,
+            PairwiseFeature.method_name_is_same,
         ],
         0,
     )
@@ -244,7 +255,9 @@ def main():
     filtered_above_threshold = carpro[carpro.ns_score > ns_threshold]
     filtered = no_reflexive(filtered_above_threshold)
     filtered = leave_only_most_similar_pairs(filtered)
-    filtered[["methname_x", "methname_y"]].to_csv(f"NodeWiseFeatures_{comp_unit}_udfs.csv_filtered.csv")
+    filtered[["methname_x", "methname_y"]].to_csv(
+        f"NodeWiseFeatures_{comp_unit}_udfs.csv_filtered.csv"
+    )
 
 
 if __name__ == "__main__":
@@ -253,8 +266,41 @@ if __name__ == "__main__":
 
 def repl_setup():
     os.chdir("/Users/jslee/Dropbox/InferenceEngine/")
-    comp_unit = "sagan-renderer"
 
 
-def comment(dataframe, bidigraph):
-    pass
+def comment(dataframe, bidigraph, carpro):
+    def inspect(m1, m2):
+        print(carpro[(carpro["methname_x"] == m1) & (carpro["methname_y"] == m2)])
+
+    comp_unit = "sagan-site"
+    teamservice1 = "MemberProfile TeamService.createOrUpdateMemberProfile(Long,String,String,String)"
+    teamservice2 = "MemberProfile TeamService.fetchMemberProfile(Long)"
+    teamservice3 = "MemberProfile TeamService.fetchMemberProfileUsername(String)"
+    inspect(teamservice1, teamservice2)
+    inspect(teamservice2, teamservice3)
+    inspect(teamservice1, teamservice3)
+
+    fetch1 = "GuideContent SaganRendererClient.fetchGettingStartedGuideContent(String)"
+    fetch2 = "GuideContent SaganRendererClient.fetchTopicalGuideContent(String)"
+    fetch3 = "GuideContent SaganRendererClient.fetchTutorialGuideContent(String)"
+    fetch4 = "GuideMetadata SaganRendererClient.fetchGettingStartedGuide(String)"
+    fetch5 = "GuideMetadata SaganRendererClient.fetchTopicalGuide(String)"
+    fetch6 = "GuideMetadata SaganRendererClient.fetchTutorialGuide(String)"
+
+    inspect(fetch1, fetch2)
+    inspect(fetch2, fetch3)
+    inspect(fetch3, fetch4)
+    inspect(fetch4, fetch5)
+    inspect(fetch5, fetch6)
+
+    # noice!
+
+    admin1 = (
+        "String BlogAdminController.createPost(Principal,PostForm,BindingResult,Model)"
+    )
+    admin2 = "String BlogAdminController.dashboard(Model,int)"
+    admin3 = "String BlogAdminController.newPost(Model)"
+
+    inspect(admin1, admin2)
+    inspect(admin2, admin3)
+    inspect(admin1, admin3)

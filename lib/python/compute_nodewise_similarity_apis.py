@@ -62,6 +62,10 @@ def get_word_set(identifier):
     return set(map(lambda string: string.lower(), camel_case_split(identifier)))
 
 
+def split_class_name(class_name):
+    return class_name.split("$")
+
+
 class PairwiseFeature:
     scores = {
         "is_both_framework_code": 4,
@@ -76,7 +80,10 @@ class PairwiseFeature:
         "method_has_same_prefixes": 5,
         "class_name_has_same_words": 4,
         "class_name_has_same_prefixes": 7,
-        "class_name_has_same_suffixes": 6
+        "class_name_has_same_suffixes": 6,
+        "method_name_is_same": 7,
+        "is_sub_super": 8,
+        "is_subclass_of_same_superclass": 8
     }
 
     @staticmethod
@@ -207,7 +214,9 @@ class PairwiseFeature:
         )
         method1_method_words = camel_case_split(method1_class_name_camelcase)
         method2_method_words = camel_case_split(method2_class_name_camelcase)
-        there_is_common_word = len(set(method1_method_words).intersection(method2_method_words))
+        there_is_common_word = len(
+            set(method1_method_words).intersection(method2_method_words)
+        )
         if there_is_common_word:
             return PairwiseFeature.scores["class_name_has_same_words"]
         else:
@@ -247,6 +256,40 @@ class PairwiseFeature:
         else:
             return 0
 
+    @staticmethod
+    def method_name_is_same(row):
+        method1_method_name = row.method_name1
+        method2_method_name = row.method_name2
+        if method1_method_name == method2_method_name:
+            return PairwiseFeature.scores["method_name_is_same"]
+        else:
+            return 0
+
+    @staticmethod
+    def is_sub_super(row):
+        method1_class_name = row.class_name1
+        method2_class_name = row.class_name2
+        is_sub_super = method1_class_name != method2_class_name and (
+            method1_class_name.startswith(method2_class_name)
+            or method2_class_name.startswith(method1_class_name)
+        )
+        if is_sub_super:
+            return PairwiseFeature.scores["is_sub_super"]
+        else:
+            return 0
+
+    @staticmethod
+    def is_subclass_of_same_superclass(row):
+        method1_class_name = row.class_name1
+        method2_class_name = row.class_name2
+        method1_superclass_name = method1_class_name[0]
+        method2_superclass_name = method2_class_name[0]
+        if method1_superclass_name == method2_superclass_name:
+            return PairwiseFeature.scores["is_subclass_of_same_superclass"]
+        else:
+            return 0
+
+
 def run_all_pairwise_feature(row):
     return reduce(
         lambda acc, feature: acc + feature(row),
@@ -257,13 +300,14 @@ def run_all_pairwise_feature(row):
             PairwiseFeature.returnval_not_used_in_caller,
             PairwiseFeature.return_type_is_anothers_class,
             PairwiseFeature.has_same_return_type,
-            # PairwiseFeature.is_both_java_builtin,
-            # PairwiseFeature.is_both_initializer,
             PairwiseFeature.method_contains_same_words,
             # PairwiseFeature.method_has_same_prefixes,
             PairwiseFeature.class_name_has_same_words,
             PairwiseFeature.class_name_has_same_prefixes,
             PairwiseFeature.class_name_has_same_suffixes,
+            PairwiseFeature.method_name_is_same,
+            PairwiseFeature.is_sub_super,
+            PairwiseFeature.is_subclass_of_same_superclass,
         ],
         0,
     )
@@ -311,7 +355,9 @@ def main():
     # filter rows based on ns_score
     filtered_above_threshold = carpro[carpro.ns_score > ns_threshold]
     filtered = no_reflexive(filtered_above_threshold)
-    filtered[["methname_x", "methname_y", "ns_score"]].to_csv(f"NodeWiseFeatures_{comp_unit}_apis.csv_filtered.csv")
+    filtered[["methname_x", "methname_y", "ns_score"]].to_csv(
+        f"NodeWiseFeatures_{comp_unit}_apis.csv_filtered.csv"
+    )
 
 
 if __name__ == "__main__":
@@ -320,10 +366,16 @@ if __name__ == "__main__":
 
 def repl_setup():
     os.chdir("/Users/jslee/Dropbox/InferenceEngine/")
-    comp_unit = "sagan-renderer"
+    comp_unit = "sagan-site"
     csvfile = f"NodeWiseFeatures_{comp_unit}_apis.csv"
     dataframe = pd.read_csv(csvfile)
 
 
 def comment(dataframe):
-    pass
+
+    def inspect(m1, m2):
+        print(carpro[(carpro["methname_x"] == m1) & (carpro["methname_y"] == m2)])
+
+    securityconfig1 = "void SecurityConfig$AdminAuthenticationConfig$1.doFilterInternal(HttpServletRequest,HttpServletResponse,FilterChain)"
+    securityconfig2 = "AuthenticationManager SecurityConfig$ApiAuthenticationConfig.githubAuthenticationManager()"
+    securityconfig3 = "void SecurityConfig.configureHeaders(HeadersConfigurer)"
