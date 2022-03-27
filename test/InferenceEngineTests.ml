@@ -1585,7 +1585,20 @@ end
 module Notebook126 = struct
   let _ = Start
 
-  let x = 1
+  (* DONE *)
+
+  let is_interface_method (method_ : Method.t) : bool =
+    let all_interfaces =
+      InterfaceScraper.scrape_interfaces_from_directory Deserializer.project_root
+    in
+    List.mem all_interfaces (Method.get_class_name method_) ~equal:String.equal
+
+
+  let apis = In_channel.read_lines "APIs.txt"
+
+  let fake_apis = List.filter apis ~f:is_interface_method
+
+  let _ = FileAmender.amend_interface_method ()
 
   let _ = End
 end

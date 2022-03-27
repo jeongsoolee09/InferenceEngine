@@ -401,3 +401,23 @@ let classname_implements_some_interface (method_ : t) : bool =
       Deserializer.project_root
   in
   Option.is_some @@ List.Assoc.find all_class_interface_pairs classname ~equal:String.equal
+
+
+module FileAmender = struct
+  let is_interface_method (method_ : t) : bool =
+    let all_interfaces =
+      InterfaceScraper.scrape_interfaces_from_directory Deserializer.project_root
+    in
+    List.mem all_interfaces (get_class_name method_) ~equal:String.equal
+
+
+  (* NOTE this method should be called right after the engine is initialized. *)
+  let amend_interface_method () =
+    let api_line_by_line = In_channel.read_lines "APIs.txt" in
+    (* These are the methods to amend *)
+    let interface_methods = List.filter api_line_by_line ~f:is_interface_method in
+    let udfs_amended = List.append (In_channel.read_lines "UDFs.txt") interface_methods in
+    Out_channel.write_lines "APIs_amended.txt"
+      (List.filter api_line_by_line ~f:(fun meth -> not @@ List.mem interface_methods meth ~equal)) ;
+    Out_channel.write_lines "UDFs_amended.txt" udfs_amended
+end
