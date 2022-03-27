@@ -201,8 +201,10 @@ let mark_api_based_on_relative_position_in_its_trunk : rule =
             match Method.is_api (Vertex.get_method df_succ) with
             | true ->
                 vertex_dist
-            | false ->
+            | false when not @@ Annotations.has_annot (Vertex.get_method df_succ) ->
                 DistManipulator.bump vertex_dist [None] ~inc_delta:10. ~dec_delta:5.
+            | _ ->
+                vertex_dist
           in
           G.strong_update_dist df_succ new_dist graph_acc )
         df_succs ~init:graph

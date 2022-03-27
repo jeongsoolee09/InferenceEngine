@@ -45,14 +45,12 @@ let make_contextual_sim_edge (graph : G.t) : G.t =
 let make_nodewise_sim_edge (graph : G.t) : G.t =
   let api_csv_filename = F.asprintf "NodeWiseFeatures_%s_apis.csv_filtered.csv" graph.comp_unit in
   let udf_csv_filename = F.asprintf "NodeWiseFeatures_%s_udfs.csv_filtered.csv" graph.comp_unit in
-  if (not @@ Sys.file_exists_exn api_csv_filename) || (not @@ Sys.file_exists_exn udf_csv_filename)
-  then (
-    Out_channel.print_string "spawning python process compute_nodewise_similarity.py..." ;
+  if not @@ Sys.file_exists_exn api_csv_filename then
     SpawnPython.spawn_python ~pyfile:"./lib/python/compute_nodewise_similarity_apis.py"
       ~args:[graph.comp_unit] ;
+  if not @@ Sys.file_exists_exn udf_csv_filename then
     SpawnPython.spawn_python ~pyfile:"./lib/python/compute_nodewise_similarity_udfs.py"
       ~args:[graph.comp_unit] ;
-    Out_channel.print_endline "done" ) ;
   let api_in_chan = In_channel.create api_csv_filename
   and udf_in_chan = In_channel.create udf_csv_filename in
   let api_array = Csv.to_array @@ Csv.load_in api_in_chan
@@ -88,7 +86,7 @@ let make_nodewise_sim_edge (graph : G.t) : G.t =
             m2_vertices )
         m1_vertices ) ;
   Array.iter udf_array ~f:(fun array_ ->
-      let method1 = array_.(0) and method2 = array_.(1) in
+      let method1 = array_.(1) and method2 = array_.(2) in
       let m1_vertices = G.this_method_vertices graph method1
       and m2_vertices = G.this_method_vertices graph method2 in
       List.iter

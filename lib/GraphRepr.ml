@@ -144,6 +144,14 @@ module ProbQuadruple = struct
     TaintLabel.equal (determine_label dist) TaintLabel.Indeterminate
 
 
+  let is_srm (dist : t) : bool =
+    match determine_label dist with Source | Sink | Sanitizer -> true | _ -> false
+
+
+  let is_determined (dist : t) : bool =
+    not @@ TaintLabel.equal (determine_label dist) TaintLabel.Indeterminate
+
+
   let dist_is_flat (dist : t) : bool = equal dist initial
 end
 

@@ -350,4 +350,20 @@ module InterfaceScraper = struct
           out
       | Some res ->
           res
+
+
+  let scrape_method_names_from_single_interface (file_absdir : string) : string list =
+    let file_line_by_line = In_channel.read_lines file_absdir in
+    let lines_after_interface_decl =
+      List.drop_while file_line_by_line ~f:(not << is_interface_decl)
+    in
+    let lines_ending_with_semicolon =
+      List.map ~f:String.strip
+      @@ List.filter lines_after_interface_decl ~f:(String.is_suffix ~suffix:";")
+    in
+    List.stable_dedup
+    @@ List.map lines_ending_with_semicolon ~f:(fun line ->
+           let split_on_open_paren = String.split line ~on:'(' in
+           let split_on_space = String.split (List.hd_exn split_on_open_paren) ~on:' ' in
+           List.last_exn split_on_space )
 end

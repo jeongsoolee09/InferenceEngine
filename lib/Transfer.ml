@@ -124,3 +124,41 @@ let transfer_from_json ~(filename : string) ~(prev_comp_unit : string) (next_gra
                (TaintLabel.string_of_list otherwise) ;
           acc )
     ~init:next_graph
+
+
+let initiate_cluster (supergraph : G.t) (cluster : G.t) : G.t =
+  let there_is_no_indeterminate =
+    List.for_all (G.all_vertices_of_graph cluster)
+      ~f:(Vertex.get_dist >> ProbQuadruple.is_determined)
+  and all_vertices_are_indeterminate =
+    List.for_all (G.all_vertices_of_graph cluster)
+      ~f:(Vertex.get_dist >> ProbQuadruple.is_indeterminate)
+  in
+  if there_is_no_indeterminate || all_vertices_are_indeterminate then supergraph
+  else
+    let random_elem =
+      Utils.random_elem
+        (List.filter (G.all_vertices_of_graph cluster)
+           ~f:(Vertex.get_dist >> ProbQuadruple.is_determined) )
+    in
+    let this_elem_response =
+      let method_ = Vertex.get_method random_elem and dist = Vertex.get_dist random_elem in
+      Response.ForLabel (method_, ProbQuadruple.determine_label dist)
+    in
+    let ns_propagated, _ =
+      Propagator.propagator this_elem_response cluster
+        [| { rule= PropagationRules.nodewise_similarity_propagation_rule
+           ; label= "nodewise_similarity_propagation_rule" } |]
+        [] [||]
+        [| { rule= PropagationRules.nodewise_similarity_propagation_rule
+           ; label= "nodewise_similarity_propagation_rule" } |]
+    in
+    G.fold_vertex
+      (fun vertex current_supergraph ->
+        G.strong_update_dist vertex (Vertex.get_dist vertex) current_supergraph )
+      ns_propagated supergraph
+
+
+let initiate_NS_propagation (transferred_graph : G.t) : G.t =
+  let ns_clusters = SimilarityHandler.all_ns_clusters transferred_graph in
+  Array.fold ns_clusters ~f:initiate_cluster ~init:transferred_graph

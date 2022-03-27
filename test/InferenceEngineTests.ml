@@ -22,6 +22,7 @@ open SpanningTree
 open WeaklyConnectedComponents
 open TaintLabel
 open EdgeLabel
+open Transfer
 module Json = Yojson.Basic
 
 type delimiter = Start | End
@@ -393,25 +394,9 @@ module Notebook102 = struct
 
   let _ = GetterSetter.is_setter "void AtomFeedView.setRenderedContent(Post,Entry)"
 
-  let gettersetter_none_marked =
-    Axioms.Distribution.getters_setters_and_predicates_are_none renderer_graph
+  let gettersetter_none_marked = Axioms.Distribution.getters_setters_predicates_equals_are_none
 
-
-  let gettersetter_none_marked =
-    Axioms.Distribution.getters_setters_and_predicates_are_none site_graph
-
-
-  let _ = Visualizer.visualize_and_open gettersetter_none_marked
-
-  let unmarked_udfs = G.get_unmarked_udfs gettersetter_none_marked
-
-  let unmarked_apis = G.get_unmarked_apis gettersetter_none_marked
-
-  let _ = List.length unmarked_udfs
-
-  let _ = List.length unmarked_apis
-
-  let _ = G.nb_vertex gettersetter_none_marked
+  let gettersetter_none_marked = Axioms.Distribution.getters_setters_predicates_equals_are_none
 
   let _ = End
 end
@@ -936,9 +921,9 @@ module Notebook114 = struct
     and recursive_succs_and_distances =
       Array.of_list @@ get_recursive_succs graph vertex ~label:DataFlow
     in
-    Array.sort recursive_preds_and_distances ~compare:(fun (pred1, distance1) (pred2, distance2) ->
+    Array.sort recursive_preds_and_distances ~compare:(fun (_, distance1) (_, distance2) ->
         -Int.compare distance1 distance2 ) ;
-    Array.sort recursive_succs_and_distances ~compare:(fun (pred1, distance1) (pred2, distance2) ->
+    Array.sort recursive_succs_and_distances ~compare:(fun (_, distance1) (_, distance2) ->
         -Int.compare distance1 distance2 ) ;
     let farthest_pred_distance = snd recursive_preds_and_distances.(0)
     and farthest_succ_distance = snd recursive_succs_and_distances.(0) in
@@ -1120,7 +1105,7 @@ module Notebook119 = struct
       in
       G.fold_vertex
         (fun vertex current_supergraph ->
-          G.strong_update_dist vertex (Vertex.get_dist vertex) supergraph )
+          G.strong_update_dist vertex (Vertex.get_dist vertex) current_supergraph )
         ns_propagated supergraph
 
 
@@ -1139,6 +1124,468 @@ module Notebook119 = struct
 
 
   let _ = List.length indeterminates
+
+  (* what are those methods? *)
+
+  let indeterminate_methods = List.map indeterminates ~f:Vertex.get_method |> List.stable_dedup
+
+  let _ = List.length indeterminate_methods (* 232 *)
+
+  let ns_clusters = all_ns_clusters site_finished
+
+  let ns_clusters_enumeration = Array.mapi ns_clusters ~f:(fun index cluster -> (cluster, index))
+
+  let find_containing_cluster_number (clusters : (G.t * int) array) (method_ : Method.t) :
+      int option =
+    Array.fold clusters
+      ~f:(fun acc (cluster, index) ->
+        if List.mem (G.all_methods_of_graph cluster) method_ ~equal:Method.equal then Some index
+        else acc )
+      ~init:(None : int option)
+
+
+  let indeterminate_methods_membership =
+    List.map indeterminate_methods ~f:(fun method_ ->
+        (method_, find_containing_cluster_number ns_clusters_enumeration method_) )
+
+
+  let not_connected_methods =
+    List.map ~f:fst
+    @@ List.filter indeterminate_methods_membership ~f:(fun (_, membership) ->
+           Option.is_none membership )
+
+
+  let _ = List.length not_connected_methods
+
+  let _ =
+    (* let's debug the NS_connection: the `fetch` families should be connected!! *)
+    (* but first, we sort the methods and output them. *)
+    let sorted_methods = List.sort ~compare:String.compare not_connected_methods in
+    Out_channel.with_file "not_connected_methods.txt" ~f:(fun out_chan ->
+        Out_channel.output_lines out_chan sorted_methods )
+
+
+  let _ = End
+end
+
+module Notebook120 = struct
+  let _ = Start
+
+  let site_finished = build_graph site_graph
+
+  let transferred =
+    Transfer.transfer_from_json ~filename:"sagan-renderer_inference_results.json"
+      ~prev_comp_unit:"sagan-renderer" site_finished
+
+
+  let internal_ns_propagated = Transfer.initiate_NS_propagation transferred
+
+  let indeterminates =
+    List.filter (G.all_vertices_of_graph internal_ns_propagated) ~f:(fun vertex ->
+        ProbQuadruple.is_indeterminate @@ Vertex.get_dist vertex )
+
+
+  let indeterminate_methods = List.map indeterminates ~f:Vertex.get_method |> List.stable_dedup
+
+  let ns_clusters = all_ns_clusters site_finished
+
+  let ns_clusters_enumeration = Array.mapi ns_clusters ~f:(fun index cluster -> (cluster, index))
+
+  let find_containing_cluster_number (clusters : (G.t * int) array) (method_ : Method.t) :
+      int option =
+    Array.fold clusters
+      ~f:(fun acc (cluster, index) ->
+        if List.mem (G.all_methods_of_graph cluster) method_ ~equal:Method.equal then Some index
+        else acc )
+      ~init:(None : int option)
+
+
+  let indeterminate_methods_membership =
+    List.map indeterminate_methods ~f:(fun method_ ->
+        (method_, find_containing_cluster_number ns_clusters_enumeration method_) )
+
+
+  let not_connected_methods =
+    List.map ~f:fst
+    @@ List.filter indeterminate_methods_membership ~f:(fun (_, membership) ->
+           Option.is_none membership )
+
+
+  let _ = List.length not_connected_methods (* 101 *)
+
+  let _ =
+    (* let's debug the NS_connection: the `fetch` families should be connected!! *)
+    (* but first, we sort the methods and output them. *)
+    let sorted_methods = List.sort ~compare:String.compare not_connected_methods in
+    Out_channel.with_file "not_connected_methods.txt" ~f:(fun out_chan ->
+        Out_channel.output_lines out_chan sorted_methods )
+
+
+  let _ = List.length indeterminates
+
+  let _ = List.length indeterminate_methods (* 120 *)
+
+  let _ = End
+end
+
+module Notebook121 = struct
+  let _ = Start
+
+  (* WORKING Visualizing NS clusters *)
+
+  let site_finished = build_graph site_graph
+
+  let ns_graph = G.leave_only_ns_edges site_finished
+
+  let subgraphs = WeaklyConnectedComponents.find_distinct_subgraphs_with_edges ns_graph
+
+  let subgraphs_integrated =
+    G.empty
+    |> fun g ->
+    Array.fold
+      ~f:(fun big_acc subgraph ->
+        G.fold_vertex (fun vertex smol_acc -> G.add_vertex smol_acc vertex) subgraph big_acc )
+      ~init:g subgraphs
+    |> fun g ->
+    Array.fold
+      ~f:(fun big_acc subgraph ->
+        G.fold_edges_e (fun edge smol_acc -> G.add_edge_e smol_acc edge) subgraph big_acc )
+      ~init:g subgraphs
+
+
+  let _ = Visualizer.visualize_and_open subgraphs_integrated
+
+  let _ = End
+end
+
+module Notebook122 = struct
+  let _ = Start
+
+  let site_finished = build_graph site_graph
+
+  let ns_graph = G.leave_only_ns_edges site_finished
+
+  let subgraphs = WeaklyConnectedComponents.find_distinct_subgraphs_with_edges ns_graph
+
+  let subgraphs_api_only =
+    Array.filter subgraphs ~f:(fun subgraph ->
+        List.for_all (G.all_methods_of_graph subgraph) ~f:Method.is_api )
+
+
+  let _ = Array.length subgraphs_api_only (* 19 *)
+
+  let subgraphs_integrated_apis_only =
+    G.empty
+    |> fun g ->
+    Array.fold
+      ~f:(fun big_acc subgraph ->
+        G.fold_vertex
+          (fun vertex smol_acc ->
+            if Method.is_api (Vertex.get_method vertex) then G.add_vertex smol_acc vertex
+            else smol_acc )
+          subgraph big_acc )
+      ~init:g subgraphs
+    |> fun g ->
+    Array.fold
+      ~f:(fun big_acc subgraph ->
+        G.fold_edges_e
+          (fun edge smol_acc ->
+            if
+              Method.is_api (Vertex.get_method (fst3 edge))
+              && Method.is_api (Vertex.get_method (trd3 edge))
+            then G.add_edge_e smol_acc edge
+            else smol_acc )
+          subgraph big_acc )
+      ~init:g subgraphs
+
+
+  let _ = Visualizer.visualize_and_open subgraphs_integrated_apis_only
+
+  let _ = End
+end
+
+module Notebook123 = struct
+  let _ = Start
+
+  let site_finished = build_graph site_graph
+
+  let ns_graph = G.leave_only_ns_edges site_finished
+
+  let _ = G.all_methods_of_graph ns_graph
+
+  let _ = 1
+
+  (* *** DONE API: .get()은 non이야 *)
+
+  let is_api_with_get_and_no_intypes (method_ : Method.t) : bool =
+    Method.is_api method_
+    && String.is_prefix (Method.get_method_name method_) ~prefix:"get"
+    && String.is_substring method_ ~substring:"()"
+
+
+  let api_that_has_prefix_get_and_intype_is_void_is_none (graph : G.t) =
+    let all_apis_with_get_and_no_intypes =
+      List.filter (G.all_methods_of_graph graph) ~f:is_api_with_get_and_no_intypes
+    in
+    all_apis_with_get_and_no_intypes
+
+
+  (* *** DONE API: void .set()은 non이야 *)
+
+  let _ = api_that_has_prefix_get_and_intype_is_void_is_none ns_graph
+
+  let is_api_with_set_prefix_set_and_void_rtntype (method_ : Method.t) : bool =
+    Method.is_api method_
+    && String.is_prefix (Method.get_method_name method_) ~prefix:"set"
+    && String.equal (Method.get_return_type method_) "void"
+
+
+  let api_that_has_prefix_set_and_rtntype_is_void_is_none (graph : G.t) =
+    let all_apis_with_set_and_void_rtntypes =
+      List.filter (G.all_methods_of_graph graph) ~f:is_api_with_set_prefix_set_and_void_rtntype
+    in
+    all_apis_with_set_and_void_rtntypes
+
+
+  let _ = api_that_has_prefix_set_and_rtntype_is_void_is_none ns_graph
+
+  (* *** DONE API: java.util 끼리 모으기 *)
+
+  let is_java_builtin (method_ : Method.t) : bool =
+    String.is_prefix (Method.get_package_name method_) ~prefix:"java."
+
+
+  let all_java_builtin_methods_and_their_packages (graph : G.t) =
+    let all_java_builtin_methods = List.filter (G.all_methods_of_graph graph) ~f:is_java_builtin in
+    List.map ~f:(fun method_ -> (method_, Method.get_package_name method_)) all_java_builtin_methods
+
+
+  let java_builtins_and_packages = all_java_builtin_methods_and_their_packages ns_graph
+
+  (* 108!! *)
+
+  (* now i want to partition them by package names. *)
+
+  let partitioned_by_packages =
+    let all_packages = List.stable_dedup @@ List.map ~f:snd java_builtins_and_packages in
+    List.map all_packages ~f:(fun package ->
+        List.filter ~f:(String.equal package << snd) java_builtins_and_packages )
+
+
+  let format_for_single_package tuples =
+    let stringlist =
+      List.fold tuples
+        ~f:(fun acc (method_, package) -> F.asprintf " ; (%s, %s)\n" method_ package :: acc)
+        ~init:[]
+    in
+    F.asprintf "[%s]" (String.concat stringlist)
+
+
+  let _ =
+    let stringlist = List.map partitioned_by_packages ~f:format_for_single_package in
+    Out_channel.with_file "java_builtin_methods.txt" ~f:(fun out_chan ->
+        Out_channel.output_lines out_chan stringlist )
+
+
+  let transferred =
+    Transfer.transfer_from_json ~filename:"sagan-renderer_inference_results.json"
+      ~prev_comp_unit:"sagan-renderer" site_finished
+
+
+  let internal_ns_propagated = Transfer.initiate_NS_propagation transferred
+
+  let indeterminates =
+    List.filter (G.all_vertices_of_graph internal_ns_propagated) ~f:(fun vertex ->
+        ProbQuadruple.is_indeterminate @@ Vertex.get_dist vertex )
+
+
+  let indeterminate_methods =
+    List.map indeterminates ~f:Vertex.get_method |> List.stable_dedup (* 120 *)
+
+
+  let indeterminate_apis = List.filter ~f:Method.is_api indeterminate_methods (* 63 *)
+
+  let indeterminate_udfs = List.filter ~f:Method.is_udf indeterminate_methods (* 57 *)
+
+  (* TODO How many of them are indeterminates? *)
+
+  let interesting =
+    let m1 = api_that_has_prefix_get_and_intype_is_void_is_none ns_graph
+    and m2 = api_that_has_prefix_set_and_rtntype_is_void_is_none ns_graph
+    and m3 = all_java_builtin_methods_and_their_packages ns_graph in
+    m1 @ m2 @ (m3 >>| fst)
+
+
+  let _ =
+    List.length @@ List.stable_dedup @@ List.map ~f:Vertex.get_method
+    @@ List.filter
+         (interesting >>= G.this_method_vertices internal_ns_propagated)
+         ~f:(ProbQuadruple.is_indeterminate << Vertex.get_dist)
+
+
+  let ns_clusters = all_ns_clusters site_finished
+
+  let subgraphs = WeaklyConnectedComponents.find_distinct_subgraphs_with_edges ns_graph
+
+  let subgraphs_integrated =
+    G.empty
+    |> fun g ->
+    Array.fold
+      ~f:(fun big_acc subgraph ->
+        G.fold_vertex (fun vertex smol_acc -> G.add_vertex smol_acc vertex) subgraph big_acc )
+      ~init:g subgraphs
+    |> fun g ->
+    Array.fold
+      ~f:(fun big_acc subgraph ->
+        G.fold_edges_e (fun edge smol_acc -> G.add_edge_e smol_acc edge) subgraph big_acc )
+      ~init:g subgraphs
+
+
+  let not_connected = In_channel.read_lines "not_connected_methods.txt"
+
+  let not_connected_interesting =
+    (* 22 *)
+    List.length
+    @@ List.filter interesting ~f:(fun method_ ->
+           List.mem not_connected method_ ~equal:Method.equal )
+
+
+  (* nice! *)
+
+  let _ = End
+end
+
+module Notebook124 = struct
+  let _ = Start
+
+  let site_finished = build_graph site_graph
+
+  (* I want to know the constitution of not_connected_methods. *)
+
+  let not_connected : Method.t list = In_channel.read_lines "not_connected_methods.txt"
+
+  let not_connected_apis = List.filter ~f:Method.is_api not_connected (* 47 *)
+
+  let not_connected_udfs = List.filter ~f:Method.is_udf not_connected (* 54 *)
+
+  let transferred =
+    Transfer.transfer_from_json ~filename:"sagan-renderer_inference_results.json"
+      ~prev_comp_unit:"sagan-renderer" site_finished
+
+
+  let internal_ns_propagated = Transfer.initiate_NS_propagation transferred
+
+  let indeterminates =
+    List.filter (G.all_vertices_of_graph internal_ns_propagated) ~f:(fun vertex ->
+        ProbQuadruple.is_indeterminate @@ Vertex.get_dist vertex )
+
+
+  let indeterminate_methods =
+    List.map indeterminates ~f:Vertex.get_method |> List.stable_dedup (* 120 *)
+
+
+  let determinate_apis =
+    List.stable_dedup @@ List.map ~f:Vertex.get_method
+    @@ List.filter
+         ~f:(ProbQuadruple.is_determined << Vertex.get_dist)
+         (G.all_vertices_of_graph internal_ns_propagated)
+
+
+  let determinate_api_vertices =
+    List.filter
+      ~f:(ProbQuadruple.is_determined << Vertex.get_dist)
+      (G.all_vertices_of_graph internal_ns_propagated)
+
+
+  let _ =
+    let repository_methods =
+      List.filter determinate_apis ~f:(fun meth ->
+          String.is_substring (Method.get_class_name meth) ~substring:"Repository" )
+    in
+    let repository_vertices =
+      repository_methods >>= G.this_method_vertices internal_ns_propagated
+    in
+    Out_channel.write_lines "repository_methods.txt"
+      ( repository_vertices
+      >>| fun vertex ->
+      F.asprintf "(%s, %s)" (Vertex.to_string vertex)
+        (ProbQuadruple.to_string @@ Vertex.get_dist vertex) )
+
+
+  let _ =
+    let repository_methods =
+      List.filter determinate_apis ~f:(fun meth ->
+          String.is_substring (Method.get_class_name meth) ~substring:"Repository" )
+    in
+    let repository_vertices = repository_methods >>= G.this_method_vertices transferred in
+    Out_channel.write_lines "repository_methods.txt"
+      ( repository_vertices
+      >>| fun vertex ->
+      F.asprintf "(%s, %s)" (Vertex.to_string vertex)
+        (ProbQuadruple.to_string @@ Vertex.get_dist vertex) )
+
+
+  let indeterminate_apis = List.filter ~f:Method.is_api indeterminate_methods (* 63 *)
+
+  let indeterminate_udfs = List.filter ~f:Method.is_udf indeterminate_methods (* 57 *)
+
+  let indeterminate_udfs_and_their_annots =
+    indeterminate_udfs >>| fun udf -> (udf, Annotations.get_annots udf)
+
+
+  let indeterminate_udfs_without_annots =
+    (* 39 *)
+    List.filter indeterminate_udfs ~f:(List.is_empty << Annotations.get_annots)
+
+
+  let not_connected_udfs_without_annots =
+    (* 39 *)
+    List.filter not_connected_udfs ~f:(List.is_empty << Annotations.get_annots)
+
+
+  (* oh, nice. 120 - 39 (indeterminate_udfs_without_annots) - 22 (interesting) = 59. *)
+
+  let _ = End
+end
+
+module Notebook125 = struct
+  let _ = Start
+
+  let site_finished = build_graph site_graph
+
+  let transferred =
+    Transfer.transfer_from_json ~filename:"sagan-renderer_inference_results.json"
+      ~prev_comp_unit:"sagan-renderer" site_finished
+
+
+  let internal_ns_propagated = Transfer.initiate_NS_propagation transferred
+
+  let ns_clusters = all_ns_clusters transferred
+
+  let indeterminate_ns_clusters =
+    (* 22 *)
+    Array.filter ns_clusters ~f:(fun ns_cluster ->
+        List.for_all
+          (G.all_vertices_of_graph ns_cluster)
+          ~f:(ProbQuadruple.is_indeterminate << Vertex.get_dist) )
+
+
+  let indeterminates =
+    List.filter (G.all_vertices_of_graph internal_ns_propagated) ~f:(fun vertex ->
+        ProbQuadruple.is_indeterminate @@ Vertex.get_dist vertex )
+
+
+  let indeterminate_methods =
+    List.map indeterminates ~f:Vertex.get_method |> List.stable_dedup (* 120 *)
+
+
+  let _ = End
+end
+
+module Notebook126 = struct
+  let _ = Start
+
+  let x = 1
 
   let _ = End
 end

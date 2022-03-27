@@ -70,31 +70,27 @@ module Distribution = struct
       graph graph
     |> (* folding over nones *)
     fun graph ->
-    let out =
-      G.fold_vertex
-        (fun vertex current_graph ->
-          if Method.is_well_known_java_none_method (Vertex.get_method vertex) then (
-            marked := vertex :: !marked ;
-            let new_dist =
-              DistManipulator.overwrite ~src:(-100.) ~sin:(-100.) ~san:(-100.) ~non:100.
-            in
-            G.strong_update_dist vertex new_dist current_graph )
-          else current_graph )
-        graph graph
-    in
-    (* Out_channel.print_endline @@ F.asprintf "marked %d vertices." (List.length !marked) ; *)
-    out
+    G.fold_vertex
+      (fun vertex current_graph ->
+        if Method.is_well_known_java_none_method (Vertex.get_method vertex) then (
+          marked := vertex :: !marked ;
+          let new_dist =
+            DistManipulator.overwrite ~src:(-100.) ~sin:(-100.) ~san:(-100.) ~non:100.
+          in
+          G.strong_update_dist vertex new_dist current_graph )
+        else current_graph )
+      graph graph
 
 
-  let getters_setters_and_predicates_are_none : axiom =
+  let getters_setters_predicates_equals_are_none : axiom =
    fun (graph : G.t) : G.t ->
-    (* Out_channel.print_endline "getters_setters_and_predicates_are_none" ; *)
     G.fold_vertex
       (fun vertex current_graph ->
         let method_ = Vertex.get_method vertex in
         if
           GetterSetter.is_getter method_ || GetterSetter.is_setter method_
           || GetterSetter.is_predicate method_
+          || GetterSetter.is_user_defined_equals method_
         then
           let new_dist =
             DistManipulator.overwrite ~src:(-100.) ~sin:(-100.) ~san:(-100.) ~non:100.
@@ -107,7 +103,6 @@ module Distribution = struct
   (* oops, this should be run at every loop!!! *)
   let sink_can't_be_a_pred_of_sink : axiom =
    fun (graph : G.t) : G.t ->
-    (* Out_channel.print_endline "sink_can't_be_a_pred_of_sink" ; *)
     let all_sinks =
       G.all_vertices_of_graph graph
       >>| (fun vertex -> (vertex, ProbQuadruple.determine_label (Vertex.get_dist vertex)))
@@ -117,9 +112,10 @@ module Distribution = struct
     List.fold
       ~f:(fun big_acc sink_vertex ->
         let recursive_df_preds =
-          List.map ~f:fst @@ get_recursive_preds graph
-            (G.LiteralVertex.of_vertex sink_vertex)
-            ~label:EdgeLabel.DataFlow
+          List.map ~f:fst
+          @@ get_recursive_preds graph
+               (G.LiteralVertex.of_vertex sink_vertex)
+               ~label:EdgeLabel.DataFlow
         in
         List.fold
           ~f:(fun smol_acc pred_vertex ->
@@ -140,7 +136,6 @@ module Distribution = struct
   (* oops, this too should be run at every loop!!! *)
   let init_that_doesn't_call_lib_code_is_none : axiom =
    fun (graph : G.t) : G.t ->
-    (* Out_channel.print_endline "init_that_doesn't_call_lib_code_is_none" ; *)
     let all_init_vertices =
       G.all_vertices_of_graph graph
       |> List.filter ~f:(fun vertex ->
@@ -164,7 +159,6 @@ module Distribution = struct
 
   let this_project_main_is_none : axiom =
    fun (graph : G.t) : G.t ->
-    (* Out_channel.print_endline "this_project_main_is_none" ; *)
     let marked = ref [] in
     let this_project_main_vertices =
       G.fold_vertex
@@ -172,18 +166,12 @@ module Distribution = struct
           if Method.is_main_method (Vertex.to_string vertex) then vertex :: acc else acc )
         graph []
     in
-    let out =
-      List.fold this_project_main_vertices
-        ~f:(fun acc main_vertex ->
-          marked := main_vertex :: !marked ;
-          let new_dist =
-            DistManipulator.overwrite ~src:(-100.) ~sin:(-100.) ~san:(-100.) ~non:100.
-          in
-          G.strong_update_dist main_vertex new_dist acc )
-        ~init:graph
-    in
-    (* Out_channel.print_endline @@ F.asprintf "marked %d vertices." (List.length !marked) ; *)
-    out
+    List.fold this_project_main_vertices
+      ~f:(fun acc main_vertex ->
+        marked := main_vertex :: !marked ;
+        let new_dist = DistManipulator.overwrite ~src:(-100.) ~sin:(-100.) ~san:(-100.) ~non:100. in
+        G.strong_update_dist main_vertex new_dist acc )
+      ~init:graph
 
 
   let is_internal_udf_vertex =
@@ -208,7 +196,6 @@ module Distribution = struct
 
   let internal_udf_vertex_is_none : axiom =
    fun (graph : G.t) : G.t ->
-    (* Out_channel.print_endline "internal_udf_vertex_is_none" ; *)
     let internal_udf_vertices_without_annot =
       G.fold_vertex
         (fun vertex acc ->
@@ -222,18 +209,47 @@ module Distribution = struct
           else acc )
         graph []
     in
-    let propagated =
-      List.fold
-        ~f:(fun acc succ ->
-          let new_dist =
-            DistManipulator.overwrite ~src:(-100.) ~sin:(-100.) ~san:(-100.) ~non:100.
-          in
-          G.strong_update_dist succ new_dist acc )
-        ~init:graph internal_udf_vertices_without_annot
+    List.fold
+      ~f:(fun acc succ ->
+        let new_dist = DistManipulator.overwrite ~src:(-100.) ~sin:(-100.) ~san:(-100.) ~non:100. in
+        G.strong_update_dist succ new_dist acc )
+      ~init:graph internal_udf_vertices_without_annot
+
+
+  let api_that_has_prefix_get_and_intype_is_void_is_none : axiom =
+   fun (graph : G.t) : G.t ->
+    let is_api_with_get_and_no_intypes (method_ : Method.t) : bool =
+      Method.is_api method_
+      && String.is_prefix (Method.get_method_name method_) ~prefix:"get"
+      && String.is_substring method_ ~substring:"()"
     in
-    (* Out_channel.print_endline *)
-    (* @@ F.asprintf "marked %d vertices." (List.length internal_udf_vertices_without_annot) ; *)
-    propagated
+    let all_apis_with_get_and_no_intypes =
+      List.filter (G.all_methods_of_graph graph) ~f:is_api_with_get_and_no_intypes
+    in
+    List.fold
+      (all_apis_with_get_and_no_intypes >>= G.this_method_vertices graph)
+      ~f:(fun acc api ->
+        let new_dist = DistManipulator.overwrite ~src:(-100.) ~sin:(-100.) ~san:(-100.) ~non:100. in
+        G.strong_update_dist api new_dist acc )
+      ~init:graph
+
+
+  let api_that_has_prefix_set_and_rtntype_is_void_is_none : axiom =
+   fun (graph : G.t) : G.t ->
+    let is_api_with_set_prefix_set_and_void_rtntype (method_ : Method.t) : bool =
+      Method.is_api method_
+      && String.is_prefix (Method.get_method_name method_) ~prefix:"set"
+      && String.equal (Method.get_return_type method_) "void"
+    in
+    let all_apis_with_set_and_void_rtntypes =
+      List.filter (G.all_methods_of_graph graph) ~f:is_api_with_set_prefix_set_and_void_rtntype
+    in
+    List.fold
+      (all_apis_with_set_and_void_rtntypes >>= G.this_method_vertices graph)
+      ~f:(fun acc api ->
+        let new_dist = DistManipulator.overwrite ~src:(-100.) ~sin:(-100.) ~san:(-100.) ~non:100. in
+        G.strong_update_dist api new_dist acc )
+      ~init:graph
 end
 
 module Topology = struct
@@ -254,7 +270,7 @@ end
 let all_distribution_axioms : axiom array =
   [| (*Distribution.mark_well_known_java_methods
        ;*)
-     Distribution.getters_setters_and_predicates_are_none
+     Distribution.getters_setters_predicates_equals_are_none
    ; Distribution.sink_can't_be_a_pred_of_sink
    ; Distribution.init_that_doesn't_call_lib_code_is_none
    ; Distribution.this_project_main_is_none

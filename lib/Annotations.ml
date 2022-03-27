@@ -110,3 +110,5 @@ let get_annots (method_ : Method.t) =
 
 
 let has_annot (method_ : Method.t) : bool = not @@ List.is_empty (get_annots method_)
+
+let is_empty : t -> bool = List.is_empty
