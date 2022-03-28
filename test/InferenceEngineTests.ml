@@ -1658,7 +1658,7 @@ end
 module Notebook129 = struct
   let _ = Start
 
-  (* TODO Debugging AutoTest's SRM accuracy measurement function *)
+  (* DONE Debugging AutoTest's SRM accuracy measurement function *)
 
   let _ = AutoTest.auto_test renderer_graph
 
@@ -1668,6 +1668,23 @@ module Notebook129 = struct
 
   let _ =
     Hashtbl.find AutoTest.solution_table "ResponseEntity GuidesController.showGuide(String,String)"
+
+
+  let _ = End
+end
+
+module Notebook130 = struct
+  let _ = Start
+
+  let srm_map_of_snapshot (snapshot : G.t) : string =
+    let label_result_map = InferenceResult.make_label_result_map snapshot in
+    let only_srm_map =
+      InferenceResult.LabelResultMap.filter
+        (fun meth _ -> AutoTest.Scoring.is_srm meth)
+        label_result_map
+    in
+    let json_repr = InferenceResult.Serializer.to_json_repr snapshot only_srm_map in
+    Json.pretty_to_string json_repr
 
 
   let _ = End

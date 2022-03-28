@@ -86,6 +86,15 @@ let watch (snapshot : G.t) (methods : Method.t list) (count : int) : unit =
   Out_channel.close txt_file
 
 
+let srm_map_of_snapshot (snapshot : G.t) : string =
+  let label_result_map = InferenceResult.make_label_result_map snapshot in
+  let only_srm_map =
+    InferenceResult.LabelResultMap.filter (fun meth _ -> Scoring.is_srm meth) label_result_map
+  in
+  let json_repr = InferenceResult.Serializer.to_json_repr snapshot only_srm_map in
+  JSON.pretty_to_string json_repr
+
+
 let responder =
   let memory : (Method.t, TaintLabel.t list) Hashtbl.t = Hashtbl.create 777 in
   fun (question : Question.t) : Response.t ->
@@ -158,8 +167,9 @@ let rec auto_test_spechunter_for_snapshot_inner (current_snapshot : G.t)
       F.asprintf "srm: [%d / %d] (%f) <vertex>" correct_srms_count all_srms_count accuracy
     in
     print_endline srm_stats ;
+    print_endline @@ srm_map_of_snapshot propagated' ;
     auto_test_spechunter_for_snapshot_inner propagated' (response :: received_responses)
-      nodewise_featuremap (count + 1) (stats :: log_data_acc)
+      nodewise_featuremap (count + 2) (stats :: log_data_acc)
 
 
 let auto_test (initial_snapshot : G.t) : unit =
