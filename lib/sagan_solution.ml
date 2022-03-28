@@ -1,4 +1,6 @@
-let sagan_udf_solution =
+type solution = Method.t * string list
+
+let sagan_udf_solution : solution array =
   [| ("String SpringToolsController.listDownloads(Model)", ["src"; "sin"])
    ; ("String SpringToolsAdminController.save(SpringToolsPlatform,List)", ["src"; "sin"])
    ; ("String SpringToolsAdminController.edit(String,Model)", ["src"])
@@ -849,7 +851,7 @@ let sagan_udf_solution =
    ; ("Asciidoctor AsciidoctorConfig.asciidoctor()", ["non"]) |]
 
 
-let sagan_api_solution =
+let sagan_api_solution : solution array =
   [| ( "void AbstractAuthenticationProcessingFilter.setAuthenticationManager(AuthenticationManager)"
      , ["non"] )
    ; ( "void \
@@ -1396,6 +1398,6 @@ let sagan_api_solution =
    ; ("String Link.getHref()", ["non"])
    ; ("void Link.setRel(String)", ["non"]) |]
 
-let sagan_interface_solution = [|
-  ("void GuideContentContributor.contribute(GuideContentResource,File)", ["non"])
-  |]
+
+let sagan_interface_solution : solution array =
+  [|("void GuideContentContributor.contribute(GuideContentResource,File)", ["non"])|]

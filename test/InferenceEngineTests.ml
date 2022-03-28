@@ -1602,3 +1602,73 @@ module Notebook126 = struct
 
   let _ = End
 end
+
+module Notebook127 = struct
+  let _ = Start
+
+  (* TODO Testing the indeterminate udfs which slipped through the axioms. *)
+
+  let site_finished = build_graph site_graph
+
+  let indeterminate_methods =
+    List.map (G.all_vertices_of_graph site_finished) ~f:Vertex.get_method
+    |> List.stable_dedup |> List.filter ~f:Method.is_udf
+
+
+  let _ = End
+end
+
+module Notebook128 = struct
+  let _ = Start
+
+  (* DONE writing a function to measure snapshot-wise accuracy of SRMs. *)
+
+  type solution = Sagan_solution.solution
+
+  let is_srm (method_ : Method.t) (solutions : solution array) : bool =
+    let label_strs = snd @@ Array.find_exn solutions ~f:(Method.equal method_ << fst) in
+    List.mem label_strs "src" ~equal:String.equal
+    || List.mem label_strs "sin" ~equal:String.equal
+    || List.mem label_strs "san" ~equal:String.equal
+
+
+  let srm_accuracy_of_snapshot (snapshot : G.t) (solutions : solution array) : float =
+    let all_srm_vertices_count =
+      G.fold_vertex
+        (fun vertex acc -> if is_srm (Vertex.get_method vertex) solutions then acc + 1 else acc)
+        snapshot 0
+    in
+    let correct_srm_vertex_count =
+      G.fold_vertex
+        (fun vertex acc ->
+          if is_srm (Vertex.get_method vertex) solutions then
+            let estimation_is_correct =
+              AutoTest.Scoring.vertex_inference_result_is_correct vertex
+            in
+            if estimation_is_correct then acc + 1 else acc
+          else acc )
+        snapshot 0
+    in
+    Float.( / ) (Float.of_int correct_srm_vertex_count) (Float.of_int all_srm_vertices_count)
+
+
+  let _ = End
+end
+
+module Notebook129 = struct
+  let _ = Start
+
+  (* TODO Debugging AutoTest's SRM accuracy measurement function *)
+
+  let _ = AutoTest.auto_test renderer_graph
+
+  let method_ = "ResponseEntity GuidesController.renderGuide(String,String)"
+
+  let _ = AutoTest.Scoring.is_srm method_
+
+  let _ =
+    Hashtbl.find AutoTest.solution_table "ResponseEntity GuidesController.showGuide(String,String)"
+
+
+  let _ = End
+end

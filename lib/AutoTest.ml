@@ -43,6 +43,34 @@ module Scoring = struct
     in
     let num_of_all_vertices = List.length @@ G.all_vertices_of_graph snapshot in
     Float.of_int correct_vertices_count /. Float.of_int num_of_all_vertices *. 100.
+
+
+  let is_srm (method_ : Method.t) : bool =
+    if Method.is_initializer method_ then false
+    else
+      let label_strs = Hashtbl.find solution_table method_ in
+      List.mem label_strs Source ~equal:TaintLabel.equal
+      || List.mem label_strs Sink ~equal:TaintLabel.equal
+      || List.mem label_strs Sanitizer ~equal:TaintLabel.equal
+
+
+  let srm_report_of_snapshot (snapshot : G.t) : int * int * float =
+    let all_srm_vertices_count =
+      G.fold_vertex
+        (fun vertex acc -> if is_srm (Vertex.get_method vertex) then acc + 1 else acc)
+        snapshot 0
+    and correct_srm_vertex_count =
+      G.fold_vertex
+        (fun vertex acc ->
+          if is_srm (Vertex.get_method vertex) then
+            let estimation_is_correct = vertex_inference_result_is_correct vertex in
+            if estimation_is_correct then acc + 1 else acc
+          else acc )
+        snapshot 0
+    in
+    ( correct_srm_vertex_count
+    , all_srm_vertices_count
+    , Float.of_int correct_srm_vertex_count /. Float.of_int all_srm_vertices_count *. 100. )
 end
 
 let watch (snapshot : G.t) (methods : Method.t list) (count : int) : unit =
@@ -113,8 +141,8 @@ let rec auto_test_spechunter_for_snapshot_inner (current_snapshot : G.t)
             if Scoring.vertex_inference_result_is_correct vertex then acc + 1 else acc )
           propagated' 0
       in
-      F.asprintf "stats: [%d / %d] (%f) <vertex>, [%d / %d] <indeterminate>" correct_vertices_count
-        (G.nb_vertex propagated')
+      F.asprintf "overall: [%d / %d] (%f) <vertex>, [%d / %d] <indeterminate>"
+        correct_vertices_count (G.nb_vertex propagated')
         (Scoring.get_vertexwise_precision_of_snapshot propagated')
         ( List.length
         @@ List.filter
@@ -123,6 +151,13 @@ let rec auto_test_spechunter_for_snapshot_inner (current_snapshot : G.t)
         (G.nb_vertex propagated')
     in
     print_endline stats ;
+    let srm_stats =
+      let correct_srms_count, all_srms_count, accuracy =
+        Scoring.srm_report_of_snapshot propagated'
+      in
+      F.asprintf "srm: [%d / %d] (%f) <vertex>" correct_srms_count all_srms_count accuracy
+    in
+    print_endline srm_stats ;
     auto_test_spechunter_for_snapshot_inner propagated' (response :: received_responses)
       nodewise_featuremap (count + 1) (stats :: log_data_acc)
 
