@@ -20,12 +20,27 @@ module ForPropagation = struct
            ~init:[] prop_rules
     in
     Array.rev_inplace out ;
+    (* Array.iter out ~f:(fun rule -> print_endline @@ F.asprintf "Prop rule %s is chosen." rule.label) ; *)
     out
 
 
   let assign_priority_on_propagation_rules (prop_rules : PropagationRules.t array) =
     (* TODO static for now, but could be dynamic *)
-    Array.map ~f:(fun rule -> (rule, 1)) prop_rules
+    let open PropagationRules in
+    Array.map
+      ~f:(fun prop_rule ->
+        match prop_rule.label with
+        | "contextual_similarity_rule" ->
+            (prop_rule, 0)
+        | "nodewise_similarity_propagation_rule" ->
+            (prop_rule, 2)
+        | "annotation_rule" ->
+            (prop_rule, 4)
+        | "mark_api_based_on_relative_position_in_its_trunk" ->
+            (prop_rule, 3)
+        | otherwise ->
+            failwithf "%s is not covered!!" otherwise () )
+      prop_rules
 
 
   let sort_propagation_rules_by_priority graph new_fact : PropagationRules.t array =
@@ -35,7 +50,7 @@ module ForPropagation = struct
     in
     Array.sort
       ~compare:(fun (_, priority1) (_, priority2) -> -Int.compare priority1 priority2)
-      priority_assigned;
+      priority_assigned ;
     Array.map ~f:fst priority_assigned
 end
 
@@ -66,9 +81,9 @@ module ForAsking = struct
     | "ask_if_root_is_source" ->
         (asking_rule, 3)
     | "ask_foreign_package_label" ->
-        (asking_rule, 4)
-    | "ask_indeterminate" ->
         (asking_rule, 3)
+    | "ask_indeterminate" ->
+        (asking_rule, 2)
     | "ask_from_ns_api_cluster" ->
         (asking_rule, 5)
     | "ask_annotated_method" ->

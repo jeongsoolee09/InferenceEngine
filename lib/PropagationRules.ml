@@ -85,24 +85,25 @@ let nodewise_similarity_propagation_rule : rule =
             match new_fact_label with
             | Source ->
                 if Trunk.vertex_is_close_to_root graph (LV.of_vertex succ) then
-                  DistManipulator.bump succ_dist [Source] ~inc_delta:10. ~dec_delta:5.
+                  (* DistManipulator.bump succ_dist [Source] ~inc_delta:10. ~dec_delta:5. *)
+                  DistManipulator.overwrite ~src:10. ~sin:5. ~san:5. ~non:5.
                 else if Trunk.vertex_is_close_to_leaf graph (LV.of_vertex succ) then
-                  DistManipulator.bump succ_dist [Sink] ~inc_delta:10. ~dec_delta:5.
-                else DistManipulator.bump succ_dist [Source] ~inc_delta:10. ~dec_delta:5.
+                  DistManipulator.overwrite ~src:5. ~sin:10. ~san:5. ~non:5.
+                else DistManipulator.overwrite ~src:10. ~sin:5. ~san:5. ~non:5.
             | Sink ->
                 if Trunk.vertex_is_close_to_root graph (LV.of_vertex succ) then
-                  DistManipulator.bump succ_dist [Source] ~inc_delta:10. ~dec_delta:5.
+                  DistManipulator.overwrite ~src:10. ~sin:5. ~san:5. ~non:5.
                 else if Trunk.vertex_is_close_to_leaf graph (LV.of_vertex succ) then
-                  DistManipulator.bump succ_dist [Sink] ~inc_delta:10. ~dec_delta:5.
-                else DistManipulator.bump succ_dist [Sink] ~inc_delta:10. ~dec_delta:5.
+                  DistManipulator.overwrite ~src:5. ~sin:10. ~san:5. ~non:5.
+                else DistManipulator.overwrite ~src:5. ~sin:10. ~san:5. ~non:5.
             | Sanitizer ->
                 if Trunk.vertex_is_close_to_root graph (LV.of_vertex succ) then
-                  DistManipulator.bump succ_dist [Source] ~inc_delta:10. ~dec_delta:5.
+                  DistManipulator.overwrite ~src:10. ~sin:5. ~san:5. ~non:5.
                 else if Trunk.vertex_is_close_to_leaf graph (LV.of_vertex succ) then
-                  DistManipulator.bump succ_dist [Sink] ~inc_delta:10. ~dec_delta:5.
-                else DistManipulator.bump succ_dist [Sanitizer] ~inc_delta:10. ~dec_delta:5.
+                  DistManipulator.overwrite ~src:5. ~sin:10. ~san:5. ~non:5.
+                else DistManipulator.overwrite ~src:5. ~sin:5. ~san:10. ~non:5.
             | None ->
-                DistManipulator.bump succ_dist [None] ~inc_delta:10. ~dec_delta:5.
+                DistManipulator.overwrite ~src:5. ~sin:5. ~san:5. ~non:10.
             | Indeterminate ->
                 succ_dist
           in
@@ -193,18 +194,29 @@ let mark_api_based_on_relative_position_in_its_trunk : rule =
     (graph, []) )
   else
     let df_succs = this_method_vertices >>| LV.of_vertex >>= G.get_succs graph ~label:DataFlow in
+    (* propagate along DF edges *)
     let df_propagated =
       List.fold
         ~f:(fun graph_acc df_succ ->
           let vertex_dist = Vertex.get_dist df_succ in
           let new_dist =
             match Method.is_api (Vertex.get_method df_succ) with
-            | true ->
-                vertex_dist
-            | false when not @@ Annotations.has_annot (Vertex.get_method df_succ) ->
-                DistManipulator.bump vertex_dist [None] ~inc_delta:10. ~dec_delta:5.
-            | _ ->
-                vertex_dist
+            | true -> (
+                if ProbQuadruple.is_determined @@ Vertex.get_dist df_succ then vertex_dist
+                else
+                  match
+                    Trunk.VertexPosition.find_position_of_vertex graph_acc (LV.of_vertex df_succ)
+                  with
+                  | Close_to_Root ->
+                      DistManipulator.bump vertex_dist [Source] ~inc_delta:3. ~dec_delta:1.
+                  | Close_to_Leaf ->
+                      DistManipulator.bump vertex_dist [Sink] ~inc_delta:3. ~dec_delta:1.
+                  | Right_at_Middle ->
+                      vertex_dist )
+            | false ->
+                if not @@ Annotations.has_annot (Vertex.get_method df_succ) then
+                  DistManipulator.bump vertex_dist [None] ~inc_delta:3. ~dec_delta:1.
+                else vertex_dist
           in
           G.strong_update_dist df_succ new_dist graph_acc )
         df_succs ~init:graph

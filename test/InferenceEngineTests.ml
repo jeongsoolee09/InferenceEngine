@@ -1399,9 +1399,8 @@ module Notebook123 = struct
         ProbQuadruple.is_indeterminate @@ Vertex.get_dist vertex )
 
 
-  let indeterminate_methods =
-    List.map indeterminates ~f:Vertex.get_method |> List.stable_dedup (* 120 *)
-
+  let indeterminate_methods = List.map indeterminates ~f:Vertex.get_method |> List.stable_dedup
+  (* 120 *)
 
   let indeterminate_apis = List.filter ~f:Method.is_api indeterminate_methods (* 63 *)
 
@@ -1480,9 +1479,8 @@ module Notebook124 = struct
         ProbQuadruple.is_indeterminate @@ Vertex.get_dist vertex )
 
 
-  let indeterminate_methods =
-    List.map indeterminates ~f:Vertex.get_method |> List.stable_dedup (* 120 *)
-
+  let indeterminate_methods = List.map indeterminates ~f:Vertex.get_method |> List.stable_dedup
+  (* 120 *)
 
   let determinate_apis =
     List.stable_dedup @@ List.map ~f:Vertex.get_method
@@ -1575,9 +1573,8 @@ module Notebook125 = struct
         ProbQuadruple.is_indeterminate @@ Vertex.get_dist vertex )
 
 
-  let indeterminate_methods =
-    List.map indeterminates ~f:Vertex.get_method |> List.stable_dedup (* 120 *)
-
+  let indeterminate_methods = List.map indeterminates ~f:Vertex.get_method |> List.stable_dedup
+  (* 120 *)
 
   let _ = End
 end
@@ -1686,6 +1683,203 @@ module Notebook130 = struct
     let json_repr = InferenceResult.Serializer.to_json_repr snapshot only_srm_map in
     Json.pretty_to_string json_repr
 
+
+  let _ = End
+end
+
+module Notebook131 = struct
+  let _ = Start
+
+  let renderer_finished = build_graph renderer_graph
+
+  (* DONE why isn't bump working? *)
+
+  (* is bump working in the first place? *)
+
+  let initial = ProbQuadruple.initial
+
+  let _ = DistManipulator.bump initial [Source] ~inc_delta:10. ~dec_delta:3.
+
+  (* 아 아니구나. 잘못 봄. ㅋㅋㅋ DistManipulator.bump는 잘 작동하고 있다. *)
+
+  let one_step : G.t =
+    Deserializer.deserialize_graph "2022-3-29_12:57:26_sagan-renderer_ahahaha.bin"
+
+
+  (* now let's propagate Optional Optional.of(Object) ... *)
+
+  let optional_of = "Optional Optional.of(Object)"
+
+  let optional_of_cluster =
+    let all_ns_clusters = all_ns_clusters one_step in
+    Array.find all_ns_clusters ~f:(fun cluster ->
+        List.mem (G.all_methods_of_graph cluster) optional_of ~equal:Method.equal )
+
+
+  let _ = Visualizer.visualize_and_open @@ G.leave_only_ns_edges renderer_finished
+
+  let response = Response.ForLabel (optional_of, None)
+
+  let propagated = Propagator.propagator
+
+  let ended : G.t = Deserializer.deserialize_graph "2022-3-29_13:36:50_sagan-renderer_ahahaha.bin"
+
+  let sb = "StringBuilder StringBuilder.append(String)"
+
+  let _ = G.snapshot_to_json ended
+
+  let _ = End
+end
+
+module Notebook132 = struct
+  let _ = Start
+
+  let ask_annotated_done : G.t = Deserializer.deserialize_graph "ask_annotated_finished.bin"
+
+  let _ = all_ns_clusters_api_only ask_annotated_done
+
+  let sb = "StringBuilder StringBuilder.append(String)"
+
+  let sb_cluster =
+    let all_ns_clusters = all_ns_clusters ask_annotated_done in
+    Array.find_exn all_ns_clusters ~f:(fun cluster ->
+        List.mem (G.all_methods_of_graph cluster) sb ~equal:Method.equal )
+
+
+  let _ = Visualizer.visualize_and_open sb_cluster
+
+  let response = Response.ForLabel (sb, None)
+
+  let propagated, _ = AutoTest.auto_test_spechunter_for_snapshot_once sb_cluster [response]
+
+  let _ = Visualizer.visualize_and_open propagated
+
+  (* okay. no change. let's inline auto_test..once here and do it line-by-line. *)
+
+  (* observation 1 : if the dist is saturated, then no job is done (termination condition). *)
+
+  let _ = raise TODO
+
+  let current_snapshot = ask_annotated_done
+
+  and received_responses = []
+
+  open InfixOperators
+  open ListMonad
+  open GraphRepr
+  open TaintLabel
+  open Propagator
+  open Utils
+  open AutoTest
+
+  let graph, responses =
+    (* find the most appropriate Asking Rule. *)
+    if G.Saturation.all_dists_in_graph_are_saturated current_snapshot then
+      (current_snapshot, received_responses)
+    else
+      let question_maker =
+        MetaRules.ForAsking.asking_rules_selector current_snapshot received_responses
+      in
+      let question = question_maker.rule current_snapshot received_responses ~dry_run:false in
+      print_endline @@ F.asprintf "Question: %s" (Question.to_string question) ;
+      let response = AutoTest.responder question in
+      (* sort applicable Propagation Rules by adequacy. *)
+      let propagation_rules_to_apply =
+        MetaRules.ForPropagation.sort_propagation_rules_by_priority current_snapshot response
+      in
+      let propagated =
+        fst
+        @@ propagator response current_snapshot propagation_rules_to_apply received_responses [||]
+             PropagationRules.all_rules
+      in
+      let propagated' = Axioms.apply_axioms propagated in
+      let stats =
+        let correct_vertices_count =
+          G.fold_vertex
+            (fun vertex acc ->
+              if Scoring.vertex_inference_result_is_correct vertex then acc + 1 else acc )
+            propagated' 0
+        in
+        F.asprintf "overall: [%d / %d] (%f) <vertex>, [%d / %d] <indeterminate>"
+          correct_vertices_count (G.nb_vertex propagated')
+          (Scoring.get_vertexwise_precision_of_snapshot propagated')
+          ( List.length
+          @@ List.filter
+               (G.all_vertices_of_graph propagated')
+               ~f:(ProbQuadruple.is_indeterminate << Vertex.get_dist) )
+          (G.nb_vertex propagated')
+      in
+      print_endline stats ;
+      let srm_stats =
+        let correct_srms_count, all_srms_count, accuracy =
+          Scoring.srm_report_of_snapshot propagated'
+        in
+        F.asprintf "srm: [%d / %d] (%f) <vertex>" correct_srms_count all_srms_count accuracy
+      in
+      print_endline srm_stats ;
+      print_endline @@ srm_map_of_snapshot propagated' ;
+      (propagated', response :: received_responses)
+
+
+  let _ = Visualizer.visualize_and_open graph
+
+  let current_snapshot = propagated
+
+  and received_responses = responses
+
+  let graph', responses' =
+    (* find the most appropriate Asking Rule. *)
+    if G.Saturation.all_dists_in_graph_are_saturated current_snapshot then
+      (current_snapshot, received_responses)
+    else
+      (* let question_maker = *)
+      (*   MetaRules.ForAsking.asking_rules_selector current_snapshot received_responses *)
+      (* in *)
+      let question =
+        (* question_maker.rule current_snapshot received_responses ~dry_run:false *)
+        Question.AskingForLabel "boolean Optional.isPresent()"
+      in
+      print_endline @@ F.asprintf "Question: %s" (Question.to_string question) ;
+      let response = AutoTest.responder question in
+      (* sort applicable Propagation Rules by adequacy. *)
+      let propagation_rules_to_apply =
+        MetaRules.ForPropagation.sort_propagation_rules_by_priority current_snapshot response
+      in
+      let propagated =
+        fst
+        @@ propagator response current_snapshot propagation_rules_to_apply received_responses [||]
+             PropagationRules.all_rules
+      in
+      let propagated' = Axioms.apply_axioms propagated in
+      let stats =
+        let correct_vertices_count =
+          G.fold_vertex
+            (fun vertex acc ->
+              if Scoring.vertex_inference_result_is_correct vertex then acc + 1 else acc )
+            propagated' 0
+        in
+        F.asprintf "overall: [%d / %d] (%f) <vertex>, [%d / %d] <indeterminate>"
+          correct_vertices_count (G.nb_vertex propagated')
+          (Scoring.get_vertexwise_precision_of_snapshot propagated')
+          ( List.length
+          @@ List.filter
+               (G.all_vertices_of_graph propagated')
+               ~f:(ProbQuadruple.is_indeterminate << Vertex.get_dist) )
+          (G.nb_vertex propagated')
+      in
+      print_endline stats ;
+      let srm_stats =
+        let correct_srms_count, all_srms_count, accuracy =
+          Scoring.srm_report_of_snapshot propagated'
+        in
+        F.asprintf "srm: [%d / %d] (%f) <vertex>" correct_srms_count all_srms_count accuracy
+      in
+      print_endline srm_stats ;
+      print_endline @@ srm_map_of_snapshot propagated' ;
+      (propagated', response :: received_responses)
+
+
+  let _ = Visualizer.visualize_and_open graph'
 
   let _ = End
 end
