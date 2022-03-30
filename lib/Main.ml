@@ -46,8 +46,12 @@ let main () =
   let df_edges_added =
     match graph_already_serialized ~comp_unit:"" ~suffix:"df_edges" ~finished:false with
     | None ->
-        G.empty |> batch_add_vertex json |> batch_add_edge json
-        |> ReturnStmtLocation.repair_vertices_with_incorrect_return_loc
+        let out =
+          G.empty |> batch_add_vertex json |> batch_add_edge json
+          |> ReturnStmtLocation.repair_vertices_with_incorrect_return_loc
+        in
+        G.serialize_to_bin ~suffix:"df_edges" out ;
+        out
     | Some filename ->
         Deserializer.deserialize_graph filename
   in

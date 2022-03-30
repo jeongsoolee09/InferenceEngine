@@ -4,6 +4,7 @@ open ListMonad
 open InfixOperators
 open GraphRepr
 open Utils
+open NodeWiseFeatures.SingleFeature
 module LV = G.LiteralVertex
 
 type rule = G.t -> Response.t -> dry_run:bool -> G.t * Vertex.t list
@@ -84,24 +85,17 @@ let nodewise_similarity_propagation_rule : rule =
           let new_dist =
             match new_fact_label with
             | Source ->
-                if Trunk.vertex_is_close_to_root graph (LV.of_vertex succ) then
-                  (* DistManipulator.bump succ_dist [Source] ~inc_delta:10. ~dec_delta:5. *)
-                  DistManipulator.overwrite ~src:10. ~sin:5. ~san:5. ~non:5.
-                else if Trunk.vertex_is_close_to_leaf graph (LV.of_vertex succ) then
+                if returnval_not_used_in_caller @@ Vertex.get_method succ then
                   DistManipulator.overwrite ~src:5. ~sin:10. ~san:5. ~non:5.
                 else DistManipulator.overwrite ~src:10. ~sin:5. ~san:5. ~non:5.
             | Sink ->
-                if Trunk.vertex_is_close_to_root graph (LV.of_vertex succ) then
-                  DistManipulator.overwrite ~src:10. ~sin:5. ~san:5. ~non:5.
-                else if Trunk.vertex_is_close_to_leaf graph (LV.of_vertex succ) then
+                if returnval_not_used_in_caller @@ Vertex.get_method succ then
                   DistManipulator.overwrite ~src:5. ~sin:10. ~san:5. ~non:5.
-                else DistManipulator.overwrite ~src:5. ~sin:10. ~san:5. ~non:5.
+                else DistManipulator.overwrite ~src:10. ~sin:5. ~san:5. ~non:5.
             | Sanitizer ->
-                if Trunk.vertex_is_close_to_root graph (LV.of_vertex succ) then
-                  DistManipulator.overwrite ~src:10. ~sin:5. ~san:5. ~non:5.
-                else if Trunk.vertex_is_close_to_leaf graph (LV.of_vertex succ) then
+                if returnval_not_used_in_caller @@ Vertex.get_method succ then
                   DistManipulator.overwrite ~src:5. ~sin:10. ~san:5. ~non:5.
-                else DistManipulator.overwrite ~src:5. ~sin:5. ~san:10. ~non:5.
+                else DistManipulator.overwrite ~src:10. ~sin:5. ~san:5. ~non:5.
             | None ->
                 DistManipulator.overwrite ~src:5. ~sin:5. ~san:5. ~non:10.
             | Indeterminate ->
@@ -212,7 +206,12 @@ let mark_api_based_on_relative_position_in_its_trunk : rule =
                   | Close_to_Leaf ->
                       DistManipulator.bump vertex_dist [Sink] ~inc_delta:3. ~dec_delta:1.
                   | Right_at_Middle ->
-                      vertex_dist )
+                      vertex_dist
+                  (* match SingleFeature.returnval_not_used_in_caller (Vertex.get_method df_succ) with *)
+                  (* | true -> *)
+                  (*     DistManipulator.bump vertex_dist [Sink] ~inc_delta:3. ~dec_delta:1. *)
+                  (* | false -> *)
+                  (*   DistManipulator.bump vertex_dist [Source] ~inc_delta:3. ~dec_delta:1. *) )
             | false ->
                 if not @@ Annotations.has_annot (Vertex.get_method df_succ) then
                   DistManipulator.bump vertex_dist [None] ~inc_delta:3. ~dec_delta:1.

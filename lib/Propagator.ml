@@ -24,7 +24,8 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t)
         (propagated_snapshot, affected_vertices @ this_affected) )
       ~init:(oracle_marked, []) rules_to_propagate
   in
-  Array.fold (Array.of_list current_propagation_targets)
+  Array.fold
+    (Array.of_list current_propagation_targets)
     ~f:(fun (acc, history) target ->
       if
         Array.mem history target ~equal:Vertex.equal

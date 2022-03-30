@@ -5,7 +5,9 @@ open InfixOperators
 open SimilarityHandler
 open Chain
 open EdgeLabel
-module G = GraphRepr.G
+open Utils
+open GraphRepr
+module LV = G.LiteralVertex
 
 type json = Yojson.Basic.t
 
@@ -60,17 +62,6 @@ module ChainRefiners = struct
 
 
   let delete_inner_deads (chain_slices : ChainSlice.t list) : ChainSlice.t list =
-    (* let all_but_last = List.drop_last_exn chain_slices in *)
-    (* let exception_condition = *)
-    (*   (\* JavaExpert에 있지 않고, rtntype이 void가 아니라면 dead slice를 없애지 말 것 *\) *)
-    (*   let second_last_slice = List.nth_exn (List.rev chain_slices) 1 in *)
-    (*   let current_method_right_before_dead_not_well_known = *)
-    (*     not @@ Method.is_well_known_java_method (ChainSlice.get_current_method second_last_slice) *)
-    (*   and current_method_right_before_dead_not_void = *)
-    (*     not @@ Method.rtntype_is_void (ChainSlice.get_current_method second_last_slice) *)
-    (*   in *)
-    (*   current_method_right_before_dead_not_well_known || current_method_right_before_dead_not_void *)
-    (* in *)
     let dead_filtered =
       List.filter
         ~f:(fun chain_slice ->
@@ -78,7 +69,6 @@ module ChainRefiners = struct
           )
         chain_slices
     in
-    (* if exception_condition then dead_filtered @ [List.last_exn chain_slices] else dead_filtered *)
     if ChainSlice.is_dead @@ List.last_exn chain_slices then
       dead_filtered @ [List.last_exn chain_slices]
     else dead_filtered
@@ -130,36 +120,50 @@ module EdgeMaker = struct
       | DefineSlice (_, ap, loc, using) ->
           let is_frontend_tmp_var_ap = String.is_prefix ~prefix:"($" in
           if is_frontend_tmp_var_ap ap then
-            ( (* List.slice bicycle_chain 0 (List.length bicycle_chain - 1) *) bicycle_chain
-            , Some (Method.of_string using, LocationSet.of_string loc) )
+            (bicycle_chain, Some (Method.of_string using, LocationSet.of_string loc))
           else (bicycle_chain, None)
       | _ ->
           (bicycle_chain, None)
 
 
-  let collect_voidcall_vertices (chain_slices : ChainSlice.t list) : G.LiteralVertex.t list =
-    List.rev
-    @@ List.fold
-         ~f:(fun acc chain_slice ->
-           if ChainSlice.is_voidcall chain_slice then
-             (G.LiteralVertex.of_vertex @@ VertexMaker.vertex_of_chain_slice chain_slice) :: acc
-           else acc )
-         ~init:[] chain_slices
+  let collect_additional_voidcall_vertices (chain : Chain.t) : ChainSlice.t list =
+    (* call을 한 다음에 바로 다음이 Define인데, using이 그놈이고 define이 frontend면 그놈은 voidcall이얌!!! 끼얏호 *)
+    let all_call_slices = List.filter chain ~f:ChainSlice.is_call in
+    let all_call_slices_and_next =
+      List.map all_call_slices ~f:(fun call_slice ->
+          let next_slice = get_next_elem chain ~next_to:call_slice ~equal:ChainSlice.equal in
+          (call_slice, next_slice) )
+    in
+    List.filter all_call_slices_and_next ~f:(fun (call_slice, next_slice) ->
+        ChainSlice.is_define next_slice
+        && Method.equal (ChainSlice.get_callee call_slice) (ChainSlice.get_callee next_slice)
+        &&
+        let is_frontend_tmp_var_ap = String.is_prefix ~prefix:"($" in
+        is_frontend_tmp_var_ap (ChainSlice.get_access_path next_slice)
+        && (ChainSlice.is_dead @@ get_next_elem chain ~next_to:next_slice ~equal:ChainSlice.equal) )
+    |> List.map ~f:fst
+
+
+  let collect_voidcall_vertices (chain : Chain.t) : ChainSlice.t list =
+   List.filter ~f:ChainSlice.is_voidcall chain
+
+
+  let collect_all_voidcall_vertices (chain : Chain.t) : ChainSlice.t list =
+    collect_voidcall_vertices chain @ collect_additional_voidcall_vertices chain
 
 
   (** Converts a raw chain-slice list into a G.E.t list, together with an optional info of a
       void-call vertex. *)
-  let edge_list_of_chain_slice_list (chain_slices : ChainSlice.t list) :
-      (G.E.t list * G.LiteralVertex.t list) list =
-    let processed = ChainRefiners.process_chainslices chain_slices in
-    let all_void_calls = collect_voidcall_vertices chain_slices in
+  let edge_list_of_chain_slice_list (chain : Chain.t) : (G.E.t list * G.LiteralVertex.t list) list =
+    let processed = ChainRefiners.process_chainslices chain in
+    let all_void_calls = ReturnValUsedInCaller.filter_really_returnval_not_used @@ collect_all_voidcall_vertices chain >>| (VertexMaker.vertex_of_chain_slice >> G.LiteralVertex.of_vertex) in
     let bicycle_chain_of_chain_slices = make_bicycle_chain processed in
     let refined_bicycle_chain, frontend_define_vertex_opt =
       refine_bicycle_chain bicycle_chain_of_chain_slices
     in
     let edge_list =
       let last_elem = List.last_exn refined_bicycle_chain in
-      let chain_first_slice = List.hd_exn chain_slices in
+      let chain_first_slice = List.hd_exn chain in
       if ChainSlice.is_define chain_first_slice then
         let chain_first_current_method = ChainSlice.get_current_method chain_first_slice
         and chain_first_locset = ChainSlice.get_locset chain_first_slice

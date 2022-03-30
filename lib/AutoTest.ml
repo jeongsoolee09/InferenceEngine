@@ -225,8 +225,8 @@ let rec auto_test_spechunter_for_snapshot_inner (current_snapshot : G.t)
       F.asprintf "srm: [%d / %d] (%f) <vertex>" correct_srms_count all_srms_count accuracy
     in
     print_endline srm_stats ;
-    (* print_endline @@ srm_map_of_snapshot propagated' ; *)
-    print_endline @@ watch_for_class propagated' ["Optional"; "String"; "StringBuilder"] ;
+    print_endline @@ srm_map_of_snapshot propagated' ;
+    (* print_endline @@ watch_for_class propagated' ["Optional"; "String"; "StringBuilder"] ; *)
     G.serialize_to_bin ~suffix:"ahahaha" propagated' ;
     (* TEMP *)
     auto_test_spechunter_for_snapshot_inner propagated' (response :: received_responses)

@@ -357,6 +357,10 @@ module G = struct
   module LiteralVertex = struct
     type t = Method.t * LocationSet.t [@@deriving compare, equal, sexp]
 
+    let get_method = fst
+
+    let get_loc = snd
+
     let to_vertex_inner ((meth, loc) : t) (graph : BiDiGraph.t) : Vertex.t =
       let res_opt =
         BiDiGraph.fold_vertex

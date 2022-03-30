@@ -7,9 +7,11 @@ type json = Yojson.Basic.t
 
 module ChainSlice = struct
   type t =
-    | DefineSlice of (string * string * string * string) (* current_method, access_path, location, using *)
+    | DefineSlice of (string * string * string * string)
+      (* current_method, access_path, location, using *)
     | CallSlice of (string * string * string * string) (* current_method, callee, location, with *)
-    | VoidCallSlice of (string * string * string * string) (* current_method, callee, location, with *)
+    | VoidCallSlice of (string * string * string * string)
+      (* current_method, callee, location, with *)
     | RedefineSlice of (string * string * string) (* current_method, location, access_path *)
     | DeadSlice of string (* current_method *)
     | DeadByCycleSlice of string (* current_method *)
@@ -33,6 +35,25 @@ module ChainSlice = struct
         F.asprintf "DeadByCycleSlice (%s)" curr
     | Temp (curr, loc) ->
         F.asprintf "Temp (%s, %s)" curr loc
+
+
+  let get_location (chain_slice : t) : string =
+    match chain_slice with
+    | DefineSlice (_, _, loc, _)
+    | CallSlice (_, _, loc, _)
+    | VoidCallSlice (_, _, loc, _)
+    | Temp (_, loc) ->
+        loc
+    | _ ->
+        failwithf "%s does not have a location info" (to_string chain_slice) ()
+
+
+  let get_access_path (chain_slice : t) : string =
+    match chain_slice with
+    | DefineSlice (_, ap, _, _) ->
+        ap
+    | _ ->
+        failwithf "%s is not a define slice" (to_string chain_slice) ()
 
 
   let get_current_method (chain_slice : t) : string =

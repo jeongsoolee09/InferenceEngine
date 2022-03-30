@@ -83,7 +83,7 @@ class PairwiseFeature:
         "class_name_has_same_suffixes": 6,
         "method_name_is_same": 7,
         "is_sub_super": 8,
-        "is_subclass_of_same_superclass": 8
+        "is_subclass_of_same_superclass": 8,
     }
 
     @staticmethod
@@ -109,10 +109,14 @@ class PairwiseFeature:
     def belong_to_same_package(row):
         method1_package_name = row.package_name1
         method2_package_name = row.package_name2
-        if method1_package_name == method2_package_name:
+        if (
+            method1_package_name == method2_package_name
+            or method1_package_name.startswith(method2_package_name)
+            or method2_package_name.startswith(method1_package_name)
+        ):
             return PairwiseFeature.scores["belong_to_same_package"]
         else:
-            return 0
+            return -20
 
     @staticmethod
     def returnval_not_used_in_caller(row):
@@ -372,7 +376,6 @@ def repl_setup():
 
 
 def comment(dataframe):
-
     def inspect(m1, m2):
         print(carpro[(carpro["methname_x"] == m1) & (carpro["methname_y"] == m2)])
 

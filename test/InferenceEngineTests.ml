@@ -23,11 +23,11 @@ open WeaklyConnectedComponents
 open TaintLabel
 open EdgeLabel
 open Transfer
-module Json = Yojson.Basic
+open Utils
 
 type delimiter = Start | End
 
-type json = Json.t
+type json = JSON.t
 
 let json = Deserializer.deserialize_json ()
 
@@ -1880,6 +1880,149 @@ module Notebook132 = struct
 
 
   let _ = Visualizer.visualize_and_open graph'
+
+  let _ = End
+end
+
+module Notebook133 = struct
+  let _ = Start
+
+  open SingleFeature
+
+  let getforobject = "Object RestTemplate.getForObject(String,Class,Object[])"
+
+  let getforentity = "ResponseEntity RestTemplate.getForEntity(String,Class,Object[])"
+
+  let mkdir = "boolean File.mkdir()"
+
+  let deleteonexit = "void File.deleteOnExit()"
+
+  let isfile = "boolean File.isFile()"
+
+  let write = "void FileOutputStream.write(byte[])"
+
+  let _ = SingleFeature.returnval_not_used_in_caller getforobject
+
+  let _ = SingleFeature.returnval_not_used_in_caller getforentity
+
+  let _ = SingleFeature.returnval_not_used_in_caller mkdir
+
+  let _ = SingleFeature.returnval_not_used_in_caller deleteonexit
+
+  let _ = SingleFeature.returnval_not_used_in_caller isfile
+
+  let _ = SingleFeature.returnval_not_used_in_caller write
+
+  (* ======================================= *)
+
+  let getforobject_vertices = G.this_method_vertices renderer_graph getforobject
+
+  let _ =
+    List.map getforobject_vertices ~f:(LV.of_vertex >> Trunk.vertex_is_close_to_root renderer_graph)
+
+
+  let getforentity_vertices = G.this_method_vertices renderer_graph getforentity
+
+  let _ =
+    List.map getforentity_vertices ~f:(LV.of_vertex >> Trunk.vertex_is_close_to_root renderer_graph)
+
+
+  let mkdir_vertices = G.this_method_vertices renderer_graph mkdir
+
+  let _ = List.map mkdir_vertices ~f:(LV.of_vertex >> Trunk.vertex_is_close_to_root renderer_graph)
+
+  let deleteonexit_vertices = G.this_method_vertices renderer_graph getforentity
+
+  let _ =
+    List.map deleteonexit_vertices ~f:(LV.of_vertex >> Trunk.vertex_is_close_to_root renderer_graph)
+
+
+  let isfile_vertices = G.this_method_vertices renderer_graph isfile
+
+  let _ = List.map isfile_vertices ~f:(LV.of_vertex >> Trunk.vertex_is_close_to_root renderer_graph)
+
+  (* DONE the relative positions were the culprit!! *)
+
+  let _ = End
+end
+
+module Notebook134 = struct
+  let _ = Start
+
+  (* TODO testing returnval_not_used_in_caller *)
+
+  let mkdir = "boolean File.mkdir()"
+
+  let deleterecursively = "boolean FileSystemUtils.deleteRecursively(File)"
+
+  let _ = SingleFeature.returnval_not_used_in_caller mkdir
+
+  let _ = SingleFeature.returnval_not_used_in_caller deleterecursively
+
+  (* mkdir and deleterecursively is not used anywhere! *)
+
+  (* --> can be detected with a simple trick. *)
+
+  let rec get_next_elem (lst : 'a list) ~(next_to : 'a) ~(equal : 'a -> 'a -> bool) =
+    match lst with
+    | [] | [_] ->
+        failwith "get_next_elem failed"
+    | x1 :: (x2 :: _ as rest) ->
+        if equal x1 next_to then x2 else get_next_elem rest ~next_to ~equal
+
+
+  let sample_json =
+    "{\n\
+    \    \"defining_method\":\n\
+    \      \"void ImagesGuideContentContributor.contribute(GuideContentResource,File)\",\n\
+    \    \"access_path\": \"(image, [])\",\n\
+    \    \"location\": \"{ line 38 }\",\n\
+    \    \"chain\": [\n\
+    \      {\n\
+    \        \"current_method\":\n\
+    \          \"void ImagesGuideContentContributor.contribute(GuideContentResource,File)\",\n\
+    \        \"status\": \"Define\",\n\
+    \        \"access_path\": \"(image, [])\",\n\
+    \        \"location\": \"{ line 38 }\",\n\
+    \        \"using\":\n\
+    \          \"void ImagesGuideContentContributor.contribute(GuideContentResource,File)\"\n\
+    \      },\n\
+    \      {\n\
+    \        \"current_method\":\n\
+    \          \"void ImagesGuideContentContributor.contribute(GuideContentResource,File)\",\n\
+    \        \"status\": \"Call\",\n\
+    \        \"callee\": \"boolean File.isFile()\",\n\
+    \        \"location\": \"{ line 39 }\",\n\
+    \        \"with\": \"(param_isFile_39_0, [])\"\n\
+    \      },\n\
+    \      {\n\
+    \        \"current_method\":\n\
+    \          \"void ImagesGuideContentContributor.contribute(GuideContentResource,File)\",\n\
+    \        \"status\": \"Define\",\n\
+    \        \"access_path\": \"($irvar7, [])\",\n\
+    \        \"location\": \"{ line 39 }\",\n\
+    \        \"using\": \"boolean File.isFile()\"\n\
+    \      },\n\
+    \      {\n\
+    \        \"current_method\":\n\
+    \          \"void ImagesGuideContentContributor.contribute(GuideContentResource,File)\",\n\
+    \        \"status\": \"Dead\"\n\
+    \      }\n\
+    \    ]\n\
+    \  }"
+
+
+  let chain = chain_slice_list_of_wrapped_chain (JSON.from_string sample_json)
+
+  let chain_slice =
+    ChainSlice.CallSlice
+      ( "void ImagesGuideContentContributor.contribute(GuideContentResource,File)"
+      , "boolean File.isFile()"
+      , "{ line 39 }"
+      , "(param_isFile_39_0, [])" )
+
+
+  let _ = ReturnValUsedInCaller.returnval_not_used_really chain_slice
 
   let _ = End
 end
