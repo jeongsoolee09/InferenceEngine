@@ -243,3 +243,70 @@ let auto_test (initial_snapshot : G.t) : unit =
   in
   Out_channel.output_string out_chan log_data ;
   Out_channel.close out_chan
+
+
+let rec auto_test_spechunter_for_snapshot_queue (queue : Method.t list) (current_snapshot : G.t)
+    (received_responses : Response.t list)
+    (nodewise_featuremap : NodeWiseFeatures.NodeWiseFeatureMap.t) (count : int)
+    (log_data_acc : string list) : G.t * string =
+  match queue with
+  | [] ->
+      ( current_snapshot
+      , List.rev log_data_acc |> List.map ~f:(fun str -> str ^ "\n") |> String.concat )
+  | method_to_ask :: methods_to_ask ->
+      if G.Saturation.all_dists_in_graph_are_saturated current_snapshot then
+        ( current_snapshot
+        , List.rev log_data_acc |> List.map ~f:(fun str -> str ^ "\n") |> String.concat )
+      else
+        let question = Question.AskingForLabel method_to_ask in
+        print_endline @@ F.asprintf "Question: %s" (Question.to_string question) ;
+        let response = responder question in
+        (* sort applicable Propagation Rules by adequacy. *)
+        let propagation_rules_to_apply =
+          MetaRules.ForPropagation.sort_propagation_rules_by_priority current_snapshot response
+        in
+        let propagated =
+          fst
+          @@ propagator response current_snapshot propagation_rules_to_apply received_responses [||]
+               PropagationRules.all_rules
+        in
+        let propagated' = Axioms.apply_axioms propagated in
+        let stats =
+          let correct_vertices_count =
+            G.fold_vertex
+              (fun vertex acc ->
+                if Scoring.vertex_inference_result_is_correct vertex then acc + 1 else acc )
+              propagated' 0
+          in
+          F.asprintf "overall: [%d / %d] (%f) <vertex>, [%d / %d] <indeterminate>"
+            correct_vertices_count (G.nb_vertex propagated')
+            (Scoring.get_vertexwise_precision_of_snapshot propagated')
+            ( List.length
+            @@ List.filter
+                 (G.all_vertices_of_graph propagated')
+                 ~f:(ProbQuadruple.is_indeterminate << Vertex.get_dist) )
+            (G.nb_vertex propagated')
+        in
+        print_endline stats ;
+        let srm_stats =
+          let correct_srms_count, all_srms_count, accuracy =
+            Scoring.srm_report_of_snapshot propagated'
+          in
+          F.asprintf "srm: [%d / %d] (%f) <vertex>" correct_srms_count all_srms_count accuracy
+        in
+        print_endline srm_stats ;
+        print_endline @@ srm_map_of_snapshot propagated' ;
+        auto_test_spechunter_for_snapshot_queue methods_to_ask propagated'
+          (response :: received_responses) nodewise_featuremap (count + 1) (stats :: log_data_acc)
+
+
+let auto_test_queue (initial_snapshot : G.t) (methods_to_ask : Method.t list) : unit =
+  let _, log_data =
+    auto_test_spechunter_for_snapshot_queue methods_to_ask initial_snapshot []
+      NodeWiseFeatures.NodeWiseFeatureMap.empty 0 []
+  in
+  let out_chan =
+    Out_channel.create @@ F.asprintf "%s_%s.txt" (make_now_string 9) initial_snapshot.comp_unit
+  in
+  Out_channel.output_string out_chan log_data ;
+  Out_channel.close out_chan

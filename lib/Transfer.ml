@@ -114,9 +114,12 @@ let transfer_from_json ~(filename : string) ~(prev_comp_unit : string) (next_gra
       let prev_graph_method_labels = LabelResultMap.find prev_graph_method prev_label_result_map in
       match prev_graph_method_labels with
       | [label] ->
+          print_endline "single";
           transfer_single_method next_graph_method label acc
       | [_; _] as labels ->
-          resolve_multiple_labels next_graph_method labels acc
+        print_endline "multiple";
+          (* resolve_multiple_labels next_graph_method labels acc *)
+        transfer_single_method next_graph_method (List.hd_exn labels) acc
       | otherwise ->
           (* skip instead of raise *)
           print_endline

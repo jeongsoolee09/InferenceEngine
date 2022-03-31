@@ -24,6 +24,7 @@ open TaintLabel
 open EdgeLabel
 open Transfer
 open Utils
+open AutoTest
 
 type delimiter = Start | End
 
@@ -1561,7 +1562,7 @@ module Notebook125 = struct
   let ns_clusters = all_ns_clusters transferred
 
   let indeterminate_ns_clusters =
-    (* 22 *)
+    (* 23 *)
     Array.filter ns_clusters ~f:(fun ns_cluster ->
         List.for_all
           (G.all_vertices_of_graph ns_cluster)
@@ -2023,6 +2024,273 @@ module Notebook134 = struct
 
 
   let _ = ReturnValUsedInCaller.returnval_not_used_really chain_slice
+
+  let _ = End
+end
+
+module Notebook135 = struct
+  let _ = Start
+
+  let renderer_finished = build_graph renderer_graph
+
+  (* 215 *)
+  let indeterminates =
+    List.filter (G.all_vertices_of_graph renderer_finished) ~f:(fun vertex ->
+        ProbQuadruple.is_indeterminate @@ Vertex.get_dist vertex )
+
+
+  (* 109 *)
+  let indeterminate_methods = List.map indeterminates ~f:Vertex.get_method |> List.stable_dedup
+
+  (* random sampling!!! *)
+
+  let _ = End
+end
+
+module Notebook136 = struct
+  let _ = Start
+
+  let renderer_finished = build_graph renderer_graph
+
+  (* ============ attempt 1 ============ *)
+
+  let random_selected_methods =
+    [ "String StringUtils.arrayToDelimitedString(Object[],String)"
+    ; "Base64$Encoder Base64.getEncoder()"
+    ; "String Elements.toString()"
+    ; "String StringBuilder.toString()"
+    ; "Object Enumeration.nextElement()"
+    ; "OptionsBuilder OptionsBuilder.attributes(Attributes)"
+    ; "String ToHtmlSerializer.printChildrenToString(SuperNode)"
+    ; "ResponseEntity GuidesController.renderGuide(String,String)"
+    ; "String GuideType.stripPrefix(String)"
+    ; "void ArrayList.forEach(Consumer)"
+    ; "ResponseEntity MarkupController.renderMarkup(MediaType,String)"
+    ; "String String.replace(CharSequence,CharSequence)"
+    ; "byte[] GithubClient.downloadRepositoryAsZipball(String,String)"
+    ; "String String.concat(String)"
+    ; "Printer Printer.print(char)"
+    ; "GuideType GuideType.fromName(String)"
+    ; "List ResourceAssemblerSupport.toResources(Iterable)"
+    ; "String VerbatimNode.getType()"
+    ; "int StreamUtils.copy(InputStream,OutputStream)" ]
+
+
+  (* ============ attempt 2 ============ *)
+
+  let random_selected_methods =
+    [ "ResponseEntity MarkupController.renderMarkup(MediaType,String)"
+    ; "String Elements.toString()"
+    ; "Stream Stream.filter(Predicate)"
+    ; "boolean File.mkdir()"
+    ; "int HeaderNode.getLevel()"
+    ; "void ToHtmlSerializer.printLink(LinkRenderer$Rendering)"
+    ; "Repository GithubClient.fetchOrgRepository(String,String)"
+    ; "String StringBuilder.toString()"
+    ; "void FileOutputStream.write(byte[])"
+    ; "OptionsBuilder OptionsBuilder.attributes(Attributes)"
+    ; "String String.concat(String)"
+    ; "File File.createTempFile(String,String)"
+    ; "byte[] FileCopyUtils.copyToByteArray(File)"
+    ; "GuideType GuideType.fromRepositoryName(String)"
+    ; "String Elements.html()"
+    ; "Elements Element.select(String)"
+    ; "String File.getAbsolutePath()"
+    ; "void ZipFile.close()"
+    ; "Object Enumeration.nextElement()" ]
+
+
+  (* ============ attempt 3 ============ *)
+
+  let random_selected_methods =
+    [ "String File.getName()"
+    ; "void Attributes.setSkipFrontMatter(boolean)"
+    ; "String String.substring(int)"
+    ; "ConfigurableApplicationContext SpringApplication.run(Class,String[])"
+    ; "LinkRenderer$Rendering MarkdownToHtmlSerializer.createAnchorLink(String)"
+    ; "void ToHtmlSerializer.visitChildren(SuperNode)"
+    ; "char String.charAt(int)"
+    ; "OptionsBuilder OptionsBuilder.headerFooter(boolean)"
+    ; "HttpHeaders HttpEntity.getHeaders()"
+    ; "Elements Element.select(String)"
+    ; "List GithubClient.fetchOrgRepositories(String)"
+    ; "boolean Enumeration.hasMoreElements()"
+    ; "void MarkdownToHtmlSerializer.visit(HeaderNode)"
+    ; "Base64$Encoder Base64.getEncoder()"
+    ; "ControllerLinkBuilder ControllerLinkBuilder.linkTo(Object)"
+    ; "Document Jsoup.parse(String)"
+    ; "String[] StringUtils.tokenizeToStringArray(String,String)"
+    ; "String GuideType.stripPrefix(String)"
+    ; "Printer Printer.print(String)" ]
+
+
+  (* ============ attempt 4 ============ *)
+
+  let random_selected_methods =
+    [ "List ResourceAssemblerSupport.toResources(Iterable)"
+    ; "List HttpHeaders.get(Object)"
+    ; "Enumeration ZipFile.entries()"
+    ; "boolean Optional.isPresent()"
+    ; "Stream Collection.stream()"
+    ; "ResponseEntity MarkupController.renderMarkup(MediaType,String)"
+    ; "String[] StringUtils.tokenizeToStringArray(String,String)"
+    ; "void ToHtmlSerializer.visitChildren(SuperNode)"
+    ; "OptionsBuilder OptionsBuilder.attributes(Attributes)"
+    ; "String File.getAbsolutePath()"
+    ; "void MarkdownToHtmlSerializer.visit(HeaderNode)"
+    ; "OptionsBuilder OptionsBuilder.baseDir(File)"
+    ; "OptionsBuilder OptionsBuilder.headerFooter(boolean)"
+    ; "String ToHtmlSerializer.printChildrenToString(SuperNode)"
+    ; "HttpHeaders HttpEntity.getHeaders()"
+    ; "String GuideType.stripPrefix(String)"
+    ; "Document Jsoup.parse(String)"
+    ; "Stream Stream.filter(Predicate)"
+    ; "ConfigurableApplicationContext SpringApplication.run(Class,String[])" ]
+
+
+  (* ============ attempt 5 ============ *)
+
+  let random_selected_methods =
+    [ "void ToHtmlSerializer.visitChildren(SuperNode)"
+    ; "OptionsBuilder OptionsBuilder.headerFooter(boolean)"
+    ; "String String.concat(String)"
+    ; "List ResourceAssemblerSupport.toResources(Iterable)"
+    ; "Object Enumeration.nextElement()"
+    ; "String StringWriter.toString()"
+    ; "ResponseEntity RestTemplate.getForEntity(String,Class,Object[])"
+    ; "List Arrays.asList(Object[])"
+    ; "void PrettifyVerbatimSerializer.serialize(VerbatimNode,Printer)"
+    ; "String Elements.html()"
+    ; "byte[] GithubClient.downloadRepositoryAsZipball(String,String)"
+    ; "Optional Optional.of(Object)"
+    ; "void Attributes.setSkipFrontMatter(boolean)"
+    ; "Stream Stream.filter(Predicate)"
+    ; "ResourceSupport IndexController.index()"
+    ; "String FileCopyUtils.copyToString(Reader)"
+    ; "GuideResource GuideResourceAssembler.toResource(Repository)"
+    ; "Object RestTemplate.getForObject(String,Class,Object[])"
+    ; "Document Jsoup.parse(String)" ]
+
+
+  (* ============ attempt 6 ============ *)
+
+  let random_selected_methods =
+    [ "void FileOutputStream.write(byte[])"
+    ; "String String.replaceFirst(String,String)"
+    ; "HttpHeaders HttpEntity.getHeaders()"
+    ; "void PwsGuideContentContributor.contribute(GuideContentResource,File)"
+    ; "void ImagesGuideContentContributor.contribute(GuideContentResource,File)"
+    ; "ResourceSupport IndexController.index()"
+    ; "List GithubClient.fetchOrgRepositories(String)"
+    ; "Printer Printer.print(String)"
+    ; "void Attributes.setSkipFrontMatter(boolean)"
+    ; "String String.format(String,Object[])"
+    ; "boolean ArrayList.add(Object)"
+    ; "String GuideType.stripPrefix(String)"
+    ; "void MarkdownToHtmlSerializer.visit(HeaderNode)"
+    ; "List ResourceAssemblerSupport.toResources(Iterable)"
+    ; "GuideType GuideType.fromRepositoryName(String)"
+    ; "byte[] FileCopyUtils.copyToByteArray(File)"
+    ; "String VerbatimNode.getType()"
+    ; "GuideType GuideType.fromSlug(String)"
+    ; "boolean FileSystemUtils.deleteRecursively(File)" ]
+
+
+  (* ============ attempt 7 ============  *)
+
+  let random_selected_methods =
+    [ "ResponseEntity ResponseEntity.ok(Object)"
+    ; "boolean File.mkdir()"
+    ; "byte[] FileCopyUtils.copyToByteArray(File)"
+    ; "String String.substring(int)"
+    ; "Stream Stream.filter(Predicate)"
+    ; "OptionsBuilder OptionsBuilder.baseDir(File)"
+    ; "Optional Stream.findFirst()"
+    ; "String[] StringUtils.tokenizeToStringArray(String,String)"
+    ; "String String.format(String,Object[])"
+    ; "Object Enumeration.nextElement()"
+    ; "String Elements.toString()"
+    ; "GuideType GuideType.fromSlug(String)"
+    ; "boolean ArrayList.addAll(Collection)"
+    ; "void File.deleteOnExit()"
+    ; "GuideType GuideType.fromRepositoryName(String)"
+    ; "String Base64$Encoder.encodeToString(byte[])"
+    ; "Object Optional.get()"
+    ; "ConfigurableApplicationContext SpringApplication.run(Class,String[])"
+    ; "String FileCopyUtils.copyToString(Reader)" ]
+
+
+  (* ============ attempt 8 ============  *)
+
+  let random_selected_methods =
+    [ "void PwsGuideContentContributor.contribute(GuideContentResource,File)"
+    ; "void ResourceSupport.add(Link)"
+    ; "String FileCopyUtils.copyToString(Reader)"
+    ; "GuideType GuideType.fromSlug(String)"
+    ; "byte[] GithubClient.downloadRepositoryAsZipball(String,String)"
+    ; "char String.charAt(int)"
+    ; "Elements Element.select(String)"
+    ; "StringBuilder StringBuilder.append(int)"
+    ; "String StringWriter.toString()"
+    ; "String StringUtils.arrayToDelimitedString(Object[],String)"
+    ; "Document Jsoup.parse(String)"
+    ; "Link LinkBuilderSupport.withSelfRel()"
+    ; "String String.toLowerCase()"
+    ; "Optional Stream.findFirst()"
+    ; "LinkRenderer$Rendering LinkRenderer$Rendering.withAttribute(String,String)"
+    ; "Printer Printer.print(char)"
+    ; "File File.createTempFile(String,String)"
+    ; "boolean File.exists()"
+    ; "LinkRenderer$Rendering MarkdownToHtmlSerializer.createAnchorLink(String)" ]
+
+
+  (* ============ attempt 9 ============  *)
+
+  let random_selected_methods =
+    [ "String String.format(String,Object[])"
+    ; "List HttpHeaders.get(Object)"
+    ; "Enumeration ZipFile.entries()"
+    ; "void ToHtmlSerializer.printLink(LinkRenderer$Rendering)"
+    ; "void FileOutputStream.close()"
+    ; "boolean Optional.isPresent()"
+    ; "Resources GuidesController.listGuides()"
+    ; "String String.replaceAll(String,String)"
+    ; "boolean StringUtils.isEmpty(String)"
+    ; "String String.concat(String)"
+    ; "Object RestTemplate.getForObject(String,Class,Object[])"
+    ; "Elements Elements.select(String)"
+    ; "OptionsBuilder OptionsBuilder.attributes(Attributes)"
+    ; "Object Iterator.next()"
+    ; "String AsciidoctorGuideContentContributor.findTableOfContents(Document)"
+    ; "String Base64$Encoder.encodeToString(byte[])"
+    ; "String Elements.html()"
+    ; "String String.toLowerCase()"
+    ; "ResponseEntity RestTemplate.getForEntity(String,Class,Object[])" ]
+
+
+  (* ============ attempt 10 ============  *)
+
+  let random_selected_methods =
+    [ "ResponseEntity MarkupController.renderMarkup(MediaType,String)"
+    ; "boolean ArrayList.addAll(Collection)"
+    ; "void ArrayList.forEach(Consumer)"
+    ; "String Base64$Encoder.encodeToString(byte[])"
+    ; "StringBuilder StringBuilder.append(String)"
+    ; "GuideType GuideType.fromName(String)"
+    ; "Printer Printer.printEncoded(String)"
+    ; "String AsciidoctorGuideContentContributor.findTableOfContents(Document)"
+    ; "void ToHtmlSerializer.printLink(LinkRenderer$Rendering)"
+    ; "String ZipEntry.getName()"
+    ; "Link LinkBuilderSupport.withRel(String)"
+    ; "File File.createTempFile(String,String)"
+    ; "void FileOutputStream.write(byte[])"
+    ; "Elements Element.select(String)"
+    ; "List GithubClient.fetchOrgRepositories(String)"
+    ; "void FileOutputStream.close()"
+    ; "ResourceSupport IndexController.index()"
+    ; "List HttpHeaders.get(Object)"
+    ; "void Attributes.setSkipFrontMatter(boolean)" ]
+
 
   let _ = End
 end

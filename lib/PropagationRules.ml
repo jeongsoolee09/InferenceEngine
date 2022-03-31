@@ -86,18 +86,18 @@ let nodewise_similarity_propagation_rule : rule =
             match new_fact_label with
             | Source ->
                 if returnval_not_used_in_caller @@ Vertex.get_method succ then
-                  DistManipulator.overwrite ~src:5. ~sin:10. ~san:5. ~non:5.
-                else DistManipulator.overwrite ~src:10. ~sin:5. ~san:5. ~non:5.
+                  DistManipulator.overwrite ~src:3. ~sin:10. ~san:3. ~non:3.
+                else DistManipulator.overwrite ~src:10. ~sin:3. ~san:3. ~non:3.
             | Sink ->
                 if returnval_not_used_in_caller @@ Vertex.get_method succ then
-                  DistManipulator.overwrite ~src:5. ~sin:10. ~san:5. ~non:5.
-                else DistManipulator.overwrite ~src:10. ~sin:5. ~san:5. ~non:5.
+                  DistManipulator.overwrite ~src:3. ~sin:10. ~san:3. ~non:3.
+                else DistManipulator.overwrite ~src:10. ~sin:3. ~san:3. ~non:3.
             | Sanitizer ->
                 if returnval_not_used_in_caller @@ Vertex.get_method succ then
-                  DistManipulator.overwrite ~src:5. ~sin:10. ~san:5. ~non:5.
-                else DistManipulator.overwrite ~src:10. ~sin:5. ~san:5. ~non:5.
+                  DistManipulator.overwrite ~src:3. ~sin:10. ~san:3. ~non:3.
+                else DistManipulator.overwrite ~src:10. ~sin:3. ~san:3. ~non:3.
             | None ->
-                DistManipulator.overwrite ~src:5. ~sin:5. ~san:5. ~non:10.
+                DistManipulator.overwrite ~src:3. ~sin:3. ~san:3. ~non:10.
             | Indeterminate ->
                 succ_dist
           in
@@ -206,16 +206,9 @@ let mark_api_based_on_relative_position_in_its_trunk : rule =
                   | Close_to_Leaf ->
                       DistManipulator.bump vertex_dist [Sink] ~inc_delta:3. ~dec_delta:1.
                   | Right_at_Middle ->
-                      vertex_dist
-                  (* match SingleFeature.returnval_not_used_in_caller (Vertex.get_method df_succ) with *)
-                  (* | true -> *)
-                  (*     DistManipulator.bump vertex_dist [Sink] ~inc_delta:3. ~dec_delta:1. *)
-                  (* | false -> *)
-                  (*   DistManipulator.bump vertex_dist [Source] ~inc_delta:3. ~dec_delta:1. *) )
+                      vertex_dist )
             | false ->
-                if not @@ Annotations.has_annot (Vertex.get_method df_succ) then
                   DistManipulator.bump vertex_dist [None] ~inc_delta:3. ~dec_delta:1.
-                else vertex_dist
           in
           G.strong_update_dist df_succ new_dist graph_acc )
         df_succs ~init:graph
