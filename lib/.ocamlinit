@@ -54,6 +54,10 @@ open SpanningTree
 open WeaklyConnectedComponents
 open TaintLabel
 open EdgeLabel
+open Transfer
+open Utils
+open AutoTest
+open ManualTest
 module Json = Yojson.Basic
 
 exception End
