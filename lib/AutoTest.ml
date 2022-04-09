@@ -127,56 +127,6 @@ let responder =
         Response.ForYesOrNo (meth, asked_label, is_correct)
 
 
-let auto_test_spechunter_for_snapshot_once (current_snapshot : G.t)
-    (received_responses : Response.t list) =
-  if G.Saturation.all_dists_in_graph_are_saturated current_snapshot then
-    (current_snapshot, received_responses)
-  else
-    (* find the most appropriate Asking Rule. *)
-    let question_maker =
-      MetaRules.ForAsking.asking_rules_selector current_snapshot received_responses
-    in
-    let question = question_maker.rule current_snapshot received_responses ~dry_run:false in
-    print_endline @@ F.asprintf "Question: %s" (Question.to_string question) ;
-    let response = responder question in
-    (* sort applicable Propagation Rules by adequacy. *)
-    let propagation_rules_to_apply =
-      MetaRules.ForPropagation.sort_propagation_rules_by_priority current_snapshot response
-    in
-    let propagated =
-      fst
-      @@ propagator response current_snapshot propagation_rules_to_apply received_responses [||]
-           PropagationRules.all_rules
-    in
-    let propagated' = Axioms.apply_axioms propagated in
-    let stats =
-      let correct_vertices_count =
-        G.fold_vertex
-          (fun vertex acc ->
-            if Scoring.vertex_inference_result_is_correct vertex then acc + 1 else acc )
-          propagated' 0
-      in
-      F.asprintf "overall: [%d / %d] (%f) <vertex>, [%d / %d] <indeterminate>"
-        correct_vertices_count (G.nb_vertex propagated')
-        (Scoring.get_vertexwise_precision_of_snapshot propagated')
-        ( List.length
-        @@ List.filter
-             (G.all_vertices_of_graph propagated')
-             ~f:(ProbQuadruple.is_indeterminate << Vertex.get_dist) )
-        (G.nb_vertex propagated')
-    in
-    print_endline stats ;
-    let srm_stats =
-      let correct_srms_count, all_srms_count, accuracy =
-        Scoring.srm_report_of_snapshot propagated'
-      in
-      F.asprintf "srm: [%d / %d] (%f) <vertex>" correct_srms_count all_srms_count accuracy
-    in
-    print_endline srm_stats ;
-    print_endline @@ srm_map_of_snapshot propagated' ;
-    (propagated', response :: received_responses)
-
-
 let rec auto_test_spechunter_for_snapshot_inner (current_snapshot : G.t)
     (received_responses : Response.t list)
     (nodewise_featuremap : NodeWiseFeatures.NodeWiseFeatureMap.t) (count : int)
@@ -310,3 +260,53 @@ let auto_test_queue (initial_snapshot : G.t) (methods_to_ask : Method.t list) : 
   in
   Out_channel.output_string out_chan log_data ;
   Out_channel.close out_chan
+
+
+let auto_test_spechunter_for_snapshot_once (current_snapshot : G.t)
+    (received_responses : Response.t list) =
+  if G.Saturation.all_dists_in_graph_are_saturated current_snapshot then
+    (current_snapshot, received_responses)
+  else
+    (* find the most appropriate Asking Rule. *)
+    let question_maker =
+      MetaRules.ForAsking.asking_rules_selector current_snapshot received_responses
+    in
+    let question = question_maker.rule current_snapshot received_responses ~dry_run:false in
+    print_endline @@ F.asprintf "Question: %s" (Question.to_string question) ;
+    let response = responder question in
+    (* sort applicable Propagation Rules by adequacy. *)
+    let propagation_rules_to_apply =
+      MetaRules.ForPropagation.sort_propagation_rules_by_priority current_snapshot response
+    in
+    let propagated =
+      fst
+      @@ propagator response current_snapshot propagation_rules_to_apply received_responses [||]
+           PropagationRules.all_rules
+    in
+    let propagated' = Axioms.apply_axioms propagated in
+    let stats =
+      let correct_vertices_count =
+        G.fold_vertex
+          (fun vertex acc ->
+            if Scoring.vertex_inference_result_is_correct vertex then acc + 1 else acc )
+          propagated' 0
+      in
+      F.asprintf "overall: [%d / %d] (%f) <vertex>, [%d / %d] <indeterminate>"
+        correct_vertices_count (G.nb_vertex propagated')
+        (Scoring.get_vertexwise_precision_of_snapshot propagated')
+        ( List.length
+        @@ List.filter
+             (G.all_vertices_of_graph propagated')
+             ~f:(ProbQuadruple.is_indeterminate << Vertex.get_dist) )
+        (G.nb_vertex propagated')
+    in
+    print_endline stats ;
+    let srm_stats =
+      let correct_srms_count, all_srms_count, accuracy =
+        Scoring.srm_report_of_snapshot propagated'
+      in
+      F.asprintf "srm: [%d / %d] (%f) <vertex>" correct_srms_count all_srms_count accuracy
+    in
+    print_endline srm_stats ;
+    print_endline @@ srm_map_of_snapshot propagated' ;
+    (propagated', response :: received_responses)
