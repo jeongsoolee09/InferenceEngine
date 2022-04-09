@@ -15,19 +15,19 @@ module VertexMaker = struct
   let vertex_of_chain_slice (chain_slice : ChainSlice.t) : G.V.t =
     match chain_slice with
     | DefineSlice (current, _, loc, _) ->
-        (Method.of_string current, LocationSet.of_string loc, ProbQuadruple.initial)
+        Vertex.make_initial (Method.of_string current) (LocationSet.of_string loc)
     | CallSlice (_, callee, loc, _) ->
-        (Method.of_string callee, LocationSet.of_string loc, ProbQuadruple.initial)
+        Vertex.make_initial (Method.of_string callee) (LocationSet.of_string loc)
     | VoidCallSlice (_, callee, loc, _) ->
-        (Method.of_string callee, LocationSet.of_string loc, ProbQuadruple.initial)
+        Vertex.make_initial (Method.of_string callee) (LocationSet.of_string loc)
     | RedefineSlice (current, loc, _) ->
-        (Method.of_string current, LocationSet.of_string loc, ProbQuadruple.initial)
+        Vertex.make_initial (Method.of_string current) (LocationSet.of_string loc)
     | DeadSlice current ->
-        (Method.of_string current, LocationSet.dummy, ProbQuadruple.initial)
+        Vertex.make_initial (Method.of_string current) LocationSet.dummy
     | DeadByCycleSlice current ->
-        (Method.of_string current, LocationSet.dummy, ProbQuadruple.initial)
+        Vertex.make_initial (Method.of_string current) LocationSet.dummy
     | Temp (current, loc) ->
-        (Method.of_string current, LocationSet.of_string loc, ProbQuadruple.initial)
+        Vertex.make_initial (Method.of_string current) (LocationSet.of_string loc)
 
 
   module VertexSet = Set.Make (Vertex)
@@ -145,7 +145,7 @@ module EdgeMaker = struct
 
 
   let collect_voidcall_vertices (chain : Chain.t) : ChainSlice.t list =
-   List.filter ~f:ChainSlice.is_voidcall chain
+    List.filter ~f:ChainSlice.is_voidcall chain
 
 
   let collect_all_voidcall_vertices (chain : Chain.t) : ChainSlice.t list =
@@ -156,7 +156,10 @@ module EdgeMaker = struct
       void-call vertex. *)
   let edge_list_of_chain_slice_list (chain : Chain.t) : (G.E.t list * G.LiteralVertex.t list) list =
     let processed = ChainRefiners.process_chainslices chain in
-    let all_void_calls = ReturnValUsedInCaller.filter_really_returnval_not_used @@ collect_all_voidcall_vertices chain >>| (VertexMaker.vertex_of_chain_slice >> G.LiteralVertex.of_vertex) in
+    let all_void_calls =
+      ReturnValUsedInCaller.filter_really_returnval_not_used @@ collect_all_voidcall_vertices chain
+      >>| (VertexMaker.vertex_of_chain_slice >> G.LiteralVertex.of_vertex)
+    in
     let bicycle_chain_of_chain_slices = make_bicycle_chain processed in
     let refined_bicycle_chain, frontend_define_vertex_opt =
       refine_bicycle_chain bicycle_chain_of_chain_slices

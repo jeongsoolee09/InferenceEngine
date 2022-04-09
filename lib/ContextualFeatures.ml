@@ -21,8 +21,8 @@ module TrunkFeatures = struct
   (** Do the two trunks share the same suffixes? If it does, what is its length? *)
   let trunks_share_same_suffixes_length ((trunk1, trunk2) : trunk * trunk) : int =
     (* if the two trunks are not equal in size, prepends some fillers *)
-    let trunk1_only_methods = Array.map ~f:fst3 trunk1
-    and trunk2_only_methods = Array.map ~f:fst3 trunk2 in
+    let trunk1_only_methods = Array.map ~f:Vertex.get_method trunk1
+    and trunk2_only_methods = Array.map ~f:Vertex.get_method trunk2 in
     let trunk1_length = Array.length trunk1 and trunk2_length = Array.length trunk2 in
     let trunk1_revised, trunk2_revised =
       match Int.compare trunk1_length trunk2_length with
@@ -53,8 +53,8 @@ module TrunkFeatures = struct
   (** Do the two trunks share the same prefixes? If it does, what is its length? *)
   let trunks_share_same_prefixes_length ((trunk1, trunk2) : trunk * trunk) : int =
     (* if the two trunks are not equal in size, prepends some fillers *)
-    let trunk1_only_methods = Array.map ~f:fst3 trunk1
-    and trunk2_only_methods = Array.map ~f:fst3 trunk2 in
+    let trunk1_only_methods = Array.map ~f:Vertex.get_method trunk1
+    and trunk2_only_methods = Array.map ~f:Vertex.get_method trunk2 in
     let trunk1_length = Array.length trunk1 and trunk2_length = Array.length trunk2 in
     let trunk1_revised, trunk2_revised =
       match Int.compare trunk1_length trunk2_length with

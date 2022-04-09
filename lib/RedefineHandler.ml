@@ -31,7 +31,7 @@ let collect_redefines_for_single_chain (json_assoc : json) : ChainSlice.t list =
                   ChainSlice.RedefineSlice (current_method, location, access_path)
                 in
                 redefine_slice :: acc
-            | otherwise ->
+            | _ ->
                 acc )
           ~init:[] alist
     | _ ->
@@ -44,7 +44,7 @@ let collect_redefines_for_single_chain (json_assoc : json) : ChainSlice.t list =
 (** Is this vertex from a redefine slice? *)
 let is_redefine_vertex (redefine_slices : ChainSlice.t list) (vertex : G.V.t) : bool =
   (* check if the method name and linum matches *)
-  let method_name, linum, _ = vertex in
+  let method_name, linum = (Vertex.get_method vertex, Vertex.get_loc vertex) in
   List.fold
     ~f:(fun acc slice ->
       match slice with

@@ -191,27 +191,35 @@ module LocationSet = struct
 end
 
 module Vertex = struct
-  type t = Method.t * LocationSet.t * ProbQuadruple.t [@@deriving compare]
+  (* type t = Method.t * LocationSet.t * ProbQuadruple.t [@@deriving compare] *)
+  type t = {method_: Method.t; locset: LocationSet.t; dist: ProbQuadruple.t; depth: int}
+  [@@deriving compare]
 
   let hash = Hashtbl.hash
 
-  let equal ((meth1, locset1, _) : t) ((meth2, locset2, _) : t) : bool =
+  let equal (v1 : t) (v2 : t) : bool =
     (* we ignore the quadruple in defining the identity: that's just an attribute *)
-    Method.equal meth1 meth2 && LocationSet.equal locset1 locset2
+    Method.equal v1.method_ v2.method_ && LocationSet.equal v1.locset v2.locset
 
 
-  let make_initial (meth : Method.t) (loc : String.t) : t = (meth, loc, ProbQuadruple.initial)
+  let make_initial (meth : Method.t) (loc : String.t) : t =
+    {method_= meth; locset= loc; dist= ProbQuadruple.initial; depth= -1}
 
-  let make (meth : Method.t) (loc : String.t) (dist : ProbQuadruple.t) : t = (meth, loc, dist)
 
-  let get_method (meth, _, _) : Method.t = meth
+  let make (meth : Method.t) (loc : String.t) (dist : ProbQuadruple.t) : t =
+    {method_= meth; locset= loc; dist; depth= -1}
 
-  let get_loc (_, loc, _) : LocationSet.t = loc
 
-  let get_dist (_, _, dist) : ProbQuadruple.t = dist
+  let get_method (v : t) : Method.t = v.method_
 
-  let to_string ((procstring, locstring, _) : t) : string =
-    F.asprintf "(\"%s\", \"%s\")" (Method.to_string procstring) (LocationSet.to_string locstring)
+  let get_loc (v : t) : LocationSet.t = v.locset
+
+  let get_dist (v : t) : ProbQuadruple.t = v.dist
+
+  let get_depth (v : t) : int = v.depth
+
+  let to_string (v : t) : string =
+    F.asprintf "(\"%s\", \"%s\")" (Method.to_string v.method_) (LocationSet.to_string v.locset)
 
 
   let vertex_list_to_string (lst : t list) : string =
@@ -364,8 +372,11 @@ module G = struct
     let to_vertex_inner ((meth, loc) : t) (graph : BiDiGraph.t) : Vertex.t =
       let res_opt =
         BiDiGraph.fold_vertex
-          (fun ((target_meth, target_loc, _) as vertex) acc ->
-            if Method.equal meth target_meth && LocationSet.equal loc target_loc then Some vertex
+          (fun vertex acc ->
+            if
+              Method.equal meth (Vertex.get_method vertex)
+              && LocationSet.equal loc (Vertex.get_loc vertex)
+            then Some vertex
             else acc )
           graph None
       in
@@ -387,13 +398,15 @@ module G = struct
             res
 
 
-    let to_vertex_cheap ((meth, loc) : t) : Vertex.t = (meth, loc, ProbQuadruple.initial)
+    let to_vertex_cheap ((meth, loc) : t) : Vertex.t =
+      {method_= meth; locset= loc; dist= ProbQuadruple.initial; depth= -1}
+
 
     let to_string ((meth, loc) : t) : string =
       F.asprintf "(\"%s\", \"%s\")" (Method.to_string meth) (LocationSet.to_string loc)
 
 
-    let of_vertex ((str1, str2, _) : Vertex.t) : t = (str1, str2)
+    let of_vertex (v : Vertex.t) : t = (Vertex.get_method v, Vertex.get_loc v)
 
     let of_string (string : String.t) : t =
       try
@@ -439,8 +452,11 @@ module G = struct
       ProbQuadruple.t =
     let res_opt =
       fold_vertex
-        (fun (target_meth, target_loc, dist) acc ->
-          if Method.equal meth target_meth && LocationSet.equal loc target_loc then Some dist
+        (fun vertex acc ->
+          if
+            Method.equal meth (Vertex.get_method vertex)
+            && LocationSet.equal loc (Vertex.get_loc vertex)
+          then Some (Vertex.get_dist vertex)
           else acc )
         graph None
     in
@@ -454,7 +470,9 @@ module G = struct
 
   let print_snapshot_diff_verbose prev_snapshot next_snapshot =
     let all_pairs_without_dist =
-      fold_vertex (fun (meth, loc, _) acc -> (meth, loc) :: acc) prev_snapshot []
+      fold_vertex
+        (fun vertex acc -> (Vertex.get_method vertex, Vertex.get_loc vertex) :: acc)
+        prev_snapshot []
     in
     let diff =
       List.fold
@@ -480,7 +498,9 @@ module G = struct
 
   let print_snapshot_diff prev_snapshot next_snapshot =
     let all_pairs_without_dist =
-      fold_vertex (fun (meth, loc, _) acc -> (meth, loc) :: acc) prev_snapshot []
+      fold_vertex
+        (fun vertex acc -> (Vertex.get_method vertex, Vertex.get_loc vertex) :: acc)
+        prev_snapshot []
     in
     let diff =
       List.fold
@@ -506,16 +526,20 @@ module G = struct
       diff
 
 
+  (* ============ Graphviz stuffs ============ *)
+
   let graph_attributes g = [`Label g.label]
 
   let default_vertex_attributes _ = []
 
-  let vertex_name ((meth, locset, _) : V.t) : string =
-    F.asprintf "\"(%s, %s)\"" (Method.to_string meth) (LocationSet.to_string locset)
+  let vertex_name (vertex : V.t) : string =
+    F.asprintf "\"(%s, %s)\""
+      (Method.to_string (Vertex.get_method vertex))
+      (LocationSet.to_string (Vertex.get_loc vertex))
 
 
-  let vertex_attributes ((_, _, dist) : V.t) =
-    match ProbQuadruple.determine_label dist with
+  let vertex_attributes (vertex : V.t) =
+    match ProbQuadruple.determine_label (Vertex.get_dist vertex) with
     | Source ->
         [`Fillcolor 0xf54260; `Style `Filled]
     | Sink ->
@@ -546,6 +570,8 @@ module G = struct
 
   let pp_edge (v1, v2) = F.asprintf "\"(%s, %s)\"" (vertex_name v1) (vertex_name v2)
 
+  (* ============ supported computations ============ *)
+
   let serialize_to_bin ?(suffix = "") (graph : t) : unit =
     let out_chan =
       if String.is_empty suffix then
@@ -559,8 +585,8 @@ module G = struct
 
   let strong_update_dist (target_vertex : V.t) (new_dist : ProbQuadruple.t) (graph : t) : t =
     map_vertex
-      (fun ((meth, label, _) as vertex) ->
-        if Vertex.equal vertex target_vertex then (meth, label, new_dist) else vertex )
+      (fun vertex ->
+        if Vertex.equal vertex target_vertex then {vertex with dist= new_dist} else vertex )
       graph
 
 
