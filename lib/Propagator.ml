@@ -49,3 +49,13 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t)
         in
         (propagated, updated_history) )
     ~init:(propagated_snapshot, Array.append new_fact_vertices history)
+
+
+module G_debug = struct
+  include G
+
+  let six_shades_of_pink = [0xfb0c86; 0xfc46aa; 0xfd6dbc; 0xfd93cd; 0xfebadf; 0xffe0f1]
+
+  let vertex_attributes (vertex : V.t) =
+    [`Fillcolor (List.nth_exn six_shades_of_pink (Vertex.get_depth vertex)); `Style `Filled]
+end
