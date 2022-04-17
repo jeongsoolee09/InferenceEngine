@@ -52,9 +52,12 @@ let manual_test_spechunter_for_snapshot_once (current_snapshot : G.t)
 
 
 (** test the methods for initial snapshots repeatedly. *)
-let auto_test_queue_initial (initial_snapshot : G.t) (methods_to_ask : Method.t list) : unit =
-  List.iter
-    ~f:(fun method_to_ask ->
+let manual_test_queue_initial (initial_snapshot : G.t) (methods_to_ask : Method.t list) : unit =
+  List.iteri
+    ~f:(fun round method_to_ask ->
+      print_endline
+      @@ F.asprintf "======================== Round %d: Asking for %s ======================== "
+           round method_to_ask ;
       let once_result =
         Axioms.apply_axioms @@ fst
         @@ manual_test_spechunter_for_snapshot_once initial_snapshot []

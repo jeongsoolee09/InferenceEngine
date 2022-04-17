@@ -61,30 +61,44 @@ end
 module NormalString = struct
   (** Pattern that captures (1) rtntype, (2) class name, and (3) method name from a unique
       identifier. *)
-  let normalstring_regex = Str.regexp "\\(.+\\) \\([a-zA-Z0-9$_]+\\)\\.\\([a-zA-Z<>0-9$_.]+\\)(.*)"
+  let normalstring_regex = Re2.create_exn "(.+) ([a-zA-Z0-9$_]+)\.([a-zA-Z<>0-9$_.]+)\((.*)\)"
 
   let get_return_type (normalstring : String.t) : string =
     try
-      assert (Str.string_match normalstring_regex normalstring 0) ;
-      Str.matched_group 1 normalstring
+      assert (Re2.matches normalstring_regex normalstring) ;
+      let matches =
+        Re2.find_submatches_exn normalstring_regex normalstring |> Array.to_list |> catMaybes
+      in
+      List.nth_exn matches 1
     with Assert_failure _ -> ""
 
 
   let get_class_name (normalstring : String.t) : string =
     try
-      assert (Str.string_match normalstring_regex normalstring 0) ;
-      let out = Str.matched_group 2 normalstring in
-      if String.is_substring out ~substring:"$" then
-        String.split normalstring ~on:' ' |> List.last_exn |> String.split ~on:'.' |> List.hd_exn
-        |> String.split ~on:'$' |> List.last_exn
-      else out
+      assert (Re2.matches normalstring_regex normalstring) ;
+      let out =
+        let matches =
+          Re2.find_submatches_exn normalstring_regex normalstring |> Array.to_list |> catMaybes
+        in
+        List.nth_exn matches 2
+      in
+      (* if String.is_substring out ~substring:"$" then *)
+      (*   String.split normalstring ~on:' ' |> List.last_exn |> String.split ~on:'.' |> List.hd_exn *)
+      (*   |> String.split ~on:'$' |> List.last_exn *)
+      (* else out *)
+      out
     with Assert_failure _ -> ""
 
 
   let get_parent_class_name (normalstring : String.t) : string =
     try
-      assert (Str.string_match normalstring_regex normalstring 0) ;
-      let out = Str.matched_group 2 normalstring in
+      assert (Re2.matches normalstring_regex normalstring) ;
+      let out =
+        let matches =
+          Re2.find_submatches_exn normalstring_regex normalstring |> Array.to_list |> catMaybes
+        in
+        List.nth_exn matches 2
+      in
       if String.is_substring out ~substring:"$" then
         String.split normalstring ~on:' ' |> List.last_exn |> String.split ~on:'.' |> List.hd_exn
         |> String.split ~on:'$' |> List.hd_exn
@@ -96,18 +110,36 @@ module NormalString = struct
     try
       if is_dunder normalstring then normalstring
       else (
-        assert (Str.string_match normalstring_regex normalstring 0) ;
-        Str.matched_group 3 normalstring )
+        assert (Re2.matches normalstring_regex normalstring) ;
+        let matches =
+          Re2.find_submatches_exn normalstring_regex normalstring |> Array.to_list |> catMaybes
+        in
+        List.nth_exn matches 3 )
+    with Assert_failure _ -> ""
+
+
+  let get_arg_list (normalstring : String.t) : string =
+    try
+      assert (Re2.matches normalstring_regex normalstring) ;
+      let matches =
+        Re2.find_submatches_exn normalstring_regex normalstring |> Array.to_list |> catMaybes
+      in
+      List.nth_exn matches 4
     with Assert_failure _ -> ""
 end
 
 module InitString = struct
-  let initstring_regex = Str.regexp "\\([a-zA-Z0-9$_]+\\)\\.\\([a-zA-Z0-9<>$_]+\\)(.*)"
+  let initstring_regex = Re2.create_exn "([a-zA-Z0-9$_]+)\.([a-zA-Z0-9<>$_]+)\((.*)\)"
 
   let get_class_name (initstring : String.t) : string =
     try
-      assert (Str.string_match initstring_regex initstring 0) ;
-      let match_ = Str.matched_group 1 initstring in
+      assert (Re2.matches initstring_regex initstring) ;
+      let match_ =
+        let matches =
+          Re2.find_submatches_exn initstring_regex initstring |> Array.to_list |> catMaybes
+        in
+        List.nth_exn matches 1
+      in
       if String.is_substring ~substring:"$" match_ then
         String.take_while ~f:(fun char -> not @@ Char.equal '$' char) match_
       else match_
@@ -116,8 +148,13 @@ module InitString = struct
 
   let get_parent_class_name (initstring : String.t) : string =
     try
-      assert (Str.string_match initstring_regex initstring 0) ;
-      let out = Str.matched_group 2 initstring in
+      assert (Re2.matches initstring_regex initstring) ;
+      let out =
+        let matches =
+          Re2.find_submatches_exn initstring_regex initstring |> Array.to_list |> catMaybes
+        in
+        List.nth_exn matches 1
+      in
       if String.is_substring out ~substring:"$" then
         String.split initstring ~on:' ' |> List.last_exn |> String.split ~on:'.' |> List.hd_exn
         |> String.split ~on:'$' |> List.hd_exn
@@ -127,9 +164,22 @@ module InitString = struct
 
   let get_method_name (initstring : String.t) : string =
     try
-      assert (Str.string_match initstring_regex initstring 0) ;
-      Str.matched_group 2 initstring
+      assert (Re2.matches initstring_regex initstring) ;
+      let matches =
+        Re2.find_submatches_exn initstring_regex initstring |> Array.to_list |> catMaybes
+      in
+      List.nth_exn matches 2
     with Assert_failure _ -> failwithf "extract_method_name_from_initstring: %s" initstring ()
+
+
+  let get_arg_list (initstring : String.t) : string =
+    try
+      assert (Re2.matches initstring_regex initstring) ;
+      let matches =
+        Re2.find_submatches_exn initstring_regex initstring |> Array.to_list |> catMaybes
+      in
+      List.nth_exn matches 3
+    with Assert_failure _ -> failwithf "extract_arg_list_from_initstring: %s" initstring ()
 end
 
 let to_string : t -> string = ident
@@ -137,7 +187,7 @@ let to_string : t -> string = ident
 let of_string : t -> string = (* we omit input validation to make it cheap *) ident
 
 let get_return_type (method_ : t) : string =
-  if is_initializer method_ then "" (* nothing, bro! *) else NormalString.get_return_type method_
+  if is_initializer method_ then "" else NormalString.get_return_type method_
 
 
 let get_class_name (method_ : t) : string =
@@ -155,6 +205,11 @@ let get_parent_class_name (method_ : t) : string =
 let get_method_name (method_ : t) : string =
   if is_initializer method_ then InitString.get_method_name method_
   else NormalString.get_method_name method_
+
+
+let get_arg_list (method_ : t) : string =
+  if is_initializer method_ then InitString.get_arg_list method_
+  else NormalString.get_arg_list method_
 
 
 let is_udf (method_ : t) : bool =

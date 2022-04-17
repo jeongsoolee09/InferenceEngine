@@ -208,7 +208,7 @@ let mark_api_based_on_relative_position_in_its_trunk : rule =
                   | Right_at_Middle ->
                       vertex_dist )
             | false ->
-                  DistManipulator.bump vertex_dist [None] ~inc_delta:3. ~dec_delta:1.
+                DistManipulator.bump vertex_dist [None] ~inc_delta:3. ~dec_delta:1.
           in
           G.strong_update_dist df_succ new_dist graph_acc )
         df_succs ~init:graph

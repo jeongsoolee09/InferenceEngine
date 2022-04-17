@@ -26,11 +26,11 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t)
   in
   Array.fold
     (Array.of_list current_propagation_targets)
-    ~f:(fun (acc, history) target ->
+    ~f:(fun (acc, history_acc) target ->
       if
-        Array.mem history target ~equal:Vertex.equal
+        Array.mem history_acc target ~equal:Vertex.equal
         || Array.mem new_fact_vertices target ~equal:Vertex.equal
-      then (acc, history)
+      then (acc, history_acc)
       else
         let target_meth = Vertex.get_method target and target_loc = Vertex.get_loc target in
         (* summarize this node's distribution into a Response.t *)
@@ -45,7 +45,7 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t)
         let propagated, updated_history =
           propagator target_rule_summary acc applicable_rules
             (target_rule_summary :: new_fact :: prev_facts)
-            history prop_rule_pool
+            (Array.append history_acc [|target|]) prop_rule_pool
         in
         (propagated, updated_history) )
     ~init:(propagated_snapshot, Array.append new_fact_vertices history)
@@ -54,8 +54,14 @@ let rec propagator (new_fact : Response.t) (current_snapshot : G.t)
 module G_debug = struct
   include G
 
+  (** From heavy pink to light pink *)
   let six_shades_of_pink = [0xfb0c86; 0xfc46aa; 0xfd6dbc; 0xfd93cd; 0xfebadf; 0xffe0f1]
 
   let vertex_attributes (vertex : V.t) =
     [`Fillcolor (List.nth_exn six_shades_of_pink (Vertex.get_depth vertex)); `Style `Filled]
+
+
+  let reset_depth_vertex (vertex : V.t) = {vertex with depth= -1}
+
+  let reset_depth_graph = map_vertex reset_depth_vertex
 end

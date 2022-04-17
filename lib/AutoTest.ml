@@ -46,6 +46,7 @@ module Scoring = struct
 
 
   let is_srm (method_ : Method.t) : bool =
+    print_endline method_;
     if Method.is_initializer method_ then false
     else
       let label_strs = Hashtbl.find solution_table method_ in
@@ -177,7 +178,6 @@ let rec auto_test_spechunter_for_snapshot_inner (current_snapshot : G.t)
     print_endline srm_stats ;
     print_endline @@ srm_map_of_snapshot propagated' ;
     (* print_endline @@ watch_for_class propagated' ["Optional"; "String"; "StringBuilder"] ; *)
-    G.serialize_to_bin ~suffix:"ahahaha" propagated' ;
     (* TEMP *)
     auto_test_spechunter_for_snapshot_inner propagated' (response :: received_responses)
       nodewise_featuremap (count + 1) (stats :: log_data_acc)

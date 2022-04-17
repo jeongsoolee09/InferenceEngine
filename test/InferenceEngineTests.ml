@@ -25,6 +25,9 @@ open EdgeLabel
 open Transfer
 open Utils
 open AutoTest
+open ManualTest
+open Visualizer
+open TrunkView
 
 type delimiter = Start | End
 
@@ -409,7 +412,7 @@ module Notebook103 = struct
 
   open EdgeLabel
 
-  let make str : Vertex.t = (str, "", ProbQuadruple.initial)
+  let make str : Vertex.t = Vertex.make str "" ProbQuadruple.initial
 
   let test_graph =
     G.empty
@@ -2291,6 +2294,95 @@ module Notebook136 = struct
     ; "List HttpHeaders.get(Object)"
     ; "void Attributes.setSkipFrontMatter(boolean)" ]
 
+
+  let _ = End
+end
+
+module Notebook137 = struct
+  let _ = Start
+
+  let renderer_finished = build_graph renderer_graph
+
+  let initial_snapshot = renderer_finished
+
+  let mappings =
+    [ "ResourceSupport IndexController.index()"
+    ; "Resources GuidesController.listGuides()"
+    ; "ResponseEntity GuidesController.renderGuide(String,String)"
+    ; "ResponseEntity GuidesController.showGuide(String,String)"
+    ; "ResponseEntity MarkupController.renderMarkup(MediaType,String)" ]
+
+
+  let _ = manual_test_queue_initial renderer_finished mappings
+
+  let _ = End
+end
+
+module Notebook138 = struct
+  let _ = Start
+
+  (* WORKING making a pinky gradation (Tint Color Variation). *)
+
+  let x1 = 0xfb0c86
+
+  let x2 = 0xfc46aa
+
+  let x3 = 0xfd6dbc
+
+  let x4 = 0xfd93cd
+
+  let x5 = 0xfebadf
+
+  let x6 = 0xffe0f1
+
+  let _ = End
+end
+
+module Notebook139 = struct
+  let _ = Start
+
+  open TrunkView
+
+  let _ =
+    let renderer_trunkview = renderer_graph |> identify_longest_trunks |> make_trunkview in
+    Out_channel.with_file "renderer_graph_trunks.dot" ~f:(fun out_chan ->
+        Visualizer.TrunkViewDot.output_graph out_chan renderer_trunkview )
+
+
+  let _ = End
+end
+
+module Notebook140 = struct
+  let _ = Start
+
+  (* help me *)
+
+  let initstring = "Attributes.<init>1()"
+
+  let initstring_regex = Str.regexp "\\([a-zA-Z0-9$_]+\\)\\.\\([a-zA-Z0-9<>$_]+\\)(.*)"
+
+  let _ =
+    ( Method.get_return_type initstring
+    , Method.get_class_name initstring
+    , Method.get_method_name initstring )
+
+
+  let trunks = identify_longest_trunks renderer_graph
+
+  let _ =
+    Array.iter trunks ~f:(fun trunk ->
+        print_endline @@ F.asprintf "length: %d" (Array.length trunk) )
+
+
+  let renderer_trunkview = renderer_graph |> identify_longest_trunks |> make_trunkview
+
+  let _ =
+    let out_chan = Out_channel.create "hihi.dot" in
+    Dot.output_graph out_chan renderer_trunkview ;
+    Out_channel.close out_chan
+
+
+  (* Ah sh!t. Out_channel.with_file was the culprit of protectx. *)
 
   let _ = End
 end
