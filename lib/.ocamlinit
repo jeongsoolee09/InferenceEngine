@@ -58,6 +58,8 @@ open Transfer
 open Utils
 open AutoTest
 open ManualTest
+open Visualizer
+open TrunkView
 module Json = Yojson.Basic
 
 exception End
