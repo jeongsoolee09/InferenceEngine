@@ -28,6 +28,7 @@ open AutoTest
 open ManualTest
 open Visualizer
 open TrunkView
+open Deserializer
 
 type delimiter = Start | End
 
@@ -2383,6 +2384,60 @@ module Notebook140 = struct
 
 
   (* Ah sh!t. Out_channel.with_file was the culprit of protectx. *)
+
+  let _ = End
+end
+
+module Notebook141 = struct
+  let _ = Start
+
+  (* examining splitting by comp_unit for yorubaname. *)
+
+  let yorubaname_graph = df_edges_added
+
+  let yorubaname_lookup_table = create_comp_unit_lookup_table (deserialize_method_txt ())
+
+  let _ = split_graph_by_single_comp_unit yorubaname_graph yorubaname_lookup_table "importer"
+
+  let _ =
+    Hashtbl.iter
+      (fun k v -> print_endline @@ F.asprintf "%s -> %s" k (CompUnit.to_string v))
+      yorubaname_lookup_table
+
+
+  (* 오우 이런... 전부 Unknown이네
+     휴리스틱이 안먹히나벼 *)
+
+  let _ = End
+end
+
+module Notebook142 = struct
+  let _ = Start
+
+  (* 으아악 총체적 난국 *)
+
+  let udfs =
+    df_edges_added |> G.all_methods_of_graph
+    |> List.iter ~f:(fun method_ ->
+           print_endline
+           @@
+           let classname = get_class_name method_ and methodname = get_method_name method_ in
+           F.asprintf "%s.%s" classname methodname )
+
+
+  let _ = List.iter (Deserializer.deserialize_method_txt ()) ~f:print_endline
+
+  (* Oh no!! *)
+
+  let _ = End
+end
+
+module Notebook143 = struct
+  let _ = Start
+
+  (* TODO debugging for relational *)
+      
+  let _ = "아 여기서 할 게 아니네"
 
   let _ = End
 end

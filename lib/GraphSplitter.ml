@@ -23,7 +23,7 @@ let get_comp_unit =
           else
             let res =
               List.find
-                ~f:(fun (abs_dir, classnames) ->
+                ~f:(fun (_, classnames) ->
                   List.mem classnames (Method.get_class_name method_) ~equal:String.equal )
                 abs_dirs_and_classnames
             in
@@ -89,3 +89,7 @@ let split_graph_by_comp_unit (graph : G.t) : G.t list =
     all_comp_units ;
   let lookup_table = create_comp_unit_lookup_table (G.all_methods_of_graph graph) in
   all_comp_units >>| split_graph_by_single_comp_unit graph lookup_table
+
+
+let split_graph_by_package (graph : G.t) : G.t list =
+  raise TODO

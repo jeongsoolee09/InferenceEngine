@@ -12,25 +12,21 @@ module F = Format
 let make_now_string (gmt_diff : int) : string =
   let open CalendarLib in
   let now_raw = Calendar.now () in
-  let year = Calendar.year now_raw in
-  let month = Date.int_of_month @@ Calendar.month now_raw in
-  let day = Calendar.day_of_month now_raw in
-  let hour = Calendar.hour now_raw + gmt_diff in
-  let minute = Calendar.minute now_raw in
-  let second = Calendar.second now_raw in
+  let year = Calendar.year now_raw
+  and month = Date.int_of_month @@ Calendar.month now_raw
+  and day = Calendar.day_of_month now_raw
+  and hour = Calendar.hour now_raw + gmt_diff
+  and minute = Calendar.minute now_raw
+  and second = Calendar.second now_raw in
   F.asprintf "%d-%d-%d_%d:%d:%d" year month day hour minute second
 
 
 let deserialize_config () =
-  let in_channel = In_channel.create "config.json" in
-  let json = Json.from_channel in_channel in
-  let out =
-    let project_root = Util.member "project_root" json |> Util.to_string
-    and solution_dir = Util.member "solution_dir" json |> Util.to_string in
-    (project_root, solution_dir)
-  in
-  In_channel.close in_channel ;
-  out
+  In_channel.with_file "config.json" ~f:(fun in_chan ->
+      let json = Json.from_channel in_chan in
+      let project_root = Util.member "project_root" json |> Util.to_string
+      and solution_dir = Util.member "solution_dir" json |> Util.to_string in
+      (project_root, solution_dir) )
 
 
 let project_root, solution_dir = deserialize_config ()
@@ -101,9 +97,9 @@ let deserialize_skip_func =
 
 
 let deserialize_graph (filename : string) =
-  let in_chan = In_channel.create filename in
-  In_channel.set_binary_mode in_chan true ;
-  Marshal.from_channel in_chan
+  In_channel.with_file filename ~f:(fun in_chan ->
+      In_channel.set_binary_mode in_chan true ;
+      Marshal.from_channel in_chan )
 
 
 let deserialize_callgraph =
@@ -158,15 +154,6 @@ let deserialize_return_stmts =
       cache := out ;
       out )
     else !cache
-
-
-(** deprecated *)
-let deserialize_solution () : (string * string list) array =
-  let in_channel = In_channel.create solution_dir in
-  let json = Json.from_channel in_channel in
-  let assoc = Util.to_assoc json in
-  List.map ~f:(fun (str, str_json) -> (str, Util.to_list str_json >>| Util.to_string)) assoc
-  |> Array.of_list
 
 
 let deserialize_void_call =
