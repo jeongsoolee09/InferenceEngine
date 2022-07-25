@@ -12,7 +12,7 @@ Watch the Demo: https://youtu.be/_tHX5Ud3P0o
 
 ### `fatal error: 'cblas.h' file not found`
 
-(인텔맥 기준)
+(Intel Mac)
 
 - Run `brew reinstall openblas`
 - and then `export PKG_CONFIG_PATH="/usr/local/opt/openblas/lib/pkgconfig:$PATH"`
